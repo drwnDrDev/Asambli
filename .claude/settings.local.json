@@ -14,7 +14,8 @@
       "Bash(./vendor/bin/sail up:*)",
       "Bash(./sail artisan:*)",
       "Bash(./sail composer:*)",
-      "Bash(./sail php:*)"
+      "Bash(./sail php:*)",
+      "Bash(./sail npm:*)"
     ]
   }
 }
