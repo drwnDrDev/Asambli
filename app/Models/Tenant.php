@@ -19,4 +19,19 @@ class Tenant extends Model
         'activo' => 'boolean',
         'max_poderes_por_delegado' => 'integer',
     ];
+
+    public function users()
+    {
+        return $this->hasMany(User::class);
+    }
+
+    public function unidades()
+    {
+        return $this->hasMany(Unidad::class);
+    }
+
+    public function reuniones()
+    {
+        return $this->hasMany(Reunion::class);
+    }
 }
