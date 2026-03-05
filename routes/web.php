@@ -28,4 +28,18 @@ Route::middleware(['auth', 'role:administrador,super_admin'])->prefix('admin')->
     Route::get('/dashboard', fn () => Inertia::render('Dashboard'))->name('admin.dashboard');
 });
 
+Route::get('/acceso/{token}', function (string $token) {
+    $service = app(\App\Services\MagicLinkService::class);
+    $link = $service->validate($token);
+
+    if (!$link) {
+        abort(410, 'Este enlace ha expirado o ya fue utilizado.');
+    }
+
+    $service->consume($link);
+    auth()->login($link->user);
+
+    return redirect('/dashboard');
+})->name('magic-link.login');
+
 require __DIR__.'/auth.php';

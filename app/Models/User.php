@@ -48,4 +48,9 @@ class User extends Authenticatable
             'password' => 'hashed',
         ];
     }
+
+    public function magicLinks()
+    {
+        return $this->hasMany(MagicLink::class);
+    }
 }
