@@ -24,4 +24,8 @@ Route::middleware('auth')->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
 
+Route::middleware(['auth', 'role:administrador,super_admin'])->prefix('admin')->group(function () {
+    Route::get('/dashboard', fn () => Inertia::render('Dashboard'))->name('admin.dashboard');
+});
+
 require __DIR__.'/auth.php';
