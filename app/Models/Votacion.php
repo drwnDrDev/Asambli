@@ -11,6 +11,8 @@ class Votacion extends Model
     /** @use HasFactory<\Database\Factories\VotacionFactory> */
     use HasFactory, BelongsToTenant;
 
+    protected $table = 'votaciones';
+
     protected $fillable = [
         'tenant_id', 'reunion_id', 'titulo', 'descripcion',
         'tipo', 'es_secreta', 'estado', 'abierta_at', 'cerrada_at', 'creada_por',
@@ -21,6 +23,11 @@ class Votacion extends Model
         'abierta_at' => 'datetime',
         'cerrada_at' => 'datetime',
     ];
+
+    public function reunion()
+    {
+        return $this->belongsTo(Reunion::class);
+    }
 
     public function opciones()
     {

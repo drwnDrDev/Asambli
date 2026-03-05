@@ -1,0 +1,35 @@
+<?php
+
+namespace App\Jobs;
+
+use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Foundation\Queue\Queueable;
+
+class RecalcularResultadosVotacion implements ShouldQueue
+{
+    use Queueable;
+
+    public function __construct(public int $votacionId) {}
+
+    public function handle(): void
+    {
+        $votacion = \App\Models\Votacion::with('opciones')->withoutGlobalScopes()->find($this->votacionId);
+
+        if (!$votacion) return;
+
+        $resultados = $votacion->opciones->map(function ($opcion) use ($votacion) {
+            $votos = \App\Models\Voto::withoutGlobalScopes()
+                ->where('votacion_id', $votacion->id)
+                ->where('opcion_id', $opcion->id);
+
+            return [
+                'opcion_id' => $opcion->id,
+                'texto' => $opcion->texto,
+                'count' => $votos->count(),
+                'peso_total' => (float) $votos->sum('peso'),
+            ];
+        });
+
+        broadcast(new \App\Events\ResultadosVotacionActualizados($votacion, $resultados->toArray()));
+    }
+}

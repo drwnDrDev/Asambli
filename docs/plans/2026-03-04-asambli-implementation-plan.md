@@ -26,7 +26,10 @@
 | Task 10 | ✅ COMPLETADA | MagicLink model + MagicLinkService + /acceso/{token} route |
 | Task 11 | ✅ COMPLETADA | Unidad + Copropietario models con BelongsToTenant |
 | Task 12 | ✅ COMPLETADA | PadronImportService con validación coeficientes CSV |
-| Task 13+ | ⬜ PENDIENTE | |
+| Task 13 | ✅ COMPLETADA | Reunion (state machine) + ReunionLog (append-only) |
+| Task 14 | ✅ COMPLETADA | Asistencia + Poder (max delegation enforced) |
+| Task 15 | ✅ COMPLETADA | Votacion + OpcionVotacion + Voto (immutable) |
+| Task 16+ | ⬜ PENDIENTE | |
 
 > **Nota entorno:** Windows 11 Git Bash sin WSL2. Usar `./sail artisan`, `./sail composer`, `./sail npm` en lugar de `./vendor/bin/sail`. Docker se inicia con `WWWGROUP=1000 WWWUSER=1000 docker compose up -d`.
 
