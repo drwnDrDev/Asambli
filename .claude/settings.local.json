@@ -1,0 +1,18 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(docker:*)",
+      "Bash(php:*)",
+      "Read(//c/drwnDev/**)",
+      "Bash(mv ASAMBLI_temp/* ASAMBLI/)",
+      "Bash(mv ASAMBLI_temp/.env ASAMBLI/)",
+      "Bash(mv ASAMBLI_temp/.env.example ASAMBLI/)",
+      "Bash(mv ASAMBLI_temp/.gitattributes ASAMBLI/)",
+      "Bash(mv ASAMBLI_temp/.gitignore ASAMBLI/)",
+      "Bash(mv ASAMBLI_temp/.editorconfig ASAMBLI/)",
+      "Bash(ls:*)",
+      "Bash(./vendor/bin/sail up:*)",
+      "Bash(./sail artisan:*)"
+    ]
+  }
+}
