@@ -29,7 +29,13 @@
 | Task 13 | ✅ COMPLETADA | Reunion (state machine) + ReunionLog (append-only) |
 | Task 14 | ✅ COMPLETADA | Asistencia + Poder (max delegation enforced) |
 | Task 15 | ✅ COMPLETADA | Votacion + OpcionVotacion + Voto (immutable) |
-| Task 16+ | ⬜ PENDIENTE | |
+| Task 16 | ✅ COMPLETADA | QuorumService por coeficiente y por unidad |
+| Task 17 | ✅ COMPLETADA | VotoService con transacciones atómicas + hash SHA-256 |
+| Task 18 | ✅ COMPLETADA | Reverb events: ResultadosVotacion, QuorumActualizado, EstadoVotacion |
+| Task 19 | ✅ COMPLETADA | ConvocatoriaService + ConvocatoriaReunion notification |
+| Task 20 | ✅ COMPLETADA | ReporteService PDF (DomPDF + SHA-256) + CSV |
+| Task 21 | ✅ COMPLETADA | Rutas + Controllers (Admin: Reunion, Votacion, Padron, Dashboard; Copropietario: Sala, Voto; SuperAdmin: Tenant; Auth: MagicLink) |
+| Task 22+ | ⬜ PENDIENTE | |
 
 > **Nota entorno:** Windows 11 Git Bash sin WSL2. Usar `./sail artisan`, `./sail composer`, `./sail npm` en lugar de `./vendor/bin/sail`. Docker se inicia con `WWWGROUP=1000 WWWUSER=1000 docker compose up -d`.
 

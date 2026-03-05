@@ -1,6 +1,14 @@
 <?php
 
+use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
+use App\Http\Controllers\Admin\PadronController;
+use App\Http\Controllers\Admin\ReunionController;
+use App\Http\Controllers\Admin\VotacionController;
+use App\Http\Controllers\Auth\MagicLinkController;
+use App\Http\Controllers\Copropietario\SalaReunionController;
+use App\Http\Controllers\Copropietario\VotoController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\SuperAdmin\TenantController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -14,32 +22,65 @@ Route::get('/', function () {
     ]);
 });
 
+// Default dashboard (Breeze redirects here after login/register)
 Route::get('/dashboard', function () {
     return Inertia::render('Dashboard');
 })->middleware(['auth', 'verified'])->name('dashboard');
 
+// Magic link (unauthenticated)
+Route::get('/acceso/{token}', [MagicLinkController::class, 'acceder'])->name('magic-link.login');
+
+// Standard auth routes
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
 
-Route::middleware(['auth', 'role:administrador,super_admin'])->prefix('admin')->group(function () {
-    Route::get('/dashboard', fn () => Inertia::render('Dashboard'))->name('admin.dashboard');
-});
+// Admin routes
+Route::middleware(['auth', 'role:administrador,super_admin'])
+    ->prefix('admin')
+    ->name('admin.')
+    ->group(function () {
+        Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('dashboard');
 
-Route::get('/acceso/{token}', function (string $token) {
-    $service = app(\App\Services\MagicLinkService::class);
-    $link = $service->validate($token);
+        // Reuniones
+        Route::resource('reuniones', ReunionController::class)->parameters(['reuniones' => 'reunion']);
+        Route::post('reuniones/{reunion}/convocar', [ReunionController::class, 'convocar'])->name('reuniones.convocar');
+        Route::post('reuniones/{reunion}/iniciar', [ReunionController::class, 'iniciar'])->name('reuniones.iniciar');
+        Route::post('reuniones/{reunion}/finalizar', [ReunionController::class, 'finalizar'])->name('reuniones.finalizar');
+        Route::post('reuniones/{reunion}/copropietarios/{copropietario}/asistencia', [ReunionController::class, 'confirmarAsistencia'])->name('reuniones.confirmar-asistencia');
+        Route::get('reuniones/{reunion}/reporte/pdf', [ReunionController::class, 'reportePdf'])->name('reuniones.reporte-pdf');
+        Route::get('reuniones/{reunion}/reporte/csv', [ReunionController::class, 'reporteCsv'])->name('reuniones.reporte-csv');
+        Route::get('reuniones/{reunion}/auditoria', [ReunionController::class, 'auditoria'])->name('reuniones.auditoria');
 
-    if (!$link) {
-        abort(410, 'Este enlace ha expirado o ya fue utilizado.');
-    }
+        // Votaciones (within a reunion context)
+        Route::post('reuniones/{reunion}/votaciones', [VotacionController::class, 'store'])->name('votaciones.store');
+        Route::post('votaciones/{votacion}/abrir', [VotacionController::class, 'abrir'])->name('votaciones.abrir');
+        Route::post('votaciones/{votacion}/cerrar', [VotacionController::class, 'cerrar'])->name('votaciones.cerrar');
+        Route::get('votaciones/{votacion}/resultados', [VotacionController::class, 'resultados'])->name('votaciones.resultados');
 
-    $service->consume($link);
-    auth()->login($link->user);
+        // Padrón
+        Route::get('padron', [PadronController::class, 'index'])->name('padron.index');
+        Route::post('padron/import', [PadronController::class, 'import'])->name('padron.import');
+    });
 
-    return redirect('/dashboard');
-})->name('magic-link.login');
+// Copropietario (sala) routes
+Route::middleware(['auth', 'role:copropietario,administrador,super_admin'])
+    ->name('sala.')
+    ->group(function () {
+        Route::get('/sala', [SalaReunionController::class, 'index'])->name('index');
+        Route::get('/sala/{reunion}', [SalaReunionController::class, 'show'])->name('show');
+        Route::get('/historial', [SalaReunionController::class, 'historial'])->name('historial');
+        Route::post('/votos', [VotoController::class, 'store'])->name('votos.store');
+    });
+
+// Super-admin routes
+Route::middleware(['auth', 'role:super_admin'])
+    ->prefix('super-admin')
+    ->name('super-admin.')
+    ->group(function () {
+        Route::resource('tenants', TenantController::class);
+    });
 
 require __DIR__.'/auth.php';
