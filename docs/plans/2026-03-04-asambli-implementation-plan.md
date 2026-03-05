@@ -17,9 +17,13 @@
 | Task 1 | ✅ COMPLETADA | Docker Desktop instalado y corriendo |
 | Task 2 | ✅ COMPLETADA | Laravel 12 + Sail Docker (PHP 8.5, MySQL 8.4, Redis). Wrapper `./sail` creado para Windows/Git Bash |
 | Task 3 | ✅ COMPLETADA | Breeze + Inertia React + Tailwind instalados, build OK |
-| Task 4 | ⬜ PENDIENTE | |
-| Task 5 | ⬜ PENDIENTE | |
-| Task 6+ | ⬜ PENDIENTE | |
+| Task 4 | ✅ COMPLETADA | DB `asambli` configurada, migraciones base corridas |
+| Task 5 | ✅ COMPLETADA | Reverb v1.8, Horizon v5.45, DomPDF v3.1, league/csv v9.28 instalados |
+| Task 6 | ✅ COMPLETADA | Tenant model + migration + factory + Pest configurado |
+| Task 7 | ✅ COMPLETADA | BelongsToTenant trait + TenantScope + tenant_id/rol en users |
+| Task 8 | ✅ COMPLETADA | SetTenantContext middleware registrado en web group |
+| Task 9 | ✅ COMPLETADA | RequireRole middleware + alias `role` + admin routes protegidas |
+| Task 10+ | ⬜ PENDIENTE | |
 
 > **Nota entorno:** Windows 11 Git Bash sin WSL2. Usar `./sail artisan`, `./sail composer`, `./sail npm` en lugar de `./vendor/bin/sail`. Docker se inicia con `WWWGROUP=1000 WWWUSER=1000 docker compose up -d`.
 
