@@ -17,7 +17,7 @@ class UnidadFactory extends Factory
     public function definition(): array
     {
         return [
-            'tenant_id' => \App\Models\Tenant::factory(),
+            'tenant_id' => fn() => app()->has('current_tenant') ? app('current_tenant')->id : \App\Models\Tenant::factory(),
             'numero' => fake()->numerify('###'),
             'tipo' => fake()->randomElement(['apartamento', 'local', 'parqueadero', 'otro']),
             'coeficiente' => fake()->randomFloat(5, 0.5, 5.0),

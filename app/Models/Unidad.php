@@ -11,6 +11,8 @@ class Unidad extends Model
     /** @use HasFactory<\Database\Factories\UnidadFactory> */
     use HasFactory, BelongsToTenant;
 
+    protected $table = 'unidades';
+
     protected $fillable = [
         'tenant_id', 'numero', 'tipo', 'coeficiente', 'torre', 'piso', 'activo',
     ];
