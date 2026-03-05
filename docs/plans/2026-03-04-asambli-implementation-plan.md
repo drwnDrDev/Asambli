@@ -10,6 +10,21 @@
 
 ---
 
+## Estado de Progreso
+
+| Task | Estado | Notas |
+|------|--------|-------|
+| Task 1 | ✅ COMPLETADA | Docker Desktop instalado y corriendo |
+| Task 2 | ✅ COMPLETADA | Laravel 12 + Sail Docker (PHP 8.5, MySQL 8.4, Redis). Wrapper `./sail` creado para Windows/Git Bash |
+| Task 3 | ✅ COMPLETADA | Breeze + Inertia React + Tailwind instalados, build OK |
+| Task 4 | ⬜ PENDIENTE | |
+| Task 5 | ⬜ PENDIENTE | |
+| Task 6+ | ⬜ PENDIENTE | |
+
+> **Nota entorno:** Windows 11 Git Bash sin WSL2. Usar `./sail artisan`, `./sail composer`, `./sail npm` en lugar de `./vendor/bin/sail`. Docker se inicia con `WWWGROUP=1000 WWWUSER=1000 docker compose up -d`.
+
+---
+
 ## FASE 0: Entorno y Setup del Proyecto
 
 ### Task 1: Instalar Prerrequisitos (Windows)
