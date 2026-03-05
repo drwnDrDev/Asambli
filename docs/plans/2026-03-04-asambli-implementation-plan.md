@@ -35,7 +35,11 @@
 | Task 19 | ✅ COMPLETADA | ConvocatoriaService + ConvocatoriaReunion notification |
 | Task 20 | ✅ COMPLETADA | ReporteService PDF (DomPDF + SHA-256) + CSV |
 | Task 21 | ✅ COMPLETADA | Rutas + Controllers (Admin: Reunion, Votacion, Padron, Dashboard; Copropietario: Sala, Voto; SuperAdmin: Tenant; Auth: MagicLink) |
-| Task 22+ | ⬜ PENDIENTE | |
+| Task 22 | ✅ COMPLETADA | AdminLayout + SalaLayout + @headlessui/react + lucide-react |
+| Task 23 | ✅ COMPLETADA | Conducir.jsx con Echo/Reverb en tiempo real + VotacionController abrir/cerrar |
+| Task 24 | ✅ COMPLETADA | Sala/Show.jsx mobile-first con votación delegada en tiempo real |
+| Task 25 | ⏭️ OMITIDA | A realizar cuando el usuario decida desplegar |
+| Task 26 | ⏭️ OMITIDA | A realizar cuando el usuario decida desplegar |
 
 > **Nota entorno:** Windows 11 Git Bash sin WSL2. Usar `./sail artisan`, `./sail composer`, `./sail npm` en lugar de `./vendor/bin/sail`. Docker se inicia con `WWWGROUP=1000 WWWUSER=1000 docker compose up -d`.
 

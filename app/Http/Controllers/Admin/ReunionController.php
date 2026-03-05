@@ -21,7 +21,12 @@ class ReunionController extends Controller
 
     public function index()
     {
-        return Inertia::render('Admin/Reuniones/Index');
+        $reuniones = Reunion::withoutGlobalScopes()
+            ->where('tenant_id', auth()->user()->tenant_id)
+            ->orderByDesc('created_at')
+            ->get();
+
+        return Inertia::render('Admin/Reuniones/Index', compact('reuniones'));
     }
 
     public function create()
@@ -47,12 +52,28 @@ class ReunionController extends Controller
     public function show(Reunion $reunion)
     {
         $quorum = $this->quorumService->calcular($reunion);
+        $asistencias = $reunion->asistencias()->where('confirmada_por_admin', true)->pluck('copropietario_id')->toArray();
         $copropietarios = Copropietario::withoutGlobalScopes()
             ->where('tenant_id', $reunion->tenant_id)
             ->with('user', 'unidad')
-            ->get();
+            ->get()
+            ->map(fn($c) => array_merge($c->toArray(), ['asistencia' => in_array($c->id, $asistencias)]));
 
         return Inertia::render('Admin/Reuniones/Show', compact('reunion', 'quorum', 'copropietarios'));
+    }
+
+    public function conducir(Reunion $reunion)
+    {
+        $quorum = $this->quorumService->calcular($reunion);
+        $asistencias = $reunion->asistencias()->where('confirmada_por_admin', true)->pluck('copropietario_id')->toArray();
+        $copropietarios = Copropietario::withoutGlobalScopes()
+            ->where('tenant_id', $reunion->tenant_id)
+            ->with('user', 'unidad')
+            ->get()
+            ->map(fn($c) => array_merge($c->toArray(), ['asistencia' => in_array($c->id, $asistencias)]));
+        $votaciones = $reunion->votaciones()->with('opciones')->get();
+
+        return Inertia::render('Admin/Reuniones/Conducir', compact('reunion', 'quorum', 'copropietarios', 'votaciones'));
     }
 
     public function edit(Reunion $reunion)

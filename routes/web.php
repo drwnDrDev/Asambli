@@ -53,6 +53,7 @@ Route::middleware(['auth', 'role:administrador,super_admin'])
         Route::get('reuniones/{reunion}/reporte/pdf', [ReunionController::class, 'reportePdf'])->name('reuniones.reporte-pdf');
         Route::get('reuniones/{reunion}/reporte/csv', [ReunionController::class, 'reporteCsv'])->name('reuniones.reporte-csv');
         Route::get('reuniones/{reunion}/auditoria', [ReunionController::class, 'auditoria'])->name('reuniones.auditoria');
+        Route::get('reuniones/{reunion}/conducir', [ReunionController::class, 'conducir'])->name('reuniones.conducir');
 
         // Votaciones (within a reunion context)
         Route::post('reuniones/{reunion}/votaciones', [VotacionController::class, 'store'])->name('votaciones.store');
