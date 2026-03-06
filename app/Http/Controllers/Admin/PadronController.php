@@ -28,10 +28,10 @@ class PadronController extends Controller
 
         $result = $this->importService->importFromString($csv, $tenant);
 
-        if (!$result['success']) {
-            return back()->withErrors(['archivo' => $result['error']]);
+        if (!empty($result['errors'])) {
+            return back()->withErrors(['archivo' => implode(' | ', $result['errors'])]);
         }
 
-        return back()->with('success', "Padrón importado: {$result['creados']} creados, {$result['actualizados']} actualizados.");
+        return back()->with('success', "Importación completada: {$result['imported']} copropietarios procesados.");
     }
 }
