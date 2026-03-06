@@ -1,6 +1,9 @@
 # Diagrama ER — ASAMBLI
 
 ```mermaid
+---
+id: 405a216a-756e-4916-a1a0-868ae0926599
+---
 erDiagram
 
     tenants {
