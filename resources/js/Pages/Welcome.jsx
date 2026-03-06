@@ -68,7 +68,11 @@ export default function Welcome({ auth }) {
 
                     {auth?.user ? (
                         <Link
-                            href={route('admin.dashboard')}
+                            href={
+                                auth.user.rol === 'super_admin'   ? route('super-admin.tenants.index') :
+                                auth.user.rol === 'administrador' ? route('admin.dashboard') :
+                                                                    route('sala.index')
+                            }
                             className="px-4 py-2 bg-brand hover:bg-brand-dark text-white text-[13px] font-semibold rounded transition-colors"
                         >
                             Ir al Dashboard →

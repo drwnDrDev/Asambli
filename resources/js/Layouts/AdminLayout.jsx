@@ -121,7 +121,7 @@ function SidebarContent({ navItems, user, onClose }) {
                             {user?.name}
                         </p>
                         <p className="text-sidebar-text text-[11px] capitalize">
-                            {user?.roles?.[0]?.name ?? 'Usuario'}
+                            {user?.rol ?? 'Usuario'}
                         </p>
                     </div>
                 </div>
@@ -144,7 +144,7 @@ export default function AdminLayout({ children, title }) {
     const { auth } = usePage().props
     const [drawerOpen, setDrawerOpen] = useState(false)
 
-    const isSuperAdmin = auth?.user?.roles?.some(r => r.name === 'super_admin')
+    const isSuperAdmin = auth?.user?.rol === 'super_admin'
     const navItems = isSuperAdmin ? NAV_SUPERADMIN : NAV_ADMIN
 
     return (
