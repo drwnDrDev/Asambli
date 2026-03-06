@@ -11,7 +11,7 @@ export default function Index() {
     }
 
     return (
-        <AdminLayout title="Padrón de Copropietarios">
+        <AdminLayout title="Importar Copropietarios">
             {flash?.success && (
                 <div className="mb-4 bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg text-sm">
                     {flash.success}
@@ -23,12 +23,12 @@ export default function Index() {
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-sm text-blue-800">
                     <p className="font-semibold mb-2">Formato del CSV:</p>
                     <code className="block bg-blue-100 rounded p-2 text-xs font-mono">
-                        numero_unidad,nombre,email,coeficiente<br/>
+                        numero,nombre,email,coeficiente<br/>
                         101,Juan Pérez,juan@ejemplo.com,3.45<br/>
                         102,María García,maria@ejemplo.com,2.80
                     </code>
                     <p className="mt-2 text-xs text-blue-600">
-                        La suma de coeficientes debe ser ≤ 100. Se hace upsert por email.
+                        Campos requeridos: numero, email, coeficiente. La suma de coeficientes debe ser ≤ 100.
                     </p>
                 </div>
 
@@ -54,7 +54,7 @@ export default function Index() {
                         disabled={processing || !data.archivo}
                         className="bg-blue-600 text-white px-5 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50 transition"
                     >
-                        {processing ? 'Importando...' : 'Importar padrón'}
+                        {processing ? 'Importando...' : 'Importar CSV'}
                     </button>
                 </form>
             </div>

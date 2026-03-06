@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
+use App\Http\Controllers\Admin\CopropietarioController;
 use App\Http\Controllers\Admin\PadronController;
 use App\Http\Controllers\Admin\ReunionController;
 use App\Http\Controllers\Admin\VotacionController;
@@ -64,6 +65,9 @@ Route::middleware(['auth', 'role:administrador,super_admin'])
         // Padrón
         Route::get('padron', [PadronController::class, 'index'])->name('padron.index');
         Route::post('padron/import', [PadronController::class, 'import'])->name('padron.import');
+
+        // Copropietarios
+        Route::resource('copropietarios', CopropietarioController::class);
     });
 
 // Copropietario (sala) routes
