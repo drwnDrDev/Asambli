@@ -13,7 +13,50 @@ export default {
     theme: {
         extend: {
             fontFamily: {
-                sans: ['Figtree', ...defaultTheme.fontFamily.sans],
+                sans:  ['DM Sans', ...defaultTheme.fontFamily.sans],
+                mono:  ['JetBrains Mono', ...defaultTheme.fontFamily.mono],
+            },
+            colors: {
+                brand: {
+                    DEFAULT: 'var(--color-brand)',
+                    dark:    'var(--color-brand-dark)',
+                    light:   'var(--color-brand-light)',
+                },
+                sidebar: {
+                    bg:     'var(--sidebar-bg)',
+                    border: 'var(--sidebar-border)',
+                    hover:  'var(--sidebar-item-hover)',
+                    active: 'var(--sidebar-item-active)',
+                    text:   'var(--sidebar-text)',
+                    'text-active': 'var(--sidebar-text-active)',
+                },
+                content: {
+                    bg: 'var(--content-bg)',
+                },
+                surface: {
+                    DEFAULT: 'var(--surface)',
+                    border:  'var(--surface-border)',
+                    hover:   'var(--surface-hover)',
+                },
+                'app-text': {
+                    primary:   'var(--text-primary)',
+                    secondary: 'var(--text-secondary)',
+                    muted:     'var(--text-muted)',
+                },
+                success:  'var(--color-success)',
+                danger:   'var(--color-danger)',
+                warning:  'var(--color-warning)',
+                info:     'var(--color-info)',
+            },
+            borderRadius: {
+                sm: 'var(--radius-sm)',
+                md: 'var(--radius-md)',
+                lg: 'var(--radius-lg)',
+            },
+            boxShadow: {
+                sm: 'var(--shadow-sm)',
+                md: 'var(--shadow-md)',
+                lg: 'var(--shadow-lg)',
             },
         },
     },

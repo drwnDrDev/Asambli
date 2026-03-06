@@ -1,0 +1,53 @@
+@import url('https://fonts.bunny.net/css?family=dm-sans:400,500,600,700&display=swap');
+@import url('https://fonts.bunny.net/css?family=jetbrains-mono:400,500&display=swap');
+
+:root {
+  /* ── Brand ─────────────────────────────── */
+  --color-brand:         #2563eb;
+  --color-brand-dark:    #1d4ed8;
+  --color-brand-light:   #eff6ff;
+  --color-brand-glow:    rgba(59, 130, 246, 0.12);
+
+  /* ── Sidebar (dark) ─────────────────────── */
+  --sidebar-bg:          #0c111d;
+  --sidebar-border:      #1a2234;
+  --sidebar-item-hover:  #161e30;
+  --sidebar-item-active: #1e3055;
+  --sidebar-text:        #7a8fa8;
+  --sidebar-text-active: #e8edf5;
+  --sidebar-width:       256px;
+
+  /* ── Content (light) ────────────────────── */
+  --content-bg:          #f4f6fb;
+  --surface:             #ffffff;
+  --surface-border:      #e4e9f2;
+  --surface-hover:       #f8faff;
+
+  /* ── Text ───────────────────────────────── */
+  --text-primary:        #0d1526;
+  --text-secondary:      #556070;
+  --text-muted:          #8a95a8;
+
+  /* ── Status ─────────────────────────────── */
+  --color-success:       #10b981;
+  --color-success-bg:    #ecfdf5;
+  --color-danger:        #ef4444;
+  --color-danger-bg:     #fef2f2;
+  --color-warning:       #f59e0b;
+  --color-warning-bg:    #fffbeb;
+  --color-info:          #06b6d4;
+  --color-info-bg:       #ecfeff;
+
+  /* ── Typography ─────────────────────────── */
+  --font-display:        'DM Sans', sans-serif;
+  --font-body:           'DM Sans', sans-serif;
+  --font-mono:           'JetBrains Mono', monospace;
+
+  /* ── Radii & Shadows ────────────────────── */
+  --radius-sm:           6px;
+  --radius-md:           10px;
+  --radius-lg:           14px;
+  --shadow-sm:           0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-md:           0 4px 16px rgba(0,0,0,0.08), 0 2px 4px rgba(0,0,0,0.04);
+  --shadow-lg:           0 10px 40px rgba(0,0,0,0.12), 0 4px 8px rgba(0,0,0,0.06);
+}
