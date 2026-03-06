@@ -43,10 +43,22 @@ export default {
                     secondary: 'var(--text-secondary)',
                     muted:     'var(--text-muted)',
                 },
-                success:  'var(--color-success)',
-                danger:   'var(--color-danger)',
-                warning:  'var(--color-warning)',
-                info:     'var(--color-info)',
+                success:  {
+                    DEFAULT: 'var(--color-success)',
+                    bg:      'var(--color-success-bg)',
+                },
+                danger:   {
+                    DEFAULT: 'var(--color-danger)',
+                    bg:      'var(--color-danger-bg)',
+                },
+                warning:  {
+                    DEFAULT: 'var(--color-warning)',
+                    bg:      'var(--color-warning-bg)',
+                },
+                info:     {
+                    DEFAULT: 'var(--color-info)',
+                    bg:      'var(--color-info-bg)',
+                },
             },
             borderRadius: {
                 sm: 'var(--radius-sm)',
