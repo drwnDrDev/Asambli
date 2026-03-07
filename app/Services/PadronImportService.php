@@ -6,19 +6,20 @@ use App\Models\Copropietario;
 use App\Models\Tenant;
 use App\Models\Unidad;
 use App\Models\User;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
-use League\Csv\Reader;
+use Spatie\SimpleExcel\SimpleExcelReader;
 
 class PadronImportService
 {
-    public function importFromString(string $csvContent, Tenant $tenant): array
+    public function importFromFile(UploadedFile $file, Tenant $tenant): array
     {
-        $csv = Reader::createFromString($csvContent);
-        $csv->setHeaderOffset(0);
+        $rows = SimpleExcelReader::create($file->getRealPath(), $file->getClientOriginalExtension())->getRows();
 
-        $records = collect($csv->getRecords());
-        $totalCoeficiente = $records->sum('coeficiente');
+        $records = collect($rows);
+
+        $totalCoeficiente = $records->sum(fn($r) => (float) str_replace(',', '.', $r['coeficiente'] ?? 0));
 
         if ($totalCoeficiente > 100.001) {
             return [
@@ -44,25 +45,34 @@ class PadronImportService
                         ['email' => $row['email']],
                         [
                             'tenant_id' => $tenant->id,
-                            'name' => $row['nombre'] ?? $row['email'],
-                            'password' => bcrypt(Str::random(16)),
-                            'rol' => 'copropietario',
+                            'name'      => $row['nombre'] ?: $row['email'],
+                            'password'  => Str::random(16),
+                            'rol'       => 'copropietario',
                         ]
                     );
 
                     $unidad = Unidad::withoutGlobalScopes()->updateOrCreate(
                         ['tenant_id' => $tenant->id, 'numero' => $row['numero']],
                         [
-                            'tipo' => $row['tipo'] ?? 'apartamento',
-                            'coeficiente' => $row['coeficiente'],
-                            'torre' => $row['torre'] ?? null,
-                            'piso' => $row['piso'] ?? null,
+                            'tipo'        => $row['tipo'] ?? 'apartamento',
+                            'coeficiente' => (float) str_replace(',', '.', $row['coeficiente']),
+                            'torre'       => $row['torre'] ?? null,
+                            'piso'        => $row['piso'] ?? null,
+                            'activo'      => true,
                         ]
                     );
 
+                    $esResidente = isset($row['es_residente'])
+                        ? filter_var($row['es_residente'], FILTER_VALIDATE_BOOLEAN)
+                        : true;
+
                     Copropietario::withoutGlobalScopes()->updateOrCreate(
-                        ['tenant_id' => $tenant->id, 'user_id' => $user->id],
-                        ['unidad_id' => $unidad->id, 'activo' => true]
+                        ['tenant_id' => $tenant->id, 'user_id' => $user->id, 'unidad_id' => $unidad->id],
+                        [
+                            'es_residente' => $esResidente,
+                            'telefono'     => $row['telefono'] ?? null,
+                            'activo'       => true,
+                        ]
                     );
 
                     $imported++;
