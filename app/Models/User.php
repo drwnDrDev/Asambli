@@ -53,4 +53,9 @@ class User extends Authenticatable
     {
         return $this->hasMany(MagicLink::class);
     }
+
+    public function copropietario()
+    {
+        return $this->hasOne(Copropietario::class);
+    }
 }

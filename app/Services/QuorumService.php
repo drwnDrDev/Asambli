@@ -29,10 +29,9 @@ class QuorumService
             ->where('confirmada_por_admin', true)
             ->pluck('copropietario_id');
 
-        $coeficientePresente = Copropietario::withoutGlobalScopes()
-            ->whereIn('copropietarios.id', $presenteIds)
-            ->join('unidades', 'copropietarios.unidad_id', '=', 'unidades.id')
-            ->sum('unidades.coeficiente');
+        $coeficientePresente = Unidad::withoutGlobalScopes()
+            ->whereIn('copropietario_id', $presenteIds)
+            ->sum('coeficiente');
 
         $porcentaje = $totalCoeficiente > 0
             ? round(($coeficientePresente / $totalCoeficiente) * 100, 2)

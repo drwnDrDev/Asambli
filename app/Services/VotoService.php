@@ -93,7 +93,7 @@ class VotoService
             return 1.0;
         }
 
-        $copropietario = Copropietario::withoutGlobalScopes()->with('unidad')->find($copropietarioId);
-        return (float) $copropietario->unidad->coeficiente;
+        $copropietario = Copropietario::withoutGlobalScopes()->with('unidades')->find($copropietarioId);
+        return (float) $copropietario->unidades->sum('coeficiente');
     }
 }

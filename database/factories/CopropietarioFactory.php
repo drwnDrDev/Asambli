@@ -16,10 +16,12 @@ class CopropietarioFactory extends Factory
      */
     public function definition(): array
     {
+        $tipos = ['CC', 'CE', 'NIT', 'PP', 'TI', 'PEP'];
         return [
             'tenant_id' => fn() => app()->has('current_tenant') ? app('current_tenant')->id : \App\Models\Tenant::factory(),
             'user_id' => \App\Models\User::factory(),
-            'unidad_id' => \App\Models\Unidad::factory(),
+            'tipo_documento' => fake()->randomElement($tipos),
+            'numero_documento' => fake()->unique()->numerify('##########'),
             'es_residente' => true,
             'activo' => true,
         ];

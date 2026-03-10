@@ -20,11 +20,11 @@ test('convocatoria envia notificacion a todos los copropietarios activos', funct
     $user1 = User::factory()->create(['tenant_id' => $tenant->id, 'rol' => 'copropietario']);
     $user2 = User::factory()->create(['tenant_id' => $tenant->id, 'rol' => 'copropietario']);
 
-    $unidad1 = Unidad::factory()->create();
-    $unidad2 = Unidad::factory()->create();
+    $copro1 = Copropietario::factory()->create(['tenant_id' => $tenant->id, 'user_id' => $user1->id, 'activo' => true]);
+    $copro2 = Copropietario::factory()->create(['tenant_id' => $tenant->id, 'user_id' => $user2->id, 'activo' => true]);
 
-    Copropietario::factory()->create(['tenant_id' => $tenant->id, 'user_id' => $user1->id, 'unidad_id' => $unidad1->id, 'activo' => true]);
-    Copropietario::factory()->create(['tenant_id' => $tenant->id, 'user_id' => $user2->id, 'unidad_id' => $unidad2->id, 'activo' => true]);
+    Unidad::factory()->create(['tenant_id' => $tenant->id, 'copropietario_id' => $copro1->id]);
+    Unidad::factory()->create(['tenant_id' => $tenant->id, 'copropietario_id' => $copro2->id]);
 
     app(ConvocatoriaService::class)->enviar($reunion, $admin);
 

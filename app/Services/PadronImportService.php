@@ -51,27 +51,33 @@ class PadronImportService
                         ]
                     );
 
-                    $unidad = Unidad::withoutGlobalScopes()->updateOrCreate(
-                        ['tenant_id' => $tenant->id, 'numero' => $row['numero']],
-                        [
-                            'tipo'        => $row['tipo'] ?? 'apartamento',
-                            'coeficiente' => (float) str_replace(',', '.', $row['coeficiente']),
-                            'torre'       => $row['torre'] ?? null,
-                            'piso'        => $row['piso'] ?? null,
-                            'activo'      => true,
-                        ]
+                    $coproData = [
+                        'es_residente' => isset($row['es_residente'])
+                            ? filter_var($row['es_residente'], FILTER_VALIDATE_BOOLEAN)
+                            : true,
+                        'telefono' => $row['telefono'] ?? null,
+                        'activo'   => true,
+                    ];
+
+                    if (!empty($row['tipo_documento'])) {
+                        $coproData['tipo_documento']   = $row['tipo_documento'];
+                        $coproData['numero_documento'] = $row['numero_documento'] ?? null;
+                    }
+
+                    $copropietario = Copropietario::withoutGlobalScopes()->updateOrCreate(
+                        ['tenant_id' => $tenant->id, 'user_id' => $user->id],
+                        $coproData
                     );
 
-                    $esResidente = isset($row['es_residente'])
-                        ? filter_var($row['es_residente'], FILTER_VALIDATE_BOOLEAN)
-                        : true;
-
-                    Copropietario::withoutGlobalScopes()->updateOrCreate(
-                        ['tenant_id' => $tenant->id, 'user_id' => $user->id, 'unidad_id' => $unidad->id],
+                    Unidad::withoutGlobalScopes()->updateOrCreate(
+                        ['tenant_id' => $tenant->id, 'numero' => $row['numero']],
                         [
-                            'es_residente' => $esResidente,
-                            'telefono'     => $row['telefono'] ?? null,
-                            'activo'       => true,
+                            'copropietario_id' => $copropietario->id,
+                            'tipo'             => $row['tipo'] ?? 'apartamento',
+                            'coeficiente'      => (float) str_replace(',', '.', $row['coeficiente']),
+                            'torre'            => $row['torre'] ?? null,
+                            'piso'             => $row['piso'] ?? null,
+                            'activo'           => true,
                         ]
                     );
 

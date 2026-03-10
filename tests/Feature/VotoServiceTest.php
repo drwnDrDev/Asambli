@@ -21,8 +21,8 @@ function setupVotoContext(): array
         'quorum_requerido' => 1.0,
     ]);
 
-    $unidad = Unidad::factory()->create(['tenant_id' => $tenant->id, 'coeficiente' => 100.0]);
-    $copropietario = Copropietario::factory()->create(['tenant_id' => $tenant->id, 'unidad_id' => $unidad->id]);
+    $copropietario = Copropietario::factory()->create(['tenant_id' => $tenant->id]);
+    $unidad = Unidad::factory()->create(['tenant_id' => $tenant->id, 'copropietario_id' => $copropietario->id, 'coeficiente' => 100.0]);
 
     Asistencia::create([
         'reunion_id' => $reunion->id,

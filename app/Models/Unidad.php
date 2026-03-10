@@ -8,13 +8,12 @@ use Illuminate\Database\Eloquent\Model;
 
 class Unidad extends Model
 {
-    /** @use HasFactory<\Database\Factories\UnidadFactory> */
     use HasFactory, BelongsToTenant;
 
     protected $table = 'unidades';
 
     protected $fillable = [
-        'tenant_id', 'numero', 'tipo', 'coeficiente', 'torre', 'piso', 'activo',
+        'tenant_id', 'copropietario_id', 'numero', 'tipo', 'coeficiente', 'torre', 'piso', 'activo',
     ];
 
     protected $casts = [
@@ -22,8 +21,8 @@ class Unidad extends Model
         'activo' => 'boolean',
     ];
 
-    public function copropietarios()
+    public function copropietario()
     {
-        return $this->hasMany(Copropietario::class);
+        return $this->belongsTo(Copropietario::class);
     }
 }

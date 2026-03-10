@@ -1,18 +1,28 @@
 import AdminLayout from '@/Layouts/AdminLayout'
 import { Link, useForm } from '@inertiajs/react'
 
+const TIPOS_DOC = ['CC', 'CE', 'NIT', 'PP', 'TI', 'PEP']
+
 export default function Create({ unidades = [] }) {
     const { data, setData, post, processing, errors } = useForm({
         nombre: '',
         email: '',
+        tipo_documento: '',
+        numero_documento: '',
         telefono: '',
         es_residente: false,
-        unidad_id: '',
+        unidades: [],
     })
 
     const submit = (e) => {
         e.preventDefault()
         post('/admin/copropietarios')
+    }
+
+    const toggleUnidad = (id) => {
+        setData('unidades', data.unidades.includes(id)
+            ? data.unidades.filter(u => u !== id)
+            : [...data.unidades, id])
     }
 
     const inputClass = "w-full px-3.5 py-2.5 rounded-lg border border-surface-border bg-surface text-app-text-primary text-sm focus:outline-none focus:ring-2 focus:ring-brand focus:border-brand transition-colors"
@@ -43,6 +53,23 @@ export default function Create({ unidades = [] }) {
                         {errors.email && <p className={errorClass}>{errors.email}</p>}
                     </div>
 
+                    <div className="grid grid-cols-2 gap-3">
+                        <div>
+                            <label className={labelClass}>Tipo documento <span className="text-app-text-muted font-normal">(opcional)</span></label>
+                            <select value={data.tipo_documento} onChange={e => setData('tipo_documento', e.target.value)} className={inputClass}>
+                                <option value="">Seleccionar...</option>
+                                {TIPOS_DOC.map(t => <option key={t} value={t}>{t}</option>)}
+                            </select>
+                            {errors.tipo_documento && <p className={errorClass}>{errors.tipo_documento}</p>}
+                        </div>
+                        <div>
+                            <label className={labelClass}>Número documento</label>
+                            <input type="text" value={data.numero_documento} onChange={e => setData('numero_documento', e.target.value)}
+                                className={inputClass} placeholder="12345678" />
+                            {errors.numero_documento && <p className={errorClass}>{errors.numero_documento}</p>}
+                        </div>
+                    </div>
+
                     <div>
                         <label className={labelClass}>Teléfono <span className="text-app-text-muted font-normal">(opcional)</span></label>
                         <input type="text" value={data.telefono} onChange={e => setData('telefono', e.target.value)}
@@ -50,19 +77,25 @@ export default function Create({ unidades = [] }) {
                         {errors.telefono && <p className={errorClass}>{errors.telefono}</p>}
                     </div>
 
-                    <div>
-                        <label className={labelClass}>Unidad</label>
-                        <select value={data.unidad_id} onChange={e => setData('unidad_id', e.target.value)}
-                            className={inputClass}>
-                            <option value="">Seleccionar unidad...</option>
-                            {unidades.map(u => (
-                                <option key={u.id} value={u.id}>
-                                    {u.numero} — {u.tipo} ({u.coeficiente}%)
-                                </option>
-                            ))}
-                        </select>
-                        {errors.unidad_id && <p className={errorClass}>{errors.unidad_id}</p>}
-                    </div>
+                    {unidades.length > 0 && (
+                        <div>
+                            <label className={labelClass}>Unidades a asignar <span className="text-app-text-muted font-normal">(opcional)</span></label>
+                            <div className="space-y-1.5 max-h-48 overflow-y-auto border border-surface-border rounded-lg p-3">
+                                {unidades.map(u => (
+                                    <label key={u.id} className="flex items-center gap-2.5 cursor-pointer py-0.5">
+                                        <input type="checkbox"
+                                            checked={data.unidades.includes(u.id)}
+                                            onChange={() => toggleUnidad(u.id)}
+                                            className="w-4 h-4 accent-brand rounded" />
+                                        <span className="text-sm text-app-text-secondary">
+                                            {u.numero} — {u.tipo} <span className="font-mono text-xs">({u.coeficiente}%)</span>
+                                        </span>
+                                    </label>
+                                ))}
+                            </div>
+                            {errors.unidades && <p className={errorClass}>{errors.unidades}</p>}
+                        </div>
+                    )}
 
                     <div>
                         <label className="flex items-center gap-2.5 cursor-pointer">

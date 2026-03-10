@@ -15,7 +15,7 @@ class CopropietarioController extends Controller
 {
     public function index()
     {
-        $copropietarios = Copropietario::with(['user', 'unidad'])
+        $copropietarios = Copropietario::with(['user', 'unidades'])
             ->orderBy('created_at', 'desc')
             ->get();
 
@@ -26,7 +26,7 @@ class CopropietarioController extends Controller
 
     public function create()
     {
-        $unidades = Unidad::orderBy('numero')->get();
+        $unidades = Unidad::whereNull('copropietario_id')->orderBy('numero')->get();
 
         return Inertia::render('Admin/Copropietarios/Create', [
             'unidades' => $unidades,
@@ -36,11 +36,14 @@ class CopropietarioController extends Controller
     public function store(Request $request)
     {
         $data = $request->validate([
-            'nombre'       => 'required|string|max:255',
-            'email'        => 'required|email|unique:users,email',
-            'telefono'     => 'nullable|string|max:20',
-            'es_residente' => 'boolean',
-            'unidad_id'    => 'required|exists:unidades,id',
+            'nombre'          => 'required|string|max:255',
+            'email'           => 'required|email|unique:users,email',
+            'tipo_documento'  => 'nullable|in:CC,CE,NIT,PP,TI,PEP',
+            'numero_documento'=> 'nullable|string|max:30',
+            'telefono'        => 'nullable|string|max:20',
+            'es_residente'    => 'boolean',
+            'unidades'        => 'array',
+            'unidades.*'      => 'exists:unidades,id',
         ]);
 
         $tenant = app('current_tenant');
@@ -54,14 +57,19 @@ class CopropietarioController extends Controller
                 'rol'       => 'copropietario',
             ]);
 
-            Copropietario::create([
-                'tenant_id'    => $tenant->id,
-                'user_id'      => $user->id,
-                'unidad_id'    => $data['unidad_id'],
-                'telefono'     => $data['telefono'] ?? null,
-                'es_residente' => $data['es_residente'] ?? false,
-                'activo'       => true,
+            $copropietario = Copropietario::create([
+                'tenant_id'        => $tenant->id,
+                'user_id'          => $user->id,
+                'tipo_documento'   => $data['tipo_documento'] ?? null,
+                'numero_documento' => $data['numero_documento'] ?? null,
+                'telefono'         => $data['telefono'] ?? null,
+                'es_residente'     => $data['es_residente'] ?? false,
+                'activo'           => true,
             ]);
+
+            if (!empty($data['unidades'])) {
+                Unidad::whereIn('id', $data['unidades'])->update(['copropietario_id' => $copropietario->id]);
+            }
         });
 
         return redirect()->route('admin.copropietarios.index')
@@ -70,7 +78,7 @@ class CopropietarioController extends Controller
 
     public function show(Copropietario $copropietario)
     {
-        $copropietario->load(['user', 'unidad']);
+        $copropietario->load(['user', 'unidades']);
 
         return Inertia::render('Admin/Copropietarios/Show', [
             'copropietario' => $copropietario,
@@ -79,8 +87,12 @@ class CopropietarioController extends Controller
 
     public function edit(Copropietario $copropietario)
     {
-        $copropietario->load(['user', 'unidad']);
-        $unidades = Unidad::orderBy('numero')->get();
+        $copropietario->load(['user', 'unidades']);
+        // Unidades libres + las ya asignadas a este copropietario
+        $unidades = Unidad::where(function ($q) use ($copropietario) {
+            $q->whereNull('copropietario_id')
+              ->orWhere('copropietario_id', $copropietario->id);
+        })->orderBy('numero')->get();
 
         return Inertia::render('Admin/Copropietarios/Edit', [
             'copropietario' => $copropietario,
@@ -91,12 +103,15 @@ class CopropietarioController extends Controller
     public function update(Request $request, Copropietario $copropietario)
     {
         $data = $request->validate([
-            'nombre'       => 'required|string|max:255',
-            'email'        => 'required|email|unique:users,email,' . $copropietario->user_id,
-            'telefono'     => 'nullable|string|max:20',
-            'es_residente' => 'boolean',
-            'unidad_id'    => 'required|exists:unidades,id',
-            'activo'       => 'boolean',
+            'nombre'          => 'required|string|max:255',
+            'email'           => 'required|email|unique:users,email,' . $copropietario->user_id,
+            'tipo_documento'  => 'nullable|in:CC,CE,NIT,PP,TI,PEP',
+            'numero_documento'=> 'nullable|string|max:30',
+            'telefono'        => 'nullable|string|max:20',
+            'es_residente'    => 'boolean',
+            'activo'          => 'boolean',
+            'unidades'        => 'array',
+            'unidades.*'      => 'exists:unidades,id',
         ]);
 
         DB::transaction(function () use ($data, $copropietario) {
@@ -106,11 +121,18 @@ class CopropietarioController extends Controller
             ]);
 
             $copropietario->update([
-                'unidad_id'    => $data['unidad_id'],
-                'telefono'     => $data['telefono'] ?? null,
-                'es_residente' => $data['es_residente'] ?? false,
-                'activo'       => $data['activo'] ?? true,
+                'tipo_documento'   => $data['tipo_documento'] ?? null,
+                'numero_documento' => $data['numero_documento'] ?? null,
+                'telefono'         => $data['telefono'] ?? null,
+                'es_residente'     => $data['es_residente'] ?? false,
+                'activo'           => $data['activo'] ?? true,
             ]);
+
+            // Desasignar todas sus unidades, reasignar las enviadas
+            Unidad::where('copropietario_id', $copropietario->id)->update(['copropietario_id' => null]);
+            if (!empty($data['unidades'])) {
+                Unidad::whereIn('id', $data['unidades'])->update(['copropietario_id' => $copropietario->id]);
+            }
         });
 
         return redirect()->route('admin.copropietarios.show', $copropietario)
@@ -120,7 +142,7 @@ class CopropietarioController extends Controller
     public function destroy(Copropietario $copropietario)
     {
         $user = $copropietario->user;
-        $copropietario->delete();
+        $copropietario->delete(); // nullOnDelete liberará sus unidades
         $user?->delete();
 
         return redirect()->route('admin.copropietarios.index')

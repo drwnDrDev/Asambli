@@ -47,47 +47,50 @@ export default function Index({ copropietarios = [] }) {
                         <thead className="bg-content-bg border-b border-surface-border">
                             <tr>
                                 <th className="text-left px-5 py-3 font-medium text-app-text-muted">Nombre</th>
-                                <th className="text-left px-5 py-3 font-medium text-app-text-muted">Email</th>
-                                <th className="text-left px-5 py-3 font-medium text-app-text-muted">Unidad</th>
-                                <th className="text-left px-5 py-3 font-medium text-app-text-muted">Coeficiente</th>
+                                <th className="text-left px-5 py-3 font-medium text-app-text-muted">Documento</th>
+                                <th className="text-left px-5 py-3 font-medium text-app-text-muted">Unidades</th>
+                                <th className="text-left px-5 py-3 font-medium text-app-text-muted">Coef. total</th>
                                 <th className="text-left px-5 py-3 font-medium text-app-text-muted">Estado</th>
                                 <th className="px-5 py-3"></th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-surface-border">
-                            {copropietarios.map(c => (
-                                <tr key={c.id} className="hover:bg-surface-hover transition-colors">
-                                    <td className="px-5 py-3.5 font-medium text-app-text-primary">{c.user?.name}</td>
-                                    <td className="px-5 py-3.5 text-app-text-secondary">{c.user?.email}</td>
-                                    <td className="px-5 py-3.5 text-app-text-secondary">
-                                        {c.unidad ? `Unidad ${c.unidad.numero}` : '—'}
-                                    </td>
-                                    <td className="px-5 py-3.5 font-mono text-app-text-secondary text-xs">
-                                        {c.unidad?.coeficiente ?? '—'}%
-                                    </td>
-                                    <td className="px-5 py-3.5">
-                                        <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium ${c.activo ? 'bg-success-bg text-success' : 'bg-danger-bg text-danger'}`}>
-                                            {c.activo ? 'Activo' : 'Inactivo'}
-                                        </span>
-                                    </td>
-                                    <td className="px-5 py-3.5">
-                                        <div className="flex items-center justify-end gap-3">
-                                            <Link href={`/admin/copropietarios/${c.id}`} className="text-xs text-brand hover:underline">
-                                                Ver
-                                            </Link>
-                                            <Link href={`/admin/copropietarios/${c.id}/edit`} className="text-xs text-app-text-secondary hover:text-brand">
-                                                Editar
-                                            </Link>
-                                            <button
-                                                onClick={() => destroy(c.id)}
-                                                className="text-xs text-app-text-muted hover:text-danger transition-colors"
-                                            >
-                                                Eliminar
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
-                            ))}
+                            {copropietarios.map(c => {
+                                const coefTotal = (c.unidades ?? []).reduce((s, u) => s + parseFloat(u.coeficiente ?? 0), 0)
+                                return (
+                                    <tr key={c.id} className="hover:bg-surface-hover transition-colors">
+                                        <td className="px-5 py-3.5">
+                                            <div className="font-medium text-app-text-primary">{c.user?.name}</div>
+                                            <div className="text-xs text-app-text-muted">{c.user?.email}</div>
+                                        </td>
+                                        <td className="px-5 py-3.5 text-app-text-secondary">
+                                            {c.tipo_documento && c.numero_documento
+                                                ? `${c.tipo_documento} ${c.numero_documento}`
+                                                : '—'}
+                                        </td>
+                                        <td className="px-5 py-3.5 text-app-text-secondary">
+                                            {(c.unidades ?? []).length > 0
+                                                ? (c.unidades ?? []).map(u => u.numero).join(', ')
+                                                : <span className="text-app-text-muted">Sin asignar</span>}
+                                        </td>
+                                        <td className="px-5 py-3.5 font-mono text-app-text-secondary text-xs">
+                                            {coefTotal > 0 ? `${coefTotal.toFixed(5)}%` : '—'}
+                                        </td>
+                                        <td className="px-5 py-3.5">
+                                            <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium ${c.activo ? 'bg-success-bg text-success' : 'bg-danger-bg text-danger'}`}>
+                                                {c.activo ? 'Activo' : 'Inactivo'}
+                                            </span>
+                                        </td>
+                                        <td className="px-5 py-3.5">
+                                            <div className="flex items-center justify-end gap-3">
+                                                <Link href={`/admin/copropietarios/${c.id}`} className="text-xs text-brand hover:underline">Ver</Link>
+                                                <Link href={`/admin/copropietarios/${c.id}/edit`} className="text-xs text-app-text-secondary hover:text-brand">Editar</Link>
+                                                <button onClick={() => destroy(c.id)} className="text-xs text-app-text-muted hover:text-danger transition-colors">Eliminar</button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                )
+                            })}
                         </tbody>
                     </table>
                 )}

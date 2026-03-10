@@ -3,7 +3,9 @@ import { Link, usePage, router } from '@inertiajs/react'
 
 export default function Show({ copropietario }) {
     const { flash } = usePage().props
-    const { user, unidad } = copropietario
+    const { user, unidades = [] } = copropietario
+
+    const coefTotal = unidades.reduce((s, u) => s + parseFloat(u.coeficiente ?? 0), 0)
 
     const destroy = () => {
         if (confirm('¿Eliminar este copropietario y su usuario asociado?')) {
@@ -45,6 +47,14 @@ export default function Show({ copropietario }) {
 
                     <dl className="grid grid-cols-2 gap-4 text-sm">
                         <div>
+                            <dt className="text-app-text-muted font-medium mb-0.5">Documento</dt>
+                            <dd className="text-app-text-primary">
+                                {copropietario.tipo_documento && copropietario.numero_documento
+                                    ? `${copropietario.tipo_documento} ${copropietario.numero_documento}`
+                                    : '—'}
+                            </dd>
+                        </div>
+                        <div>
                             <dt className="text-app-text-muted font-medium mb-0.5">Teléfono</dt>
                             <dd className="text-app-text-primary">{copropietario.telefono ?? '—'}</dd>
                         </div>
@@ -52,40 +62,38 @@ export default function Show({ copropietario }) {
                             <dt className="text-app-text-muted font-medium mb-0.5">Es residente</dt>
                             <dd className="text-app-text-primary">{copropietario.es_residente ? 'Sí' : 'No'}</dd>
                         </div>
+                        <div>
+                            <dt className="text-app-text-muted font-medium mb-0.5">Coef. total</dt>
+                            <dd className="font-mono text-app-text-primary">{coefTotal > 0 ? `${coefTotal.toFixed(5)}%` : '—'}</dd>
+                        </div>
                     </dl>
                 </div>
 
-                {/* Unidad */}
+                {/* Unidades */}
                 <div className="bg-surface rounded-xl border border-surface-border p-6">
-                    <h3 className="text-sm font-semibold text-app-text-muted uppercase tracking-wide mb-4">Unidad</h3>
-                    {unidad ? (
-                        <dl className="space-y-3 text-sm">
-                            <div>
-                                <dt className="text-app-text-muted font-medium mb-0.5">Número</dt>
-                                <dd className="text-app-text-primary font-semibold text-base">{unidad.numero}</dd>
-                            </div>
-                            <div>
-                                <dt className="text-app-text-muted font-medium mb-0.5">Tipo</dt>
-                                <dd className="text-app-text-primary capitalize">{unidad.tipo}</dd>
-                            </div>
-                            <div>
-                                <dt className="text-app-text-muted font-medium mb-0.5">Coeficiente</dt>
-                                <dd className="font-mono text-app-text-primary">{unidad.coeficiente}%</dd>
-                            </div>
-                            {unidad.torre && (
-                                <div>
-                                    <dt className="text-app-text-muted font-medium mb-0.5">Torre / Piso</dt>
-                                    <dd className="text-app-text-primary">{unidad.torre} / {unidad.piso ?? '—'}</dd>
-                                </div>
-                            )}
-                        </dl>
+                    <h3 className="text-sm font-semibold text-app-text-muted uppercase tracking-wide mb-4">
+                        Unidades ({unidades.length})
+                    </h3>
+                    {unidades.length > 0 ? (
+                        <div className="space-y-3">
+                            {unidades.map(u => (
+                                <dl key={u.id} className="text-sm border-b border-surface-border pb-3 last:border-0 last:pb-0">
+                                    <div className="flex justify-between items-center">
+                                        <dd className="text-app-text-primary font-semibold">Unidad {u.numero}</dd>
+                                        <dd className="font-mono text-xs text-app-text-secondary">{u.coeficiente}%</dd>
+                                    </div>
+                                    <dd className="text-app-text-muted capitalize text-xs mt-0.5">
+                                        {u.tipo}{u.torre ? ` · Torre ${u.torre}` : ''}{u.piso ? ` · Piso ${u.piso}` : ''}
+                                    </dd>
+                                </dl>
+                            ))}
+                        </div>
                     ) : (
-                        <p className="text-sm text-app-text-muted">Sin unidad asignada</p>
+                        <p className="text-sm text-app-text-muted">Sin unidades asignadas</p>
                     )}
                 </div>
             </div>
 
-            {/* Acciones */}
             <div className="mt-5 flex items-center gap-3">
                 <Link
                     href={`/admin/copropietarios/${copropietario.id}/edit`}
