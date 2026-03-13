@@ -1,5 +1,6 @@
 import AdminLayout from '@/Layouts/AdminLayout'
 import { Link, router, usePage } from '@inertiajs/react'
+import { QRCodeSVG } from 'qrcode.react'
 
 const ESTADO_BADGE = {
     borrador:   'bg-gray-100 text-gray-700',
@@ -93,6 +94,43 @@ export default function Show({ reunion, quorum, copropietarios = [] }) {
                         {quorum.tiene_quorum ? '✓ HAY QUÓRUM' : '✗ SIN QUÓRUM'}
                     </span>
                 </div>
+            </div>
+
+            {/* QR de acceso rápido */}
+            <div className="border border-sidebar-border rounded-lg p-5 mb-6">
+                <h3 className="font-semibold text-gray-700 mb-4">QR de acceso rápido</h3>
+                {reunion.qr_token && reunion.qr_expires_at ? (
+                    <div className="flex flex-col items-center gap-4">
+                        <div className="bg-white p-3 rounded inline-block shadow">
+                            <QRCodeSVG value={`${window.location.origin}/sala/entrada/${reunion.qr_token}`} size={180} />
+                        </div>
+                        <div className="text-center">
+                            <p className="text-xs text-gray-500 mb-1">URL de acceso:</p>
+                            <p className="text-sm font-mono text-gray-700 break-all select-all">
+                                {`${window.location.origin}/sala/entrada/${reunion.qr_token}`}
+                            </p>
+                        </div>
+                        <p className="text-xs text-gray-500">
+                            Vence: {new Date(reunion.qr_expires_at).toLocaleString('es-CO')}
+                        </p>
+                        <button
+                            onClick={() => router.post(route('admin.reuniones.generar-qr', reunion.id))}
+                            className="text-sm border border-gray-300 text-gray-600 px-4 py-2 rounded-lg hover:bg-gray-50 transition"
+                        >
+                            Regenerar QR
+                        </button>
+                    </div>
+                ) : (
+                    <div className="flex flex-col items-center gap-4">
+                        <p className="text-sm text-gray-500">No hay QR generado</p>
+                        <button
+                            onClick={() => router.post(route('admin.reuniones.generar-qr', reunion.id))}
+                            className="text-sm bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition"
+                        >
+                            Generar QR de acceso
+                        </button>
+                    </div>
+                )}
             </div>
 
             {/* Lista de copropietarios */}

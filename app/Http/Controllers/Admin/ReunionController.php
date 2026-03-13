@@ -9,6 +9,7 @@ use App\Services\ConvocatoriaService;
 use App\Services\QuorumService;
 use App\Services\ReporteService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 use Inertia\Inertia;
 
 class ReunionController extends Controller
@@ -151,5 +152,15 @@ class ReunionController extends Controller
     {
         $logs = $reunion->logs()->with('user')->orderBy('created_at')->get();
         return Inertia::render('Admin/Reuniones/Auditoria', compact('reunion', 'logs'));
+    }
+
+    public function generarQr(Reunion $reunion)
+    {
+        $reunion->update([
+            'qr_token'     => Str::random(64),
+            'qr_expires_at' => now()->addHours(72),
+        ]);
+
+        return back()->with('success', 'QR generado. Válido por 72 horas.');
     }
 }

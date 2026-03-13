@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Models\Copropietario;
 use App\Models\Unidad;
 use App\Models\User;
+use App\Notifications\OnboardingInvitation;
+use App\Services\MagicLinkService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -48,7 +50,9 @@ class CopropietarioController extends Controller
 
         $tenant = app('current_tenant');
 
-        DB::transaction(function () use ($data, $tenant) {
+        $user = null;
+
+        DB::transaction(function () use ($data, $tenant, &$user) {
             $user = User::create([
                 'tenant_id' => $tenant->id,
                 'name'      => $data['nombre'],
@@ -71,6 +75,10 @@ class CopropietarioController extends Controller
                 Unidad::whereIn('id', $data['unidades'])->update(['copropietario_id' => $copropietario->id]);
             }
         });
+
+        // Enviar invitación de onboarding
+        $onboardingUrl = app(MagicLinkService::class)->generate($user, null, 'onboarding');
+        $user->notify(new OnboardingInvitation($onboardingUrl));
 
         return redirect()->route('admin.copropietarios.index')
             ->with('success', 'Copropietario creado exitosamente.');
@@ -147,5 +155,23 @@ class CopropietarioController extends Controller
 
         return redirect()->route('admin.copropietarios.index')
             ->with('success', 'Copropietario eliminado.');
+    }
+
+    public function generatePin(Copropietario $copropietario)
+    {
+        $pin = str_pad(random_int(0, 999999), 6, '0', STR_PAD_LEFT);
+        $copropietario->user->update([
+            'quick_pin' => $pin,
+            'pin_expires_at' => now()->addHours(72),
+        ]);
+        return back()->with('pin', $pin)->with('success', 'PIN generado correctamente.');
+    }
+
+    public function reenviarBienvenida(Copropietario $copropietario)
+    {
+        $copropietario->load('user');
+        $onboardingUrl = app(MagicLinkService::class)->generate($copropietario->user, null, 'onboarding');
+        $copropietario->user->notify(new OnboardingInvitation($onboardingUrl));
+        return back()->with('success', 'Invitación de bienvenida reenviada.');
     }
 }

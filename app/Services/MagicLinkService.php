@@ -8,7 +8,7 @@ use Illuminate\Support\Str;
 
 class MagicLinkService
 {
-    public function generate(User $user, ?int $reunionId = null): string
+    public function generate(User $user, ?int $reunionId = null, string $type = 'convocatoria'): string
     {
         $token = Str::random(64);
 
@@ -16,8 +16,13 @@ class MagicLinkService
             'user_id' => $user->id,
             'reunion_id' => $reunionId,
             'token' => $token,
+            'type' => $type,
             'expires_at' => now()->addHours(48),
         ]);
+
+        if ($type === 'onboarding') {
+            return url('/bienvenida/' . $token);
+        }
 
         return url('/acceso/' . $token);
     }

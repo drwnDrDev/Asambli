@@ -77,9 +77,14 @@ export default function Index({ copropietarios = [] }) {
                                             {coefTotal > 0 ? `${coefTotal.toFixed(5)}%` : '—'}
                                         </td>
                                         <td className="px-5 py-3.5">
-                                            <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium ${c.activo ? 'bg-success-bg text-success' : 'bg-danger-bg text-danger'}`}>
-                                                {c.activo ? 'Activo' : 'Inactivo'}
-                                            </span>
+                                            <div className="flex flex-col gap-1">
+                                                <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium ${c.activo ? 'bg-success-bg text-success' : 'bg-danger-bg text-danger'}`}>
+                                                    {c.activo ? 'Activo' : 'Inactivo'}
+                                                </span>
+                                                {!c.user?.onboarded_at && (
+                                                    <span className="text-[11px] bg-warning/20 text-warning px-1.5 py-0.5 rounded">Sin activar</span>
+                                                )}
+                                            </div>
                                         </td>
                                         <td className="px-5 py-3.5">
                                             <div className="flex items-center justify-end gap-3">

@@ -55,6 +55,7 @@ Route::middleware(['auth', 'role:administrador,super_admin'])
         Route::get('reuniones/{reunion}/reporte/csv', [ReunionController::class, 'reporteCsv'])->name('reuniones.reporte-csv');
         Route::get('reuniones/{reunion}/auditoria', [ReunionController::class, 'auditoria'])->name('reuniones.auditoria');
         Route::get('reuniones/{reunion}/conducir', [ReunionController::class, 'conducir'])->name('reuniones.conducir');
+        Route::post('reuniones/{reunion}/generar-qr', [ReunionController::class, 'generarQr'])->name('reuniones.generar-qr');
 
         // Votaciones (within a reunion context)
         Route::post('reuniones/{reunion}/votaciones', [VotacionController::class, 'store'])->name('votaciones.store');
@@ -68,7 +69,21 @@ Route::middleware(['auth', 'role:administrador,super_admin'])
 
         // Copropietarios
         Route::resource('copropietarios', CopropietarioController::class);
+        Route::post('copropietarios/{copropietario}/generar-pin', [CopropietarioController::class, 'generatePin'])->name('copropietarios.generar-pin');
+        Route::post('copropietarios/{copropietario}/reenviar-bienvenida', [CopropietarioController::class, 'reenviarBienvenida'])->name('copropietarios.reenviar-bienvenida');
     });
+
+// Onboarding (unauthenticated)
+use App\Http\Controllers\Auth\OnboardingController;
+Route::get('/bienvenida/{token}', [OnboardingController::class, 'show'])->name('onboarding.show');
+Route::post('/bienvenida/{token}', [OnboardingController::class, 'store'])->name('onboarding.store');
+
+// Acceso rápido (PIN y QR - unauthenticated) — DEBE ir antes del grupo /sala/{reunion}
+use App\Http\Controllers\Auth\QuickAccessController;
+Route::get('/acceso-rapido', [QuickAccessController::class, 'showPin'])->name('quick-access.pin');
+Route::post('/acceso-rapido', [QuickAccessController::class, 'storePin'])->name('quick-access.pin.store');
+Route::get('/sala/entrada/{token}', [QuickAccessController::class, 'showQr'])->name('quick-access.qr');
+Route::post('/sala/entrada/{token}', [QuickAccessController::class, 'storeQr'])->name('quick-access.qr.store');
 
 // Copropietario (sala) routes
 Route::middleware(['auth', 'role:copropietario,administrador,super_admin'])

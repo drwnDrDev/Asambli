@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class MagicLink extends Model
 {
-    protected $fillable = ['user_id', 'reunion_id', 'token', 'expires_at', 'used_at'];
+    protected $fillable = ['user_id', 'reunion_id', 'token', 'type', 'expires_at', 'used_at'];
 
     protected $casts = [
         'expires_at' => 'datetime',

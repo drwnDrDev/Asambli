@@ -17,6 +17,7 @@ class Reunion extends Model
         'tenant_id', 'titulo', 'tipo', 'tipo_voto_peso',
         'quorum_requerido', 'estado', 'fecha_programada',
         'fecha_inicio', 'fecha_fin', 'convocatoria_enviada_at', 'creado_por',
+        'qr_token', 'qr_expires_at',
     ];
 
     protected $casts = [
@@ -24,6 +25,7 @@ class Reunion extends Model
         'fecha_inicio' => 'datetime',
         'fecha_fin' => 'datetime',
         'convocatoria_enviada_at' => 'datetime',
+        'qr_expires_at' => 'datetime',
         'quorum_requerido' => 'decimal:2',
     ];
 

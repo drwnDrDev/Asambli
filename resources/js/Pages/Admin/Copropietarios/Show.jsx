@@ -94,6 +94,58 @@ export default function Show({ copropietario }) {
                 </div>
             </div>
 
+            {/* Acceso: Onboarding y PIN */}
+            <div className="mt-5 grid grid-cols-1 lg:grid-cols-2 gap-5">
+                {/* Estado de activación */}
+                <div className="bg-surface rounded-xl border border-surface-border p-6">
+                    <h3 className="text-sm font-semibold text-app-text-muted uppercase tracking-wide mb-4">
+                        Estado de activación
+                    </h3>
+                    {user?.onboarded_at ? (
+                        <div className="text-success text-[13px] mb-4">
+                            ✓ Activo desde {new Date(user.onboarded_at).toLocaleDateString('es-CO')}
+                        </div>
+                    ) : (
+                        <div className="mb-4">
+                            <span className="text-[12px] text-sidebar-text bg-warning/20 px-2 py-0.5 rounded">Sin activar</span>
+                        </div>
+                    )}
+                    <button
+                        onClick={() => router.post(route('admin.copropietarios.reenviar-bienvenida', copropietario.id))}
+                        className="px-3 py-1.5 border border-surface-border text-xs font-medium text-app-text-secondary hover:text-brand hover:border-brand rounded-lg transition-colors"
+                    >
+                        Reenviar bienvenida
+                    </button>
+                </div>
+
+                {/* PIN de acceso rápido */}
+                <div className="bg-surface rounded-xl border border-surface-border p-6">
+                    <h3 className="text-sm font-semibold text-app-text-muted uppercase tracking-wide mb-4">
+                        PIN de acceso rápido
+                    </h3>
+                    {user?.quick_pin ? (
+                        <div className="mb-3 text-sm">
+                            <p className="text-app-text-muted mb-0.5">PIN actual: <code className="font-mono text-app-text-primary bg-content-bg px-1.5 py-0.5 rounded">{user.quick_pin}</code></p>
+                            <p className="text-xs text-app-text-muted">Vence: {new Date(user.pin_expires_at).toLocaleString('es-CO')}</p>
+                        </div>
+                    ) : (
+                        <p className="text-sidebar-text text-[13px] mb-3">Sin PIN generado</p>
+                    )}
+                    {flash?.pin && (
+                        <div className="bg-success-bg border border-success rounded p-3 mb-3">
+                            <p className="text-success font-mono text-lg font-bold">{flash.pin}</p>
+                            <p className="text-[12px] text-success">Copia este PIN y entrégalo al copropietario</p>
+                        </div>
+                    )}
+                    <button
+                        onClick={() => router.post(route('admin.copropietarios.generar-pin', copropietario.id))}
+                        className="px-3 py-1.5 border border-surface-border text-xs font-medium text-app-text-secondary hover:text-brand hover:border-brand rounded-lg transition-colors"
+                    >
+                        Generar nuevo PIN
+                    </button>
+                </div>
+            </div>
+
             <div className="mt-5 flex items-center gap-3">
                 <Link
                     href={`/admin/copropietarios/${copropietario.id}/edit`}
