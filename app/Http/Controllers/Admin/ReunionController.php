@@ -220,4 +220,40 @@ class ReunionController extends Controller
 
         return back()->with('success', 'QR generado. Válido por 72 horas.');
     }
+
+    public function proyeccion(Reunion $reunion)
+    {
+        $votacionActiva = $reunion->votaciones()
+            ->where('estado', 'abierta')
+            ->with('opciones')
+            ->first();
+
+        $resultados = [];
+        if ($votacionActiva) {
+            $resultados = $votacionActiva->opciones->map(function ($opcion) use ($votacionActiva) {
+                $votos = \App\Models\Voto::withoutGlobalScopes()
+                    ->where('votacion_id', $votacionActiva->id)
+                    ->where('opcion_id', $opcion->id);
+                return [
+                    'opcion_id'  => $opcion->id,
+                    'texto'      => $opcion->texto,
+                    'count'      => $votos->count(),
+                    'peso_total' => (float) $votos->sum('peso'),
+                ];
+            })->toArray();
+        }
+
+        return Inertia::render('Admin/Reuniones/Proyeccion', [
+            'reunion'    => $reunion->only('id', 'titulo', 'quorum_requerido'),
+            'votacion'   => $votacionActiva,
+            'resultados' => $resultados,
+        ]);
+    }
+
+    public function enviarAviso(Request $request, Reunion $reunion)
+    {
+        $request->validate(['mensaje' => 'required|string|max:300']);
+        broadcast(new \App\Events\AvisoEnviado($reunion->id, $request->mensaje, now()->toIso8601String()));
+        return back()->with('success', 'Aviso enviado.');
+    }
 }

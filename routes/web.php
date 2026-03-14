@@ -61,6 +61,8 @@ Route::middleware(['auth', 'role:administrador,super_admin'])
         Route::get('reuniones/{reunion}/auditoria', [ReunionController::class, 'auditoria'])->name('reuniones.auditoria');
         Route::get('reuniones/{reunion}/conducir', [ReunionController::class, 'conducir'])->name('reuniones.conducir');
         Route::post('reuniones/{reunion}/generar-qr', [ReunionController::class, 'generarQr'])->name('reuniones.generar-qr');
+        Route::get('reuniones/{reunion}/proyeccion', [ReunionController::class, 'proyeccion'])->name('reuniones.proyeccion');
+        Route::post('reuniones/{reunion}/aviso', [ReunionController::class, 'enviarAviso'])->name('reuniones.aviso');
 
         // Votaciones (within a reunion context)
         Route::post('reuniones/{reunion}/votaciones', [VotacionController::class, 'store'])->name('votaciones.store');
