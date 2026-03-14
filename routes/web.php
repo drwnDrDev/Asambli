@@ -64,6 +64,8 @@ Route::middleware(['auth', 'role:administrador,super_admin'])
 
         // Votaciones (within a reunion context)
         Route::post('reuniones/{reunion}/votaciones', [VotacionController::class, 'store'])->name('votaciones.store');
+        Route::patch('votaciones/{votacion}', [VotacionController::class, 'update'])->name('votaciones.update');
+        Route::delete('votaciones/{votacion}', [VotacionController::class, 'destroy'])->name('votaciones.destroy');
         Route::post('votaciones/{votacion}/abrir', [VotacionController::class, 'abrir'])->name('votaciones.abrir');
         Route::post('votaciones/{votacion}/cerrar', [VotacionController::class, 'cerrar'])->name('votaciones.cerrar');
         Route::get('votaciones/{votacion}/resultados', [VotacionController::class, 'resultados'])->name('votaciones.resultados');

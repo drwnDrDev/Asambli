@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Events\VotacionModificada;
 use App\Http\Controllers\Controller;
 use App\Models\OpcionVotacion;
 use App\Models\Reunion;
@@ -29,7 +30,56 @@ class VotacionController extends Controller
             $votacion->opciones()->create(['texto' => $opcion['texto']]);
         }
 
+        $votacion->load('opciones');
+        broadcast(new VotacionModificada($votacion, 'created'));
+
         return back()->with('success', 'Votación creada.');
+    }
+
+    public function update(Request $request, Votacion $votacion)
+    {
+        if ($votacion->estado !== 'pendiente') {
+            abort(403, 'Solo se pueden editar votaciones en estado pendiente.');
+        }
+
+        $data = $request->validate([
+            'pregunta' => 'required|string|max:500',
+            'opciones' => 'required|array|min:2',
+            'opciones.*.texto' => 'required|string|max:255',
+        ]);
+
+        $votacion->update(['pregunta' => $data['pregunta']]);
+
+        $votacion->opciones()->delete();
+
+        foreach ($data['opciones'] as $opcion) {
+            $votacion->opciones()->create(['texto' => $opcion['texto']]);
+        }
+
+        $votacion->load('opciones');
+        broadcast(new VotacionModificada($votacion, 'updated'));
+
+        return back()->with('success', 'Votación actualizada.');
+    }
+
+    public function destroy(Votacion $votacion)
+    {
+        if ($votacion->estado !== 'pendiente') {
+            abort(403, 'Solo se pueden eliminar votaciones en estado pendiente.');
+        }
+
+        $votacion->load('opciones');
+        $reunionId = $votacion->reunion_id;
+
+        // Snapshot para el broadcast antes de eliminar
+        $payload = new VotacionModificada($votacion, 'deleted');
+
+        $votacion->opciones()->delete();
+        $votacion->delete();
+
+        broadcast($payload);
+
+        return back()->with('success', 'Votación eliminada.');
     }
 
     public function abrir(Votacion $votacion)
