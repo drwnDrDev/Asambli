@@ -59,7 +59,7 @@ class ReunionController extends Controller
         $asistencias = $reunion->asistencias()->where('confirmada_por_admin', true)->pluck('copropietario_id')->toArray();
         $copropietarios = Copropietario::withoutGlobalScopes()
             ->where('tenant_id', $reunion->tenant_id)
-            ->with('user', 'unidad')
+            ->with('user', 'unidades')
             ->get()
             ->map(fn($c) => array_merge($c->toArray(), ['asistencia' => in_array($c->id, $asistencias)]));
 
@@ -72,7 +72,7 @@ class ReunionController extends Controller
         $asistencias = $reunion->asistencias()->where('confirmada_por_admin', true)->pluck('copropietario_id')->toArray();
         $copropietarios = Copropietario::withoutGlobalScopes()
             ->where('tenant_id', $reunion->tenant_id)
-            ->with('user', 'unidad')
+            ->with('user', 'unidades')
             ->get()
             ->map(fn($c) => array_merge($c->toArray(), ['asistencia' => in_array($c->id, $asistencias)]));
         $votaciones = $reunion->votaciones()->with('opciones')->get();
