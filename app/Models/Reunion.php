@@ -36,7 +36,7 @@ class Reunion extends Model
         return $this->hasMany(ReunionLog::class);
     }
 
-    public function asistencia()
+    public function asistencias()
     {
         return $this->hasMany(Asistencia::class);
     }

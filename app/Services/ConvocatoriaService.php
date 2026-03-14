@@ -21,6 +21,9 @@ class ConvocatoriaService
             ->get();
 
         foreach ($copropietarios as $copropietario) {
+            if (! $copropietario->user) {
+                continue;
+            }
             $link = $this->magicLinkService->generate($copropietario->user, $reunion->id);
             $copropietario->user->notify(new ConvocatoriaReunion($reunion, $link));
         }

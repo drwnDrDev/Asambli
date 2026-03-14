@@ -32,7 +32,7 @@ class ReunionTransicionService
             );
         }
 
-        $reunion->estado = $nuevoEstado->value;
+        $reunion->estado = $nuevoEstado;
 
         if ($nuevoEstado === ReunionEstado::EnCurso) {
             $reunion->fecha_inicio = now();

@@ -99,6 +99,9 @@ class ReunionController extends Controller
 
     public function destroy(Reunion $reunion)
     {
+        if ($reunion->estado !== ReunionEstado::Borrador) {
+            return back()->withErrors(['error' => 'Solo se puede eliminar una reunión en estado borrador.']);
+        }
         $reunion->delete();
         return redirect()->route('admin.reuniones.index')->with('success', 'Reunión eliminada.');
     }
