@@ -22,7 +22,7 @@
         <tr><th>Fecha</th><td>{{ $reunion->fecha_inicio?->format('d/m/Y H:i') }}</td></tr>
         <tr><th>Quórum requerido</th><td>{{ $reunion->quorum_requerido }}%</td></tr>
         <tr><th>Quórum alcanzado</th><td>{{ $quorum['porcentaje_presente'] }}%</td></tr>
-        <tr><th>Estado</th><td>{{ ucfirst($reunion->estado) }}</td></tr>
+        <tr><th>Estado</th><td>{{ ucfirst($reunion->estado->value) }}</td></tr>
     </table>
 
     <h2>2. Asistentes</h2>

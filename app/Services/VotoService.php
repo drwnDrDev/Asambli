@@ -21,7 +21,7 @@ class VotoService
         try {
             DB::transaction(function () use ($votacion, $copropietario, $opcionId, $request, $enNombreDeId) {
                 // 1. Verificar reunión en curso
-                if ($votacion->reunion->estado !== 'en_curso') {
+                if ($votacion->reunion->estado !== \App\Enums\ReunionEstado::EnCurso) {
                     throw new \Exception('La reunión no está en curso.');
                 }
 
