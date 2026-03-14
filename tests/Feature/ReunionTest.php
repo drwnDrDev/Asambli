@@ -124,6 +124,18 @@ test('estaActiva returns false for terminal states and true for active states', 
     $cancelada->refresh();
     expect($cancelada->estaActiva())->toBeFalse();
 
+    // Active state: en_curso
+    $enCurso = Reunion::factory()->create(['creado_por' => $this->admin->id]);
+    $this->service->transicionar($enCurso, ReunionEstado::AnteSala, $this->admin, 'Sala lista.');
+    $this->service->transicionar($enCurso, ReunionEstado::EnCurso,  $this->admin, 'Quórum alcanzado.');
+    $enCurso->refresh();
+    expect($enCurso->estaActiva())->toBeTrue();
+
+    // Active state: suspendida
+    $this->service->transicionar($enCurso, ReunionEstado::Suspendida, $this->admin, 'Pausa técnica.');
+    $enCurso->refresh();
+    expect($enCurso->estaActiva())->toBeTrue();
+
     // Terminal: finalizada
     $finalizada = Reunion::factory()->create(['creado_por' => $this->admin->id]);
     $this->service->transicionar($finalizada, ReunionEstado::AnteSala,   $this->admin, 'Sala lista.');
