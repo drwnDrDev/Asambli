@@ -76,7 +76,7 @@ class VotoService
             });
 
             // 8. Disparar job para recalcular y broadcast (fuera de la transacción)
-            RecalcularResultadosVotacion::dispatch($votacion->id);
+            RecalcularResultadosVotacion::dispatch($votacion->id, $copropietario->id);
 
             return ['success' => true];
 

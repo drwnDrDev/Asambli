@@ -9,7 +9,10 @@ class RecalcularResultadosVotacion implements ShouldQueue
 {
     use Queueable;
 
-    public function __construct(public int $votacionId) {}
+    public function __construct(
+        public int $votacionId,
+        public ?int $copropietarioId = null
+    ) {}
 
     public function handle(): void
     {
@@ -30,6 +33,14 @@ class RecalcularResultadosVotacion implements ShouldQueue
             ];
         });
 
-        broadcast(new \App\Events\ResultadosVotacionActualizados($votacion, $resultados->toArray()));
+        $ultimoVotoUnidad = null;
+        if ($this->copropietarioId) {
+            $copropietario = \App\Models\Copropietario::withoutGlobalScopes()
+                ->with('unidades')
+                ->find($this->copropietarioId);
+            $ultimoVotoUnidad = $copropietario?->unidades->first()?->numero;
+        }
+
+        broadcast(new \App\Events\ResultadosVotacionActualizados($votacion, $resultados->toArray(), $ultimoVotoUnidad));
     }
 }
