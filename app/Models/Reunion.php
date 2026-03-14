@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\ReunionEstado;
 use App\Traits\BelongsToTenant;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -27,6 +28,7 @@ class Reunion extends Model
         'convocatoria_enviada_at' => 'datetime',
         'qr_expires_at' => 'datetime',
         'quorum_requerido' => 'decimal:2',
+        'estado' => ReunionEstado::class,
     ];
 
     public function logs()
@@ -44,24 +46,8 @@ class Reunion extends Model
         return $this->hasMany(Votacion::class);
     }
 
-    public function transicionarA(string $nuevoEstado, User $user, array $metadata = []): void
+    public function estaActiva(): bool
     {
-        $estadoAnterior = $this->estado;
-        $this->update(['estado' => $nuevoEstado]);
-
-        ReunionLog::create([
-            'reunion_id' => $this->id,
-            'user_id' => $user->id,
-            'accion' => "estado_cambiado_a_{$nuevoEstado}",
-            'metadata' => array_merge($metadata, ['estado_anterior' => $estadoAnterior]),
-        ]);
-
-        if ($nuevoEstado === 'en_curso') {
-            $this->update(['fecha_inicio' => now()]);
-        }
-
-        if ($nuevoEstado === 'finalizada') {
-            $this->update(['fecha_fin' => now()]);
-        }
+        return !$this->estado->esTerminal();
     }
 }

@@ -8,7 +8,7 @@ class ReunionLog extends Model
 {
     public $timestamps = false;
 
-    protected $fillable = ['reunion_id', 'user_id', 'accion', 'metadata', 'created_at'];
+    protected $fillable = ['reunion_id', 'user_id', 'accion', 'metadata', 'observacion', 'created_at'];
 
     protected $casts = [
         'metadata' => 'array',
