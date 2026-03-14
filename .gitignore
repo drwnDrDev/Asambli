@@ -1,4 +1,5 @@
 *.log
+.worktrees/
 .DS_Store
 .env
 .env.backup
