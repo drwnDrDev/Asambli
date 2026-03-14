@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Copropietario;
 use App\Models\Reunion;
+use App\Models\ReunionLog;
 use App\Models\User;
 use App\Notifications\ConvocatoriaReunion;
 
@@ -25,6 +26,12 @@ class ConvocatoriaService
         }
 
         $reunion->update(['convocatoria_enviada_at' => now()]);
-        $reunion->transicionarA('convocada', $admin, ['total_notificados' => $copropietarios->count()]);
+        ReunionLog::create([
+            'reunion_id'  => $reunion->id,
+            'user_id'     => $admin->id,
+            'accion'      => 'convocatoria_enviada',
+            'observacion' => "Convocatoria enviada a {$copropietarios->count()} copropietarios.",
+            'metadata'    => ['total_notificados' => $copropietarios->count()],
+        ]);
     }
 }

@@ -48,8 +48,13 @@ Route::middleware(['auth', 'role:administrador,super_admin'])
         // Reuniones
         Route::resource('reuniones', ReunionController::class)->parameters(['reuniones' => 'reunion']);
         Route::post('reuniones/{reunion}/convocar', [ReunionController::class, 'convocar'])->name('reuniones.convocar');
+        Route::post('reuniones/{reunion}/ante-sala', [ReunionController::class, 'abrirAnteSala'])->name('reuniones.ante-sala');
         Route::post('reuniones/{reunion}/iniciar', [ReunionController::class, 'iniciar'])->name('reuniones.iniciar');
         Route::post('reuniones/{reunion}/finalizar', [ReunionController::class, 'finalizar'])->name('reuniones.finalizar');
+        Route::post('reuniones/{reunion}/suspender', [ReunionController::class, 'suspender'])->name('reuniones.suspender');
+        Route::post('reuniones/{reunion}/reactivar', [ReunionController::class, 'reactivar'])->name('reuniones.reactivar');
+        Route::post('reuniones/{reunion}/reprogramar', [ReunionController::class, 'reprogramar'])->name('reuniones.reprogramar');
+        Route::post('reuniones/{reunion}/cancelar', [ReunionController::class, 'cancelar'])->name('reuniones.cancelar');
         Route::post('reuniones/{reunion}/copropietarios/{copropietario}/asistencia', [ReunionController::class, 'confirmarAsistencia'])->name('reuniones.confirmar-asistencia');
         Route::get('reuniones/{reunion}/reporte/pdf', [ReunionController::class, 'reportePdf'])->name('reuniones.reporte-pdf');
         Route::get('reuniones/{reunion}/reporte/csv', [ReunionController::class, 'reporteCsv'])->name('reuniones.reporte-csv');

@@ -2,12 +2,14 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Enums\ReunionEstado;
 use App\Http\Controllers\Controller;
 use App\Models\Copropietario;
 use App\Models\Reunion;
 use App\Services\ConvocatoriaService;
 use App\Services\QuorumService;
 use App\Services\ReporteService;
+use App\Services\ReunionTransicionService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
@@ -17,7 +19,8 @@ class ReunionController extends Controller
     public function __construct(
         private ConvocatoriaService $convocatoriaService,
         private QuorumService $quorumService,
-        private ReporteService $reporteService
+        private ReporteService $reporteService,
+        private ReunionTransicionService $transicionService
     ) {}
 
     public function index()
@@ -106,16 +109,67 @@ class ReunionController extends Controller
         return back()->with('success', 'Convocatoria enviada.');
     }
 
-    public function iniciar(Reunion $reunion)
+    public function abrirAnteSala(Request $request, Reunion $reunion)
     {
-        $reunion->transicionarA('en_curso', auth()->user());
+        $request->validate(['observacion' => 'required|string|min:3']);
+        $this->transicionService->transicionar(
+            $reunion, ReunionEstado::AnteSala, auth()->user(), $request->observacion
+        );
+        return back()->with('success', 'Ante-sala abierta.');
+    }
+
+    public function iniciar(Request $request, Reunion $reunion)
+    {
+        $request->validate(['observacion' => 'required|string|min:3']);
+        $this->transicionService->transicionar(
+            $reunion, ReunionEstado::EnCurso, auth()->user(), $request->observacion
+        );
         return back()->with('success', 'Reunión iniciada.');
     }
 
-    public function finalizar(Reunion $reunion)
+    public function finalizar(Request $request, Reunion $reunion)
     {
-        $reunion->transicionarA('finalizada', auth()->user());
+        $request->validate(['observacion' => 'required|string|min:3']);
+        $this->transicionService->transicionar(
+            $reunion, ReunionEstado::Finalizada, auth()->user(), $request->observacion
+        );
         return back()->with('success', 'Reunión finalizada.');
+    }
+
+    public function suspender(Request $request, Reunion $reunion)
+    {
+        $request->validate(['observacion' => 'required|string|min:3']);
+        $this->transicionService->transicionar(
+            $reunion, ReunionEstado::Suspendida, auth()->user(), $request->observacion
+        );
+        return back()->with('success', 'Reunión suspendida.');
+    }
+
+    public function reactivar(Request $request, Reunion $reunion)
+    {
+        $request->validate(['observacion' => 'required|string|min:3']);
+        $this->transicionService->transicionar(
+            $reunion, ReunionEstado::EnCurso, auth()->user(), $request->observacion
+        );
+        return back()->with('success', 'Reunión reactivada.');
+    }
+
+    public function reprogramar(Request $request, Reunion $reunion)
+    {
+        $request->validate(['observacion' => 'required|string|min:3']);
+        $this->transicionService->transicionar(
+            $reunion, ReunionEstado::Reprogramada, auth()->user(), $request->observacion
+        );
+        return back()->with('success', 'Reunión reprogramada.');
+    }
+
+    public function cancelar(Request $request, Reunion $reunion)
+    {
+        $request->validate(['observacion' => 'required|string|min:3']);
+        $this->transicionService->transicionar(
+            $reunion, ReunionEstado::Cancelada, auth()->user(), $request->observacion
+        );
+        return back()->with('success', 'Reunión cancelada.');
     }
 
     public function confirmarAsistencia(Reunion $reunion, Copropietario $copropietario)
