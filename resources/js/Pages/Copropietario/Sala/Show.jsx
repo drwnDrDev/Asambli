@@ -8,6 +8,7 @@ export default function SalaShow({ reunion, quorum: initialQuorum, poderes = [],
     const [votacionActiva, setVotacionActiva] = useState(null)
     const [votando, setVotando] = useState(false)
     const [votosEmitidos, setVotosEmitidos] = useState(yaVotoPor)
+    const [aviso, setAviso] = useState(null)
 
     useEffect(() => {
         const channel = echo.channel(`reunion.${reunion.id}`)
@@ -19,6 +20,10 @@ export default function SalaShow({ reunion, quorum: initialQuorum, poderes = [],
             } else {
                 setVotacionActiva(null)
             }
+        })
+        channel.listen('.AvisoEnviado', (e) => {
+            setAviso({ mensaje: e.mensaje, ts: e.enviado_at })
+            setTimeout(() => setAviso(null), 10000)
         })
 
         return () => echo.leave(`reunion.${reunion.id}`)
@@ -42,6 +47,14 @@ export default function SalaShow({ reunion, quorum: initialQuorum, poderes = [],
     }
 
     return (
+        <>
+        {aviso && (
+            <div className="fixed top-4 left-1/2 -translate-x-1/2 bg-yellow-400 text-yellow-900 font-semibold rounded-xl px-6 py-4 shadow-2xl z-50 max-w-sm w-full mx-4 flex items-start gap-3">
+                <span className="text-lg">📢</span>
+                <span className="flex-1 text-sm">{aviso.mensaje}</span>
+                <button onClick={() => setAviso(null)} className="text-yellow-700 hover:text-yellow-900 text-lg font-bold leading-none">✕</button>
+            </div>
+        )}
         <SalaLayout>
             <div className="mb-4">
                 <p className="text-slate-400 text-xs uppercase tracking-wide">{reunion.tipo}</p>
@@ -121,5 +134,6 @@ export default function SalaShow({ reunion, quorum: initialQuorum, poderes = [],
                 </div>
             )}
         </SalaLayout>
+        </>
     )
 }
