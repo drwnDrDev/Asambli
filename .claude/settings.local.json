@@ -44,7 +44,10 @@
       "Bash(cd /c/drwnDev/ASAMBLI && WWWGROUP=1000 WWWUSER=1000 docker compose exec laravel.test bash << 'BASHEOF'\nphp -r 'require \"/var/www/html/.worktrees/reunion-lifecycle/vendor/autoload.php\"; use Composer\\\\Autoload\\\\ClassLoader; foreach \\(array_keys\\(ClassLoader::getRegisteredLoaders\\(\\)\\) as $p\\) echo $p . PHP_EOL;'\nBASHEOF)",
       "Bash(cd /c/drwnDev/ASAMBLI && WWWGROUP=1000 WWWUSER=1000 docker compose exec laravel.test bash -c \"cd //var/www/html/.worktrees/reunion-lifecycle && php artisan test tests/Feature/ReunionTest.php --no-coverage 2>&1\")",
       "Bash(git add:*)",
-      "Bash(cd c:/drwnDev/ASAMBLI && grep -A5 '\"autoload\"' composer.json)"
+      "Bash(cd c:/drwnDev/ASAMBLI && grep -A5 '\"autoload\"' composer.json)",
+      "Bash(find:*)",
+      "Bash(grep:*)",
+      "Bash(git:*)"
     ]
   }
 }

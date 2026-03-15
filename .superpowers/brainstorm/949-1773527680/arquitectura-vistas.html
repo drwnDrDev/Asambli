@@ -1,0 +1,58 @@
+<h2>Arquitectura de Vistas — Reunión (Admin)</h2>
+<p class="subtitle">¿Cómo separamos responsabilidades entre las vistas? Selecciona el enfoque que mejor encaje.</p>
+
+<div class="options">
+
+  <div class="option" data-choice="a" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>Dos vistas claras (Recomendado)</h3>
+      <p><strong>Show.jsx</strong> = Hub de gestión (antes y después)<br>
+      <strong>Conducir.jsx</strong> = Sala de Control en vivo (durante)</p>
+      <div style="margin-top:10px; font-size:13px; color:#666;">
+        <strong>Show.jsx maneja:</strong> configuración, convocatoria, QR, padrón, actas PDF/CSV, auditoría<br>
+        <strong>Conducir.jsx maneja:</strong> quórum en vivo, asistencia, CRUD votaciones, cambios de estado, avisos, conexiones activas
+      </div>
+      <div class="pros-cons" style="margin-top:10px;">
+        <div class="pros"><h4>Pros</h4><ul><li>Separación limpia de responsabilidades</li><li>Conducir.jsx ya existe con Echo/Reverb</li><li>Fácil de extender sin romper lo otro</li></ul></div>
+        <div class="cons"><h4>Contras</h4><ul><li>Admin navega entre dos vistas</li></ul></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="b" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>Vista única adaptativa</h3>
+      <p><strong>Show.jsx</strong> detecta el estado y cambia su UI dinámicamente</p>
+      <div style="margin-top:10px; font-size:13px; color:#666;">
+        Un solo componente que muestra configuración (borrador/convocada), panel de control en vivo (en_curso/suspendida), y resultados (finalizada/cancelada).
+      </div>
+      <div class="pros-cons" style="margin-top:10px;">
+        <div class="pros"><h4>Pros</h4><ul><li>Una sola URL para todo el ciclo de vida</li><li>No hay que navegar entre vistas</li></ul></div>
+        <div class="cons"><h4>Contras</h4><ul><li>Show.jsx se vuelve muy grande y complejo</li><li>Difícil de mantener con el tiempo</li><li>Hay que reescribir lógica ya funcional en Conducir.jsx</li></ul></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="c" onclick="toggleSelect(this)">
+    <div class="letter">C</div>
+    <div class="content">
+      <h3>Tres vistas especializadas</h3>
+      <p><strong>Show.jsx</strong> = Solo información/config, <strong>Conducir.jsx</strong> = Panel en vivo, <strong>nueva Acta.jsx</strong> = post-reunión</p>
+      <div style="margin-top:10px; font-size:13px; color:#666;">
+        Separar también el post-reunión (actas, resultados, auditoría) en su propia vista dedicada.
+      </div>
+      <div class="pros-cons" style="margin-top:10px;">
+        <div class="pros"><h4>Pros</h4><ul><li>Máxima especialización de cada vista</li><li>Post-reunión puede tener su propio espacio rico</li></ul></div>
+        <div class="cons"><h4>Contras</h4><ul><li>Más vistas que mantener</li><li>Puede ser excesivo para el scope actual</li></ul></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div style="margin-top:24px; padding:16px; background:#f8f9fa; border-radius:8px; font-size:13px;">
+  <strong>Estado actual del código:</strong> Ya existe <code>Conducir.jsx</code> con Echo/Reverb integrado (quórum en vivo, crear/abrir/cerrar votaciones).
+  Lo que falta agregar: observaciones en cambios de estado, CRUD completo de votaciones (edit/delete), conexiones activas, avisos importantes, gráficos embebidos.
+</div>

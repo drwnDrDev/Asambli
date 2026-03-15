@@ -1,0 +1,169 @@
+<h2>Layout — Sala de Control (Conducir.jsx)</h2>
+<p class="subtitle">¿Cómo organizamos el espacio del panel de conducción en tiempo real? Selecciona el layout que prefieras.</p>
+
+<div class="cards">
+
+  <!-- OPCIÓN A -->
+  <div class="card" data-choice="a" onclick="toggleSelect(this)">
+    <div class="card-image" style="background:#f0f4ff; padding:14px; font-size:11px;">
+      <div style="display:grid; grid-template-columns:220px 1fr; gap:8px; height:280px;">
+        <!-- Sidebar -->
+        <div style="background:#1e293b; color:#fff; border-radius:6px; padding:10px; display:flex; flex-direction:column; gap:8px;">
+          <div style="background:#0f172a; border-radius:4px; padding:8px;">
+            <div style="font-size:9px; color:#94a3b8; margin-bottom:3px;">ESTADO</div>
+            <div style="color:#22c55e; font-weight:bold; font-size:11px;">● EN CURSO</div>
+            <div style="font-size:9px; color:#64748b; margin-top:4px;">Obs: "Reunión iniciada"</div>
+          </div>
+          <div style="background:#0f172a; border-radius:4px; padding:8px;">
+            <div style="font-size:9px; color:#94a3b8; margin-bottom:3px;">QUÓRUM</div>
+            <div style="background:#1e293b; border-radius:3px; height:6px; margin-bottom:4px;"><div style="background:#22c55e; width:68%; height:6px; border-radius:3px;"></div></div>
+            <div style="color:#f8fafc; font-size:12px; font-weight:bold;">68% <span style="color:#94a3b8; font-size:9px;">(req. 51%)</span></div>
+          </div>
+          <div style="background:#0f172a; border-radius:4px; padding:8px;">
+            <div style="font-size:9px; color:#94a3b8; margin-bottom:3px;">CONEXIONES</div>
+            <div style="color:#f8fafc; font-size:13px; font-weight:bold;">23 <span style="color:#94a3b8; font-size:9px;">conectados</span></div>
+          </div>
+          <div style="background:#0f172a; border-radius:4px; padding:8px; flex:1;">
+            <div style="font-size:9px; color:#94a3b8; margin-bottom:3px;">ACCIONES</div>
+            <div style="background:#dc2626; color:#fff; border-radius:3px; padding:4px 6px; font-size:9px; text-align:center; margin-bottom:4px;">Suspender</div>
+            <div style="background:#475569; color:#fff; border-radius:3px; padding:4px 6px; font-size:9px; text-align:center;">Finalizar</div>
+          </div>
+        </div>
+        <!-- Main area with tabs -->
+        <div style="background:#fff; border-radius:6px; border:1px solid #e2e8f0; overflow:hidden;">
+          <div style="display:flex; border-bottom:1px solid #e2e8f0; background:#f8fafc;">
+            <div style="padding:7px 12px; font-size:10px; color:#3b82f6; border-bottom:2px solid #3b82f6; font-weight:600;">Votaciones</div>
+            <div style="padding:7px 12px; font-size:10px; color:#94a3b8;">Asistencia</div>
+            <div style="padding:7px 12px; font-size:10px; color:#94a3b8;">Avisos</div>
+          </div>
+          <div style="padding:10px;">
+            <div style="background:#f0fdf4; border:1px solid #86efac; border-radius:4px; padding:8px; margin-bottom:6px;">
+              <div style="font-size:10px; font-weight:600; color:#15803d;">● ABIERTA: ¿Aprobar presupuesto?</div>
+              <div style="height:30px; background:#f8fafc; border-radius:3px; margin:5px 0; display:flex; align-items:center; justify-content:center; font-size:9px; color:#94a3b8;">[gráfico barra]</div>
+              <div style="background:#dc2626; color:#fff; border-radius:3px; padding:3px 8px; font-size:9px; display:inline-block;">Cerrar votación</div>
+            </div>
+            <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:4px; padding:6px; margin-bottom:4px;">
+              <div style="font-size:9px; color:#475569;">PENDIENTE: ¿Elegir administrador?</div>
+              <div style="float:right; font-size:9px; color:#3b82f6;">Abrir | Editar | ✕</div>
+            </div>
+            <div style="border:1px dashed #cbd5e1; border-radius:4px; padding:6px; text-align:center; font-size:9px; color:#94a3b8;">+ Nueva votación</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>A — Sidebar fijo + Tabs</h3>
+      <p>Estado/Quórum/Conexiones siempre visibles a la izquierda. Área principal con pestañas: Votaciones | Asistencia | Avisos.</p>
+    </div>
+  </div>
+
+  <!-- OPCIÓN B -->
+  <div class="card" data-choice="b" onclick="toggleSelect(this)">
+    <div class="card-image" style="background:#f0f4ff; padding:14px; font-size:11px;">
+      <div style="display:flex; flex-direction:column; gap:6px; height:280px;">
+        <!-- Top bar -->
+        <div style="background:#1e293b; border-radius:6px; padding:8px 12px; display:flex; gap:16px; align-items:center;">
+          <div style="color:#22c55e; font-size:10px; font-weight:bold;">● EN CURSO</div>
+          <div style="color:#fff; font-size:10px;">Quórum: <strong>68%</strong> ✓</div>
+          <div style="color:#94a3b8; font-size:10px;">23 conectados</div>
+          <div style="margin-left:auto; display:flex; gap:6px;">
+            <div style="background:#f59e0b; color:#fff; border-radius:3px; padding:3px 8px; font-size:9px;">Suspender</div>
+            <div style="background:#dc2626; color:#fff; border-radius:3px; padding:3px 8px; font-size:9px;">Finalizar</div>
+          </div>
+        </div>
+        <!-- 3 columns -->
+        <div style="display:grid; grid-template-columns:1fr 1.4fr 1fr; gap:6px; flex:1;">
+          <div style="background:#fff; border-radius:6px; border:1px solid #e2e8f0; padding:8px; overflow:hidden;">
+            <div style="font-size:9px; font-weight:600; color:#475569; margin-bottom:6px;">ASISTENCIA</div>
+            <div style="background:#f8fafc; border-radius:3px; padding:5px; margin-bottom:4px; font-size:9px;">● Juan M. — 2.3%</div>
+            <div style="background:#f8fafc; border-radius:3px; padding:5px; margin-bottom:4px; font-size:9px;">● Ana R. — 1.8%</div>
+            <div style="background:#f8fafc; border-radius:3px; padding:5px; font-size:9px;">+ Confirmar</div>
+          </div>
+          <div style="background:#fff; border-radius:6px; border:1px solid #e2e8f0; padding:8px; overflow:hidden;">
+            <div style="font-size:9px; font-weight:600; color:#475569; margin-bottom:6px;">VOTACIONES</div>
+            <div style="background:#f0fdf4; border:1px solid #86efac; border-radius:4px; padding:6px; margin-bottom:4px;">
+              <div style="font-size:9px; color:#15803d; font-weight:600;">● ABIERTA</div>
+              <div style="font-size:9px;">¿Aprobar presupuesto?</div>
+              <div style="background:#f8fafc; height:24px; border-radius:3px; margin:4px 0; display:flex; align-items:center; justify-content:center; font-size:8px; color:#94a3b8;">[gráfico]</div>
+            </div>
+            <div style="background:#f8fafc; border-radius:3px; padding:5px; font-size:9px; margin-bottom:4px;">PENDIENTE: ¿Elegir admin?  <span style="color:#3b82f6;">Abrir</span></div>
+            <div style="border:1px dashed #cbd5e1; border-radius:3px; padding:4px; text-align:center; font-size:9px; color:#94a3b8;">+ Nueva</div>
+          </div>
+          <div style="background:#fff; border-radius:6px; border:1px solid #e2e8f0; padding:8px;">
+            <div style="font-size:9px; font-weight:600; color:#475569; margin-bottom:6px;">AVISOS</div>
+            <div style="background:#fefce8; border:1px solid #fde047; border-radius:3px; padding:5px; font-size:9px; margin-bottom:4px;">📢 Silencio durante votación</div>
+            <div style="border:1px dashed #cbd5e1; border-radius:3px; padding:4px; text-align:center; font-size:9px; color:#94a3b8;">+ Nuevo aviso</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>B — Barra de estado top + 3 columnas</h3>
+      <p>Estado/Quórum/Conexiones/Acciones en barra superior. Columnas: Asistencia | Votaciones (con gráfico activo) | Avisos.</p>
+    </div>
+  </div>
+
+  <!-- OPCIÓN C -->
+  <div class="card" data-choice="c" onclick="toggleSelect(this)">
+    <div class="card-image" style="background:#f0f4ff; padding:14px; font-size:11px;">
+      <div style="display:flex; flex-direction:column; gap:6px; height:280px;">
+        <!-- Top KPIs -->
+        <div style="display:grid; grid-template-columns:repeat(4,1fr); gap:6px;">
+          <div style="background:#1e293b; border-radius:5px; padding:7px; text-align:center;">
+            <div style="font-size:8px; color:#94a3b8;">ESTADO</div>
+            <div style="color:#22c55e; font-size:10px; font-weight:bold;">EN CURSO</div>
+          </div>
+          <div style="background:#fff; border-radius:5px; padding:7px; text-align:center; border:1px solid #e2e8f0;">
+            <div style="font-size:8px; color:#94a3b8;">QUÓRUM</div>
+            <div style="font-size:12px; font-weight:bold; color:#15803d;">68%</div>
+          </div>
+          <div style="background:#fff; border-radius:5px; padding:7px; text-align:center; border:1px solid #e2e8f0;">
+            <div style="font-size:8px; color:#94a3b8;">CONECTADOS</div>
+            <div style="font-size:12px; font-weight:bold;">23</div>
+          </div>
+          <div style="background:#fff; border-radius:5px; padding:7px; text-align:center; border:1px solid #e2e8f0;">
+            <div style="font-size:8px; color:#94a3b8;">VOTACIONES</div>
+            <div style="font-size:12px; font-weight:bold;">1 <span style="font-size:8px; color:#22c55e;">activa</span></div>
+          </div>
+        </div>
+        <!-- Highlighted active voting -->
+        <div style="background:#f0fdf4; border:1px solid #86efac; border-radius:6px; padding:10px; display:grid; grid-template-columns:1fr 120px; gap:10px; align-items:center;">
+          <div>
+            <div style="font-size:9px; color:#15803d; font-weight:bold; margin-bottom:3px;">● VOTACIÓN ACTIVA</div>
+            <div style="font-size:11px; font-weight:600;">¿Aprobar presupuesto anual?</div>
+            <div style="margin-top:5px; display:flex; gap:4px;">
+              <div style="background:#dc2626; color:#fff; border-radius:3px; padding:3px 8px; font-size:9px;">Cerrar votación</div>
+            </div>
+          </div>
+          <div style="background:#fff; border-radius:4px; padding:6px; height:60px; display:flex; flex-direction:column; justify-content:center; gap:3px;">
+            <div style="display:flex; align-items:center; gap:4px; font-size:8px;"><div style="background:#22c55e; height:8px; width:55%; border-radius:2px;"></div>55%</div>
+            <div style="display:flex; align-items:center; gap:4px; font-size:8px;"><div style="background:#ef4444; height:8px; width:30%; border-radius:2px;"></div>30%</div>
+            <div style="display:flex; align-items:center; gap:4px; font-size:8px;"><div style="background:#94a3b8; height:8px; width:15%; border-radius:2px;"></div>15%</div>
+          </div>
+        </div>
+        <!-- Bottom: list votaciones + acciones estado -->
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; flex:1;">
+          <div style="background:#fff; border-radius:6px; border:1px solid #e2e8f0; padding:8px; overflow:hidden;">
+            <div style="font-size:9px; font-weight:600; color:#475569; margin-bottom:4px;">TODAS LAS VOTACIONES</div>
+            <div style="font-size:9px; background:#f8fafc; border-radius:3px; padding:4px; margin-bottom:3px;">PENDIENTE: ¿Elegir admin? <span style="color:#3b82f6;">Abrir</span></div>
+            <div style="font-size:9px; background:#f8fafc; border-radius:3px; padding:4px;">CERRADA: ¿Aprobar acta? ✓</div>
+            <div style="border:1px dashed #cbd5e1; border-radius:3px; padding:4px; text-align:center; font-size:9px; color:#94a3b8; margin-top:4px;">+ Nueva votación</div>
+          </div>
+          <div style="background:#fff; border-radius:6px; border:1px solid #e2e8f0; padding:8px;">
+            <div style="font-size:9px; font-weight:600; color:#475569; margin-bottom:4px;">ACCIONES + AVISOS</div>
+            <div style="display:flex; gap:4px; margin-bottom:6px;">
+              <div style="background:#f59e0b; color:#fff; border-radius:3px; padding:3px 6px; font-size:8px;">Suspender</div>
+              <div style="background:#dc2626; color:#fff; border-radius:3px; padding:3px 6px; font-size:8px;">Finalizar</div>
+            </div>
+            <div style="border:1px dashed #cbd5e1; border-radius:3px; padding:4px; font-size:9px; color:#94a3b8;">📢 Enviar aviso...</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>C — Dashboard con votación activa destacada</h3>
+      <p>4 KPIs en tarjetas superiores. Votación activa con gráfico prominente al centro. Abajo: lista de votaciones + acciones de estado y avisos.</p>
+    </div>
+  </div>
+
+</div>
