@@ -1,6 +1,8 @@
+import { useState, useEffect } from 'react'
 import AdminLayout from '@/Layouts/AdminLayout'
-import { Link, router, usePage } from '@inertiajs/react'
+import { Link, router, usePage, useForm } from '@inertiajs/react'
 import { QRCodeSVG } from 'qrcode.react'
+import echo from '@/echo'
 
 const ESTADO_BADGE = {
     borrador:   'bg-gray-100 text-gray-700',
@@ -9,10 +11,142 @@ const ESTADO_BADGE = {
     finalizada: 'bg-slate-100 text-slate-500',
 }
 
-export default function Show({ reunion, quorum, copropietarios = [] }) {
+const VOTACION_BADGE = {
+    pendiente: 'bg-gray-100 text-gray-600',
+    abierta:   'bg-green-100 text-green-700',
+    cerrada:   'bg-slate-100 text-slate-500',
+}
+
+const VOTACION_ICON = {
+    pendiente: '○',
+    abierta:   '●',
+    cerrada:   '✓',
+}
+
+const emptyForm = { pregunta: '', opciones: [{ texto: '' }, { texto: '' }] }
+
+function VotacionForm({ reunionId, votacion, onCancel }) {
+    const isEditing = Boolean(votacion)
+    const { data, setData, post, patch, processing, errors, reset } = useForm(
+        isEditing
+            ? { pregunta: votacion.pregunta, opciones: votacion.opciones.map(o => ({ texto: o.texto })) }
+            : emptyForm
+    )
+
+    const addOpcion = () => setData('opciones', [...data.opciones, { texto: '' }])
+    const removeOpcion = (i) => {
+        if (data.opciones.length <= 2) return
+        setData('opciones', data.opciones.filter((_, idx) => idx !== i))
+    }
+    const setOpcionTexto = (i, val) => {
+        const opts = [...data.opciones]
+        opts[i] = { texto: val }
+        setData('opciones', opts)
+    }
+
+    const handleSubmit = (e) => {
+        e.preventDefault()
+        if (isEditing) {
+            patch(`/admin/votaciones/${votacion.id}`, {
+                preserveScroll: true,
+                onSuccess: () => onCancel(),
+            })
+        } else {
+            post(`/admin/reuniones/${reunionId}/votaciones`, {
+                preserveScroll: true,
+                onSuccess: () => { reset(); onCancel() },
+            })
+        }
+    }
+
+    return (
+        <form onSubmit={handleSubmit} className="border border-blue-200 bg-blue-50 rounded-lg p-4 space-y-3">
+            <p className="text-sm font-semibold text-blue-800">{isEditing ? 'Editar votación' : 'Nueva votación'}</p>
+            <div>
+                <input
+                    type="text"
+                    placeholder="Pregunta de la votación..."
+                    value={data.pregunta}
+                    onChange={e => setData('pregunta', e.target.value)}
+                    className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+                {errors.pregunta && <p className="text-red-500 text-xs mt-1">{errors.pregunta}</p>}
+            </div>
+            <div className="space-y-2">
+                {data.opciones.map((op, i) => (
+                    <div key={i} className="flex gap-2">
+                        <input
+                            type="text"
+                            value={op.texto}
+                            onChange={e => setOpcionTexto(i, e.target.value)}
+                            placeholder={`Opción ${i + 1}`}
+                            className="flex-1 border border-gray-200 rounded px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-blue-400"
+                        />
+                        {data.opciones.length > 2 && (
+                            <button type="button" onClick={() => removeOpcion(i)}
+                                className="text-red-400 hover:text-red-600 text-sm px-2">✕</button>
+                        )}
+                    </div>
+                ))}
+                {errors['opciones'] && <p className="text-red-500 text-xs">{errors['opciones']}</p>}
+            </div>
+            <div className="flex gap-2 items-center">
+                <button type="button" onClick={addOpcion}
+                    className="text-xs text-blue-600 hover:underline">
+                    + Agregar opción
+                </button>
+                <div className="ml-auto flex gap-2">
+                    <button type="button" onClick={onCancel}
+                        className="text-sm border border-gray-300 text-gray-600 px-3 py-1.5 rounded hover:bg-gray-50 transition">
+                        Cancelar
+                    </button>
+                    <button type="submit" disabled={processing}
+                        className="text-sm bg-blue-600 text-white px-4 py-1.5 rounded hover:bg-blue-700 disabled:opacity-50 transition">
+                        {isEditing ? 'Guardar' : 'Crear'}
+                    </button>
+                </div>
+            </div>
+        </form>
+    )
+}
+
+export default function Show({ reunion, quorum, copropietarios = [], votaciones: initialVotaciones = [] }) {
     const { flash } = usePage().props
+    const [votaciones, setVotaciones] = useState(initialVotaciones)
+    const [showCreateForm, setShowCreateForm] = useState(false)
+    const [editingId, setEditingId] = useState(null)
 
     const accion = (url) => router.post(url, {}, { preserveScroll: true })
+
+    const eliminarVotacion = (votacionId) => {
+        if (!window.confirm('¿Eliminar esta votación?')) return
+        router.delete(`/admin/votaciones/${votacionId}`, { preserveScroll: true })
+    }
+
+    useEffect(() => {
+        const channel = echo.channel(`reunion.${reunion.id}`)
+
+        channel.listen('.VotacionModificada', (e) => {
+            if (e.accion === 'created') {
+                setVotaciones(prev => [...prev, {
+                    id: e.votacion_id,
+                    pregunta: e.pregunta,
+                    opciones: e.opciones,
+                    estado: e.estado,
+                }])
+            } else if (e.accion === 'updated') {
+                setVotaciones(prev => prev.map(v =>
+                    v.id === e.votacion_id
+                        ? { ...v, pregunta: e.pregunta, opciones: e.opciones, estado: e.estado }
+                        : v
+                ))
+            } else if (e.accion === 'deleted') {
+                setVotaciones(prev => prev.filter(v => v.id !== e.votacion_id))
+            }
+        })
+
+        return () => echo.leave(`reunion.${reunion.id}`)
+    }, [reunion.id])
 
     return (
         <AdminLayout title={reunion.titulo}>
@@ -134,7 +268,7 @@ export default function Show({ reunion, quorum, copropietarios = [] }) {
             </div>
 
             {/* Lista de copropietarios */}
-            <div className="bg-white rounded-lg shadow overflow-hidden">
+            <div className="bg-white rounded-lg shadow overflow-hidden mb-6">
                 <div className="px-5 py-4 border-b border-gray-100 font-semibold text-gray-700">
                     Copropietarios ({copropietarios.length})
                 </div>
@@ -175,6 +309,73 @@ export default function Show({ reunion, quorum, copropietarios = [] }) {
                         ))}
                     </tbody>
                 </table>
+            </div>
+
+            {/* Votaciones */}
+            <div className="bg-white rounded-lg shadow overflow-hidden">
+                <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
+                    <span className="font-semibold text-gray-700">Votaciones ({votaciones.length})</span>
+                    {!showCreateForm && (
+                        <button
+                            onClick={() => { setShowCreateForm(true); setEditingId(null) }}
+                            className="text-sm bg-blue-600 text-white px-3 py-1.5 rounded-lg hover:bg-blue-700 transition"
+                        >
+                            + Nueva votación
+                        </button>
+                    )}
+                </div>
+
+                <div className="p-4 space-y-3">
+                    {showCreateForm && (
+                        <VotacionForm
+                            reunionId={reunion.id}
+                            votacion={null}
+                            onCancel={() => setShowCreateForm(false)}
+                        />
+                    )}
+
+                    {votaciones.length === 0 && !showCreateForm && (
+                        <p className="text-sm text-gray-400 text-center py-4">No hay votaciones creadas.</p>
+                    )}
+
+                    {votaciones.map(v => (
+                        <div key={v.id}>
+                            {editingId === v.id ? (
+                                <VotacionForm
+                                    reunionId={reunion.id}
+                                    votacion={v}
+                                    onCancel={() => setEditingId(null)}
+                                />
+                            ) : (
+                                <div className="flex items-center gap-3 py-2 px-1 border-b border-gray-50 last:border-0">
+                                    <span className="text-base text-gray-400 w-5 text-center flex-shrink-0">
+                                        {VOTACION_ICON[v.estado] ?? '○'}
+                                    </span>
+                                    <span className={`text-xs px-2 py-0.5 rounded-full font-medium flex-shrink-0 ${VOTACION_BADGE[v.estado] ?? 'bg-gray-100 text-gray-600'}`}>
+                                        {v.estado.toUpperCase().slice(0, 4)}
+                                    </span>
+                                    <span className="text-sm text-gray-800 flex-1 truncate">{v.pregunta}</span>
+                                    {v.estado === 'pendiente' && (
+                                        <div className="flex gap-2 flex-shrink-0">
+                                            <button
+                                                onClick={() => { setEditingId(v.id); setShowCreateForm(false) }}
+                                                className="text-xs border border-gray-300 text-gray-600 px-3 py-1 rounded hover:bg-gray-50 transition"
+                                            >
+                                                Editar
+                                            </button>
+                                            <button
+                                                onClick={() => eliminarVotacion(v.id)}
+                                                className="text-xs border border-red-200 text-red-600 px-3 py-1 rounded hover:bg-red-50 transition"
+                                            >
+                                                Eliminar
+                                            </button>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+                        </div>
+                    ))}
+                </div>
             </div>
         </AdminLayout>
     )

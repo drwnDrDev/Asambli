@@ -62,8 +62,9 @@ class ReunionController extends Controller
             ->with('user', 'unidades')
             ->get()
             ->map(fn($c) => array_merge($c->toArray(), ['asistencia' => in_array($c->id, $asistencias)]));
+        $votaciones = $reunion->votaciones()->with('opciones')->get();
 
-        return Inertia::render('Admin/Reuniones/Show', compact('reunion', 'quorum', 'copropietarios'));
+        return Inertia::render('Admin/Reuniones/Show', compact('reunion', 'quorum', 'copropietarios', 'votaciones'));
     }
 
     public function conducir(Reunion $reunion)
