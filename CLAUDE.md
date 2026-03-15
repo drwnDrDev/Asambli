@@ -82,6 +82,15 @@ $this->actingAs($user)
 expect($response->status())->not->toBe(403);
 ```
 
+## Flags de desarrollo (CRÍTICO — no llevar a producción)
+
+| Variable `.env` | Valor dev | Efecto |
+|-----------------|-----------|--------|
+| `BYPASS_QUORUM` | `true` | Omite la validación de quórum en `VotoService` — permite votar sin importar el % de asistencia confirmada |
+
+> Implementado en `config/app.php` (`bypass_quorum`) y `app/Services/VotoService.php`.
+> En producción esta variable no debe existir (el default es `false`).
+
 ## Plan de implementación
 `docs/plans/2026-03-04-asambli-implementation-plan.md`
 

@@ -41,6 +41,8 @@ return [
 
     'debug' => (bool) env('APP_DEBUG', false),
 
+    'bypass_quorum' => env('BYPASS_QUORUM', false),
+
     /*
     |--------------------------------------------------------------------------
     | Application URL

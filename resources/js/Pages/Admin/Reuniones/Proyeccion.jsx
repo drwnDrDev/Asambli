@@ -36,7 +36,7 @@ export default function Proyeccion({ reunion, votacion: initialVotacion, resulta
     // Echo subscriptions
     useEffect(() => {
         const publicChannel = echo.channel(`reunion.${reunion.id}`)
-        publicChannel.listen('.EstadoVotacionCambiado', (e) => {
+        publicChannel.listen('EstadoVotacionCambiado', (e) => {
             if (e.estado === 'abierta') {
                 router.reload({ only: ['votacion', 'resultados'] })
             }
@@ -48,7 +48,7 @@ export default function Proyeccion({ reunion, votacion: initialVotacion, resulta
         })
 
         const privateChannel = echo.private(`reunion.${reunion.id}`)
-        privateChannel.listen('.ResultadosVotacionActualizados', (e) => {
+        privateChannel.listen('ResultadosVotacionActualizados', (e) => {
             setResultados(e.resultados ?? [])
             if (e.ultimo_voto_unidad) {
                 setTicker(prev => [{ unidad: e.ultimo_voto_unidad, ts: Date.now() }, ...prev].slice(0, 15))

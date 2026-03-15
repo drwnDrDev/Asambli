@@ -119,7 +119,7 @@ class ReunionController extends Controller
         $this->transicionService->transicionar(
             $reunion, ReunionEstado::AnteSala, auth()->user(), $request->observacion
         );
-        return back()->with('success', 'Ante-sala abierta.');
+        return redirect()->route('admin.reuniones.conducir', $reunion)->with('success', 'Ante-sala abierta.');
     }
 
     public function iniciar(Request $request, Reunion $reunion)

@@ -15,15 +15,18 @@ class VotacionController extends Controller
     public function store(Request $request, Reunion $reunion)
     {
         $data = $request->validate([
-            'pregunta' => 'required|string|max:500',
-            'opciones' => 'required|array|min:2',
+            'pregunta'    => 'required|string|max:500',
+            'descripcion' => 'nullable|string|max:2000',
+            'opciones'    => 'required|array|min:2',
             'opciones.*.texto' => 'required|string|max:255',
         ]);
 
         $votacion = $reunion->votaciones()->create([
-            'pregunta' => $data['pregunta'],
-            'estado' => 'pendiente',
-            'tenant_id' => $reunion->tenant_id,
+            'pregunta'    => $data['pregunta'],
+            'descripcion' => $data['descripcion'] ?? null,
+            'estado'      => 'creada',
+            'creada_por'  => auth()->id(),
+            'tenant_id'   => $reunion->tenant_id,
         ]);
 
         foreach ($data['opciones'] as $opcion) {
@@ -38,17 +41,21 @@ class VotacionController extends Controller
 
     public function update(Request $request, Votacion $votacion)
     {
-        if ($votacion->estado !== 'pendiente') {
-            abort(403, 'Solo se pueden editar votaciones en estado pendiente.');
+        if ($votacion->estado !== 'creada') {
+            abort(403, 'Solo se pueden editar votaciones en estado creada.');
         }
 
         $data = $request->validate([
-            'pregunta' => 'required|string|max:500',
-            'opciones' => 'required|array|min:2',
+            'pregunta'    => 'required|string|max:500',
+            'descripcion' => 'nullable|string|max:2000',
+            'opciones'    => 'required|array|min:2',
             'opciones.*.texto' => 'required|string|max:255',
         ]);
 
-        $votacion->update(['pregunta' => $data['pregunta']]);
+        $votacion->update([
+            'pregunta'    => $data['pregunta'],
+            'descripcion' => $data['descripcion'] ?? null,
+        ]);
 
         $votacion->opciones()->delete();
 
@@ -64,8 +71,8 @@ class VotacionController extends Controller
 
     public function destroy(Votacion $votacion)
     {
-        if ($votacion->estado !== 'pendiente') {
-            abort(403, 'Solo se pueden eliminar votaciones en estado pendiente.');
+        if ($votacion->estado !== 'creada') {
+            abort(403, 'Solo se pueden eliminar votaciones en estado creada.');
         }
 
         $votacion->load('opciones');
@@ -85,6 +92,7 @@ class VotacionController extends Controller
     public function abrir(Votacion $votacion)
     {
         $votacion->update(['estado' => 'abierta', 'abierta_at' => now()]);
+        $votacion->load('opciones');
         broadcast(new \App\Events\EstadoVotacionCambiado($votacion));
         return back()->with('success', 'Votación abierta.');
     }

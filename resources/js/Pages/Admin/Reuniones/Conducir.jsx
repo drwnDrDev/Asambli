@@ -90,12 +90,13 @@ export default function Conducir({ reunion, quorum: initialQuorum, copropietario
     const [showCreateForm, setShowCreateForm] = useState(false)
     const { data, setData, post, processing, reset, errors } = useForm({
         pregunta: '',
+        descripcion: '',
         opciones: [{ texto: 'Si' }, { texto: 'No' }, { texto: 'Abstención' }],
     })
 
     // Edit state
     const [editingId, setEditingId] = useState(null)
-    const [editData, setEditData] = useState({ pregunta: '', opciones: [] })
+    const [editData, setEditData] = useState({ pregunta: '', descripcion: '', opciones: [] })
 
     // Ticker time updater
     const [, setTickerTick] = useState(0)
@@ -108,20 +109,20 @@ export default function Conducir({ reunion, quorum: initialQuorum, copropietario
     useEffect(() => {
         // 1. Public channel
         const publicChannel = echo.channel(`reunion.${reunion.id}`)
-        publicChannel.listen('.QuorumActualizado', (e) => {
+        publicChannel.listen('QuorumActualizado', (e) => {
             setQuorum(e.quorumData)
         })
-        publicChannel.listen('.EstadoVotacionCambiado', (e) => {
+        publicChannel.listen('EstadoVotacionCambiado', (e) => {
             setVotaciones(prev => prev.map(v =>
                 v.id === e.votacion_id ? { ...v, estado: e.estado } : v
             ))
         })
-        publicChannel.listen('.VotacionModificada', (e) => {
+        publicChannel.listen('VotacionModificada', (e) => {
             if (e.accion === 'created') {
-                setVotaciones(prev => [...prev, { id: e.votacion_id, pregunta: e.pregunta, estado: e.estado, opciones: e.opciones }])
+                setVotaciones(prev => [...prev, { id: e.votacion_id, pregunta: e.pregunta, descripcion: e.descripcion, estado: e.estado, opciones: e.opciones }])
             } else if (e.accion === 'updated') {
                 setVotaciones(prev => prev.map(v =>
-                    v.id === e.votacion_id ? { ...v, pregunta: e.pregunta, opciones: e.opciones, estado: e.estado } : v
+                    v.id === e.votacion_id ? { ...v, pregunta: e.pregunta, descripcion: e.descripcion, opciones: e.opciones, estado: e.estado } : v
                 ))
             } else if (e.accion === 'deleted') {
                 setVotaciones(prev => prev.filter(v => v.id !== e.votacion_id))
@@ -130,7 +131,7 @@ export default function Conducir({ reunion, quorum: initialQuorum, copropietario
 
         // 2. Private channel
         const privateChannel = echo.private(`reunion.${reunion.id}`)
-        privateChannel.listen('.ResultadosVotacionActualizados', (e) => {
+        privateChannel.listen('ResultadosVotacionActualizados', (e) => {
             setResultados(prev => ({ ...prev, [e.votacion_id]: e.resultados }))
             if (e.ultimo_voto_unidad) {
                 setTicker(prev => [{ unidad: e.ultimo_voto_unidad, ts: Date.now() }, ...prev].slice(0, 20))
@@ -201,7 +202,7 @@ export default function Conducir({ reunion, quorum: initialQuorum, copropietario
 
     const startEdit = (v) => {
         setEditingId(v.id)
-        setEditData({ pregunta: v.pregunta, opciones: v.opciones?.map(o => ({ id: o.id, texto: o.texto })) || [] })
+        setEditData({ pregunta: v.pregunta, descripcion: v.descripcion ?? '', opciones: v.opciones?.map(o => ({ id: o.id, texto: o.texto })) || [] })
     }
 
     const submitEdit = (e) => {
@@ -384,8 +385,39 @@ export default function Conducir({ reunion, quorum: initialQuorum, copropietario
 
             {/* ── Lower two-column panel ─────────────────────── */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {/* Left: Todas las votaciones */}
+                {/* Left: Sala de espera (ante_sala) o Votaciones (en_curso/suspendida) */}
                 <div className="space-y-4">
+                {reunion.estado === 'ante_sala' ? (
+                    <div className="bg-white rounded-lg shadow p-4">
+                        <h2 className="font-semibold text-gray-900 mb-3">
+                            Conectados en sala de espera
+                            <span className="ml-2 text-sm font-normal text-gray-500">({conectados.length})</span>
+                        </h2>
+                        <div className="space-y-1 max-h-96 overflow-y-auto">
+                            {conectados.length === 0 && (
+                                <p className="text-sm text-gray-400 py-4 text-center">Esperando conexiones...</p>
+                            )}
+                            {[...conectados]
+                                .sort((a, b) => (Number(a.unidad) || 999) - (Number(b.unidad) || 999))
+                                .map(c => (
+                                    <div key={c.id} className="flex items-center justify-between py-1.5 border-b border-gray-50">
+                                        <div className="flex items-center gap-2">
+                                            <span className="w-2 h-2 bg-green-400 rounded-full" />
+                                            <span className="text-sm font-medium text-gray-800">{c.nombre}</span>
+                                        </div>
+                                        <div className="text-right">
+                                            <span className="text-xs text-gray-500">Apt. {c.unidad ?? '—'}</span>
+                                            {c.coef != null && (
+                                                <span className="ml-2 text-xs text-gray-400">{parseFloat(c.coef).toFixed(2)}%</span>
+                                            )}
+                                        </div>
+                                    </div>
+                                ))
+                            }
+                        </div>
+                    </div>
+                ) : (
+                    <>
                     <div className="bg-white rounded-lg shadow p-4">
                         <div className="flex items-center justify-between mb-3">
                             <h2 className="font-semibold text-gray-900">Todas las Votaciones</h2>
@@ -447,7 +479,7 @@ export default function Conducir({ reunion, quorum: initialQuorum, copropietario
                                         </span>
                                         <span className="text-sm text-gray-800 flex-1 truncate">{v.pregunta}</span>
                                         <div className="flex gap-1 flex-shrink-0">
-                                            {v.estado === 'pendiente' && (
+                                            {v.estado === 'creada' && (
                                                 <>
                                                     <button onClick={() => abrirVotacion(v.id)}
                                                         className="text-xs bg-green-600 text-white px-2 py-0.5 rounded hover:bg-green-700 transition">Abrir</button>
@@ -548,6 +580,8 @@ export default function Conducir({ reunion, quorum: initialQuorum, copropietario
                             ))}
                         </div>
                     </div>
+                    </>
+                )}
                 </div>
 
                 {/* Right: Estado + Avisos */}
@@ -610,13 +644,7 @@ export default function Conducir({ reunion, quorum: initialQuorum, copropietario
                                         </button>
                                     </>
                                 )}
-                                {(reunion.estado === 'convocada' || reunion.estado === 'borrador') && (
-                                    <button onClick={() => doTransition('iniciar')}
-                                        className="text-xs bg-green-600 text-white px-3 py-1.5 rounded hover:bg-green-700 transition">
-                                        Iniciar
-                                    </button>
-                                )}
-                            </div>
+                                            </div>
                         </div>
                     </div>
 

@@ -5,31 +5,66 @@ import { QRCodeSVG } from 'qrcode.react'
 import echo from '@/echo'
 
 const ESTADO_BADGE = {
-    borrador:   'bg-gray-100 text-gray-700',
-    convocada:  'bg-blue-100 text-blue-700',
-    en_curso:   'bg-green-100 text-green-700',
-    finalizada: 'bg-slate-100 text-slate-500',
+    borrador:     'bg-gray-100 text-gray-700',
+    ante_sala:    'bg-blue-100 text-blue-700',
+    en_curso:     'bg-green-100 text-green-700',
+    suspendida:   'bg-yellow-100 text-yellow-700',
+    finalizada:   'bg-slate-100 text-slate-500',
+    cancelada:    'bg-red-100 text-red-600',
+    reprogramada: 'bg-purple-100 text-purple-600',
 }
 
 const VOTACION_BADGE = {
-    pendiente: 'bg-gray-100 text-gray-600',
-    abierta:   'bg-green-100 text-green-700',
-    cerrada:   'bg-slate-100 text-slate-500',
+    creada:  'bg-gray-100 text-gray-600',
+    abierta: 'bg-green-100 text-green-700',
+    cerrada: 'bg-slate-100 text-slate-500',
+    pausada: 'bg-yellow-100 text-yellow-700',
 }
 
 const VOTACION_ICON = {
-    pendiente: '○',
-    abierta:   '●',
-    cerrada:   '✓',
+    creada:  '○',
+    abierta: '●',
+    cerrada: '✓',
+    pausada: '⏸',
 }
 
-const emptyForm = { pregunta: '', opciones: [{ texto: '' }, { texto: '' }] }
+function ModalObservacion({ titulo, onConfirm, onCancel }) {
+    const [obs, setObs] = useState('')
+    return (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+            <div className="bg-white rounded-xl shadow-xl p-6 w-full max-w-md mx-4">
+                <p className="font-semibold text-gray-800 mb-3">{titulo}</p>
+                <textarea
+                    autoFocus
+                    rows={3}
+                    value={obs}
+                    onChange={e => setObs(e.target.value)}
+                    placeholder="Observación requerida (mín. 3 caracteres)..."
+                    className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                />
+                <div className="flex justify-end gap-2 mt-4">
+                    <button onClick={onCancel}
+                        className="text-sm border border-gray-300 text-gray-600 px-4 py-2 rounded-lg hover:bg-gray-50 transition">
+                        Cancelar
+                    </button>
+                    <button onClick={() => obs.trim().length >= 3 && onConfirm(obs.trim())}
+                        disabled={obs.trim().length < 3}
+                        className="text-sm bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50 transition">
+                        Confirmar
+                    </button>
+                </div>
+            </div>
+        </div>
+    )
+}
+
+const emptyForm = { pregunta: '', descripcion: '', opciones: [{ texto: '' }, { texto: '' }] }
 
 function VotacionForm({ reunionId, votacion, onCancel }) {
     const isEditing = Boolean(votacion)
     const { data, setData, post, patch, processing, errors, reset } = useForm(
         isEditing
-            ? { pregunta: votacion.pregunta, opciones: votacion.opciones.map(o => ({ texto: o.texto })) }
+            ? { pregunta: votacion.pregunta, descripcion: votacion.descripcion ?? '', opciones: votacion.opciones.map(o => ({ texto: o.texto })) }
             : emptyForm
     )
 
@@ -71,6 +106,15 @@ function VotacionForm({ reunionId, votacion, onCancel }) {
                     className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
                 {errors.pregunta && <p className="text-red-500 text-xs mt-1">{errors.pregunta}</p>}
+            </div>
+            <div>
+                <textarea
+                    placeholder="Descripción del objetivo de la votación (opcional)"
+                    value={data.descripcion}
+                    onChange={e => setData('descripcion', e.target.value)}
+                    rows={2}
+                    className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                />
             </div>
             <div className="space-y-2">
                 {data.opciones.map((op, i) => (
@@ -115,8 +159,15 @@ export default function Show({ reunion, quorum, copropietarios = [], votaciones:
     const [votaciones, setVotaciones] = useState(initialVotaciones)
     const [showCreateForm, setShowCreateForm] = useState(false)
     const [editingId, setEditingId] = useState(null)
+    const [modal, setModal] = useState(null) // { url, titulo }
 
     const accion = (url) => router.post(url, {}, { preserveScroll: true })
+    const accionConObservacion = (url, titulo) => setModal({ url, titulo })
+    const confirmarAccion = (observacion) => {
+        const { url } = modal
+        setModal(null)
+        router.post(url, { observacion }, { preserveScroll: true })
+    }
 
     const eliminarVotacion = (votacionId) => {
         if (!window.confirm('¿Eliminar esta votación?')) return
@@ -126,18 +177,19 @@ export default function Show({ reunion, quorum, copropietarios = [], votaciones:
     useEffect(() => {
         const channel = echo.channel(`reunion.${reunion.id}`)
 
-        channel.listen('.VotacionModificada', (e) => {
+        channel.listen('VotacionModificada', (e) => {
             if (e.accion === 'created') {
                 setVotaciones(prev => [...prev, {
                     id: e.votacion_id,
                     pregunta: e.pregunta,
+                    descripcion: e.descripcion,
                     opciones: e.opciones,
                     estado: e.estado,
                 }])
             } else if (e.accion === 'updated') {
                 setVotaciones(prev => prev.map(v =>
                     v.id === e.votacion_id
-                        ? { ...v, pregunta: e.pregunta, opciones: e.opciones, estado: e.estado }
+                        ? { ...v, pregunta: e.pregunta, descripcion: e.descripcion, opciones: e.opciones, estado: e.estado }
                         : v
                 ))
             } else if (e.accion === 'deleted') {
@@ -171,17 +223,31 @@ export default function Show({ reunion, quorum, copropietarios = [], votaciones:
                                 className="text-sm bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition">
                                 Enviar convocatoria
                             </button>
-                            <button onClick={() => accion(`/admin/reuniones/${reunion.id}/iniciar`)}
+                            <button onClick={() => accionConObservacion(`/admin/reuniones/${reunion.id}/ante-sala`, 'Observación para abrir ante sala')}
                                 className="text-sm bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition">
-                                Iniciar
+                                Abrir ante sala
+                            </button>
+                            <button onClick={() => accionConObservacion(`/admin/reuniones/${reunion.id}/cancelar`, 'Motivo de cancelación')}
+                                className="text-sm border border-red-300 text-red-600 px-4 py-2 rounded-lg hover:bg-red-50 transition">
+                                Cancelar
                             </button>
                         </>
                     )}
-                    {reunion.estado === 'convocada' && (
-                        <button onClick={() => accion(`/admin/reuniones/${reunion.id}/iniciar`)}
-                            className="text-sm bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition">
-                            Iniciar reunión
-                        </button>
+                    {reunion.estado === 'ante_sala' && (
+                        <>
+                            <button onClick={() => accionConObservacion(`/admin/reuniones/${reunion.id}/iniciar`, 'Observación para iniciar')}
+                                className="text-sm bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition">
+                                Iniciar reunión
+                            </button>
+                            <button onClick={() => accionConObservacion(`/admin/reuniones/${reunion.id}/reprogramar`, 'Motivo de reprogramación')}
+                                className="text-sm border border-gray-300 text-gray-600 px-4 py-2 rounded-lg hover:bg-gray-50 transition">
+                                Reprogramar
+                            </button>
+                            <button onClick={() => accionConObservacion(`/admin/reuniones/${reunion.id}/cancelar`, 'Motivo de cancelación')}
+                                className="text-sm border border-red-300 text-red-600 px-4 py-2 rounded-lg hover:bg-red-50 transition">
+                                Cancelar
+                            </button>
+                        </>
                     )}
                     {reunion.estado === 'en_curso' && (
                         <>
@@ -189,9 +255,25 @@ export default function Show({ reunion, quorum, copropietarios = [], votaciones:
                                 className="text-sm bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition">
                                 Panel de conducción
                             </Link>
-                            <button onClick={() => accion(`/admin/reuniones/${reunion.id}/finalizar`)}
+                            <button onClick={() => accionConObservacion(`/admin/reuniones/${reunion.id}/suspender`, 'Motivo de suspensión')}
+                                className="text-sm border border-yellow-400 text-yellow-700 px-4 py-2 rounded-lg hover:bg-yellow-50 transition">
+                                Suspender
+                            </button>
+                            <button onClick={() => accionConObservacion(`/admin/reuniones/${reunion.id}/finalizar`, 'Observación para finalizar')}
                                 className="text-sm bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition">
                                 Finalizar
+                            </button>
+                        </>
+                    )}
+                    {reunion.estado === 'suspendida' && (
+                        <>
+                            <button onClick={() => accionConObservacion(`/admin/reuniones/${reunion.id}/reactivar`, 'Observación para reactivar')}
+                                className="text-sm bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition">
+                                Reactivar
+                            </button>
+                            <button onClick={() => accionConObservacion(`/admin/reuniones/${reunion.id}/cancelar`, 'Motivo de cancelación')}
+                                className="text-sm border border-red-300 text-red-600 px-4 py-2 rounded-lg hover:bg-red-50 transition">
+                                Cancelar
                             </button>
                         </>
                     )}
@@ -354,8 +436,11 @@ export default function Show({ reunion, quorum, copropietarios = [], votaciones:
                                     <span className={`text-xs px-2 py-0.5 rounded-full font-medium flex-shrink-0 ${VOTACION_BADGE[v.estado] ?? 'bg-gray-100 text-gray-600'}`}>
                                         {v.estado.toUpperCase().slice(0, 4)}
                                     </span>
-                                    <span className="text-sm text-gray-800 flex-1 truncate">{v.pregunta}</span>
-                                    {v.estado === 'pendiente' && (
+                                    <div className="flex-1 min-w-0">
+                                        <span className="text-sm text-gray-800 truncate block">{v.pregunta}</span>
+                                        {v.descripcion && <span className="text-xs text-gray-400 truncate block">{v.descripcion}</span>}
+                                    </div>
+                                    {v.estado === 'creada' && (
                                         <div className="flex gap-2 flex-shrink-0">
                                             <button
                                                 onClick={() => { setEditingId(v.id); setShowCreateForm(false) }}
@@ -377,6 +462,13 @@ export default function Show({ reunion, quorum, copropietarios = [], votaciones:
                     ))}
                 </div>
             </div>
+            {modal && (
+                <ModalObservacion
+                    titulo={modal.titulo}
+                    onConfirm={confirmarAccion}
+                    onCancel={() => setModal(null)}
+                />
+            )}
         </AdminLayout>
     )
 }

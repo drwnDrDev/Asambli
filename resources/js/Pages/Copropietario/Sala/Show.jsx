@@ -3,9 +3,16 @@ import { router } from '@inertiajs/react'
 import SalaLayout from '@/Layouts/SalaLayout'
 import echo from '@/echo'
 
-export default function SalaShow({ reunion, quorum: initialQuorum, poderes = [], yaVotoPor = [] }) {
+export default function SalaShow({ reunion, quorum: initialQuorum, poderes = [], yaVotoPor = [], votacionAbierta = null }) {
     const [quorum, setQuorum] = useState(initialQuorum)
-    const [votacionActiva, setVotacionActiva] = useState(null)
+    const [votacionActiva, setVotacionActiva] = useState(
+        votacionAbierta ? {
+            votacion_id: votacionAbierta.id,
+            pregunta: votacionAbierta.pregunta,
+            estado: votacionAbierta.estado,
+            opciones: votacionAbierta.opciones ?? [],
+        } : null
+    )
     const [votando, setVotando] = useState(false)
     const [votosEmitidos, setVotosEmitidos] = useState(yaVotoPor)
     const [aviso, setAviso] = useState(null)
@@ -13,20 +20,26 @@ export default function SalaShow({ reunion, quorum: initialQuorum, poderes = [],
     useEffect(() => {
         const channel = echo.channel(`reunion.${reunion.id}`)
 
-        channel.listen('.QuorumActualizado', (e) => setQuorum(e.quorumData))
-        channel.listen('.EstadoVotacionCambiado', (e) => {
+        channel.listen('QuorumActualizado', (e) => setQuorum(e.quorumData))
+        channel.listen('EstadoVotacionCambiado', (e) => {
             if (e.estado === 'abierta') {
                 setVotacionActiva(e)
             } else {
                 setVotacionActiva(null)
             }
         })
-        channel.listen('.AvisoEnviado', (e) => {
+        channel.listen('AvisoEnviado', (e) => {
             setAviso({ mensaje: e.mensaje, ts: e.enviado_at })
             setTimeout(() => setAviso(null), 10000)
         })
 
-        return () => echo.leave(`reunion.${reunion.id}`)
+        // Unirse al canal de presencia para aparecer como conectado en la vista del admin
+        echo.join(`presence-reunion.${reunion.id}`)
+
+        return () => {
+            echo.leave(`reunion.${reunion.id}`)
+            echo.leave(`presence-reunion.${reunion.id}`)
+        }
     }, [reunion.id])
 
     const emitirVoto = (opcionId, enNombreDeId = null) => {

@@ -6,11 +6,11 @@ use Illuminate\Broadcasting\Channel;
 use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Broadcasting\PresenceChannel;
 use Illuminate\Broadcasting\PrivateChannel;
-use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
+use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 
-class EstadoVotacionCambiado implements ShouldBroadcast
+class EstadoVotacionCambiado implements ShouldBroadcastNow
 {
     use Dispatchable;
 
@@ -25,8 +25,12 @@ class EstadoVotacionCambiado implements ShouldBroadcast
     {
         return [
             'votacion_id' => $this->votacion->id,
-            'estado' => $this->votacion->estado,
-            'titulo' => $this->votacion->titulo,
+            'estado'      => $this->votacion->estado,
+            'pregunta'    => $this->votacion->pregunta,
+            'opciones'    => $this->votacion->opciones->map(fn($o) => [
+                'id'    => $o->id,
+                'texto' => $o->texto,
+            ])->values()->all(),
         ];
     }
 }

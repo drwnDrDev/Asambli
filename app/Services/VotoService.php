@@ -28,7 +28,7 @@ class VotoService
                 // 2. Verificar quórum
                 $quorumService = app(QuorumService::class);
                 $quorum = $quorumService->calcular($votacion->reunion);
-                if (!$quorum['tiene_quorum']) {
+                if (!$quorum['tiene_quorum'] && !config('app.bypass_quorum')) {
                     throw new \Exception('No hay quórum suficiente para votar.');
                 }
 

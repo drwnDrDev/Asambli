@@ -41,7 +41,7 @@ class SalaReunionController extends Controller
                 ->get()
             : collect();
 
-        $votacionAbierta = $reunion->votaciones()->where('estado', 'abierta')->first();
+        $votacionAbierta = $reunion->votaciones()->with('opciones')->where('estado', 'abierta')->first();
         $yaVotoPor = [];
         if ($votacionAbierta && $copropietario) {
             $yaVotoPor = Voto::withoutGlobalScopes()
@@ -55,7 +55,7 @@ class SalaReunionController extends Controller
                 ->toArray();
         }
 
-        return Inertia::render('Copropietario/Sala/Show', compact('reunion', 'quorum', 'poderes', 'yaVotoPor'));
+        return Inertia::render('Copropietario/Sala/Show', compact('reunion', 'quorum', 'poderes', 'yaVotoPor', 'votacionAbierta'));
     }
 
     public function historial()

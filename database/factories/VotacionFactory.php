@@ -19,7 +19,7 @@ class VotacionFactory extends Factory
         return [
             'tenant_id' => fn() => app()->has('current_tenant') ? app('current_tenant')->id : \App\Models\Tenant::factory(),
             'reunion_id' => \App\Models\Reunion::factory(),
-            'titulo' => fake()->sentence(3),
+            'pregunta' => fake()->sentence(3) . '?',
             'tipo' => 'si_no',
             'es_secreta' => true,
             'estado' => 'creada',

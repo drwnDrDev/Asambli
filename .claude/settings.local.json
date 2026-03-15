@@ -47,7 +47,8 @@
       "Bash(cd c:/drwnDev/ASAMBLI && grep -A5 '\"autoload\"' composer.json)",
       "Bash(find:*)",
       "Bash(grep:*)",
-      "Bash(git:*)"
+      "Bash(git:*)",
+      "Bash(curl:*)"
     ]
   }
 }
