@@ -51,5 +51,7 @@ class ReunionTransicionService
             'observacion' => $observacion,
             'metadata'    => array_merge($metadata, ['estado_anterior' => $estadoActual->value]),
         ]);
+
+        broadcast(new \App\Events\EstadoReunionCambiado($reunion, $nuevoEstado->value));
     }
 }
