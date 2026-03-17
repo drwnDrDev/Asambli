@@ -1,152 +1,542 @@
-import { useState, useEffect } from 'react'
+// resources/js/Pages/Copropietario/Sala/Show.jsx
+import { useState, useEffect, useRef } from 'react'
 import { router } from '@inertiajs/react'
 import SalaLayout from '@/Layouts/SalaLayout'
 import echo from '@/echo'
 
-export default function SalaShow({ reunion, quorum: initialQuorum, poderes = [], yaVotoPor = [], votacionAbierta = null }) {
-    const [quorum, setQuorum] = useState(initialQuorum)
-    const [votacionActiva, setVotacionActiva] = useState(
-        votacionAbierta ? {
-            votacion_id: votacionAbierta.id,
-            pregunta: votacionAbierta.pregunta,
-            estado: votacionAbierta.estado,
-            opciones: votacionAbierta.opciones ?? [],
-        } : null
+// ─── helpers ─────────────────────────────────────────────────────────────────
+
+const TERMINAL_STATES = ['finalizada', 'cancelada', 'reprogramada']
+
+function calcPct(pesoTotal, allResultados) {
+    const suma = allResultados.reduce((acc, r) => acc + r.peso_total, 0)
+    if (!suma) return 0
+    return Math.round((pesoTotal / suma) * 100 * 10) / 10
+}
+
+function formatTime(isoString) {
+    if (!isoString) return ''
+    return new Date(isoString).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' })
+}
+
+// ─── sub-components ───────────────────────────────────────────────────────────
+
+function ConnectionDot({ status }) {
+    const colors = {
+        connected:     'bg-emerald-400',
+        reconnecting:  'bg-orange-400 animate-pulse',
+        disconnected:  'bg-red-500',
+    }
+    const labels = {
+        connected:    'Conectado',
+        reconnecting: 'Reconectando…',
+        disconnected: 'Sin conexión',
+    }
+    return (
+        <span className="flex items-center gap-1.5 text-xs">
+            <span className={`w-2 h-2 rounded-full ${colors[status]}`} />
+            <span style={{ color: 'var(--sala-text-muted)' }}>{labels[status]}</span>
+        </span>
     )
-    const [votando, setVotando] = useState(false)
-    const [votosEmitidos, setVotosEmitidos] = useState(yaVotoPor)
-    const [aviso, setAviso] = useState(null)
+}
 
-    useEffect(() => {
-        const channel = echo.channel(`reunion.${reunion.id}`)
+function EstadoBadge({ estado }) {
+    const map = {
+        en_curso:      { label: 'EN CURSO',      cls: 'text-emerald-400 border-emerald-800 bg-emerald-950/60' },
+        ante_sala:     { label: 'ANTE SALA',      cls: 'text-blue-400 border-blue-800 bg-blue-950/60' },
+        suspendida:    { label: 'SUSPENDIDA',     cls: 'text-orange-400 border-orange-800 bg-orange-950/60' },
+        finalizada:    { label: 'FINALIZADA',     cls: 'text-red-400 border-red-900 bg-red-950/40' },
+        cancelada:     { label: 'CANCELADA',      cls: 'text-red-400 border-red-900 bg-red-950/40' },
+        reprogramada:  { label: 'REPROGRAMADA',   cls: 'text-red-400 border-red-900 bg-red-950/40' },
+    }
+    const { label, cls } = map[estado] ?? { label: estado?.toUpperCase(), cls: 'text-slate-400 border-slate-700' }
+    return (
+        <span className={`text-[10px] font-bold tracking-widest px-2 py-0.5 rounded border ${cls}`}>
+            {label}
+        </span>
+    )
+}
 
-        channel.listen('QuorumActualizado', (e) => setQuorum(e.quorumData))
-        channel.listen('EstadoVotacionCambiado', (e) => {
-            if (e.estado === 'abierta') {
-                setVotacionActiva(e)
-            } else {
-                setVotacionActiva(null)
-            }
-        })
-        channel.listen('AvisoEnviado', (e) => {
-            setAviso({ mensaje: e.mensaje, ts: e.enviado_at })
-            setTimeout(() => setAviso(null), 10000)
-        })
+function QuorumPill({ quorum }) {
+    const pct = quorum?.porcentaje_presente ?? 0
+    const ok = quorum?.tiene_quorum
+    return (
+        <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${ok ? 'bg-emerald-900/50 text-emerald-400' : 'bg-slate-800 text-slate-400'}`}>
+            {pct}% Q
+        </span>
+    )
+}
 
-        // Unirse al canal de presencia para aparecer como conectado en la vista del admin
-        echo.join(`presence-reunion.${reunion.id}`)
+function StatusBar({ connStatus, estadoReunion, quorum }) {
+    return (
+        <div
+            className="sticky top-0 z-30 flex items-center justify-between px-4 py-2.5 border-b"
+            style={{ background: '#0c111d', borderColor: 'var(--sala-border)' }}
+        >
+            <ConnectionDot status={connStatus} />
+            <EstadoBadge estado={estadoReunion} />
+            <QuorumPill quorum={quorum} />
+        </div>
+    )
+}
 
-        return () => {
-            echo.leave(`reunion.${reunion.id}`)
-            echo.leave(`presence-reunion.${reunion.id}`)
-        }
-    }, [reunion.id])
+function ConfirmModal({ opcion, onConfirm, onCancel, loading }) {
+    return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.75)' }}>
+            <div
+                className="w-full max-w-sm rounded-2xl p-6 shadow-2xl"
+                style={{ background: 'var(--sala-surface-raised)', border: '1px solid var(--sala-border)' }}
+            >
+                <h3 className="text-base font-semibold mb-4" style={{ color: 'var(--sala-text)' }}>
+                    Confirmar voto
+                </h3>
+                <p className="text-sm mb-3" style={{ color: 'var(--sala-text-muted)' }}>Vas a votar por:</p>
+                <div
+                    className="rounded-xl px-4 py-3 mb-4 text-sm font-semibold flex items-center gap-2"
+                    style={{
+                        border: '1.5px solid var(--sala-amber-border)',
+                        background: 'var(--sala-amber-glow)',
+                        color: 'var(--sala-amber)',
+                    }}
+                >
+                    <span>✦</span>
+                    <span>{opcion.texto}</span>
+                </div>
+                <p className="text-xs mb-6" style={{ color: 'var(--sala-text-muted)' }}>
+                    Esta acción no se puede deshacer.
+                </p>
+                <div className="flex gap-3">
+                    <button
+                        onClick={onCancel}
+                        disabled={loading}
+                        className="flex-1 py-2.5 rounded-xl text-sm font-medium border transition disabled:opacity-50"
+                        style={{ borderColor: 'var(--sala-border)', color: 'var(--sala-text-muted)' }}
+                    >
+                        Cancelar
+                    </button>
+                    <button
+                        onClick={onConfirm}
+                        disabled={loading}
+                        className="flex-1 py-2.5 rounded-xl text-sm font-semibold transition disabled:opacity-50 active:scale-95"
+                        style={{ background: 'var(--sala-amber)', color: '#0a0f1e' }}
+                    >
+                        {loading ? 'Enviando…' : 'Confirmar →'}
+                    </button>
+                </div>
+            </div>
+        </div>
+    )
+}
 
-    const emitirVoto = (opcionId, enNombreDeId = null) => {
-        if (votando) return
-        setVotando(true)
+function ResultBar({ opcion, resultados, esVotada }) {
+    const pct = calcPct(opcion.peso_total, resultados)
+    return (
+        <div className="mb-3">
+            <div className="flex justify-between items-center mb-1">
+                <span className="text-sm font-medium" style={{ color: esVotada ? 'var(--sala-green)' : 'var(--sala-text)' }}>
+                    {esVotada && '✓ '}{opcion.texto}
+                </span>
+                <span className="text-xs tabular-nums" style={{ color: 'var(--sala-text-muted)' }}>{pct}%</span>
+            </div>
+            <div className="h-2 rounded-full overflow-hidden" style={{ background: 'var(--sala-border)' }}>
+                <div
+                    className="h-full rounded-full transition-all duration-700"
+                    style={{
+                        width: `${pct}%`,
+                        background: esVotada ? 'var(--sala-green)' : 'var(--sala-amber)',
+                    }}
+                />
+            </div>
+        </div>
+    )
+}
 
-        router.post('/votos', {
-            votacion_id: votacionActiva.votacion_id,
-            opcion_id: opcionId,
-            en_nombre_de: enNombreDeId,
-        }, {
-            preserveScroll: true,
-            onSuccess: () => {
-                setVotosEmitidos(prev => [...prev, enNombreDeId ?? 'propio'])
-            },
-            onFinish: () => setVotando(false),
-        })
+function VotacionCard({ votacionActiva, resultados, yaVotoPor, poderes, onVotar, loading }) {
+    const [pendingOpcion, setPendingOpcion] = useState(null)
+    const yaVotoPropio = yaVotoPor.includes('propio')
+
+    if (!votacionActiva) {
+        return (
+            <div
+                className="rounded-2xl p-10 text-center mb-6"
+                style={{ background: 'var(--sala-surface)', border: '1px solid var(--sala-border)' }}
+            >
+                <div className="text-4xl mb-4">⏳</div>
+                <p className="text-sm" style={{ color: 'var(--sala-text-muted)' }}>
+                    El administrador abrirá la siguiente votación.
+                </p>
+            </div>
+        )
     }
 
     return (
         <>
-        {aviso && (
-            <div className="fixed top-4 left-1/2 -translate-x-1/2 bg-yellow-400 text-yellow-900 font-semibold rounded-xl px-6 py-4 shadow-2xl z-50 max-w-sm w-full mx-4 flex items-start gap-3">
-                <span className="text-lg">📢</span>
-                <span className="flex-1 text-sm">{aviso.mensaje}</span>
-                <button onClick={() => setAviso(null)} className="text-yellow-700 hover:text-yellow-900 text-lg font-bold leading-none">✕</button>
-            </div>
-        )}
-        <SalaLayout>
-            <div className="mb-4">
-                <p className="text-slate-400 text-xs uppercase tracking-wide">{reunion.tipo}</p>
-                <h1 className="text-lg font-bold">{reunion.titulo}</h1>
-            </div>
+            {pendingOpcion && (
+                <ConfirmModal
+                    opcion={pendingOpcion}
+                    loading={loading}
+                    onConfirm={() => {
+                        onVotar(pendingOpcion.id, pendingOpcion._enNombreDe ?? null)
+                        setPendingOpcion(null)
+                    }}
+                    onCancel={() => setPendingOpcion(null)}
+                />
+            )}
 
-            {/* Quórum */}
-            <div className={`rounded-xl p-4 mb-6 text-center ${quorum?.tiene_quorum ? 'bg-green-900/40 border border-green-700' : 'bg-red-900/40 border border-red-700'}`}>
-                <p className="text-xs text-slate-400 mb-1">Quórum actual</p>
-                <p className="text-3xl font-bold">{quorum?.porcentaje_presente ?? 0}%</p>
-                <p className={`text-sm mt-1 ${quorum?.tiene_quorum ? 'text-green-400' : 'text-red-400'}`}>
-                    {quorum?.tiene_quorum ? '✓ Quórum alcanzado' : '✗ Sin quórum suficiente'}
+            <div
+                className="rounded-2xl p-5 mb-6"
+                style={{
+                    background: 'var(--sala-surface)',
+                    border: '1.5px solid var(--sala-amber-border)',
+                    boxShadow: '0 0 24px var(--sala-amber-glow)',
+                }}
+            >
+                <p className="text-[10px] font-bold tracking-widest mb-3" style={{ color: 'var(--sala-amber)' }}>
+                    VOTACIÓN ABIERTA
                 </p>
-                <p className="text-xs text-slate-500 mt-1">Requerido: {quorum?.quorum_requerido}%</p>
-            </div>
 
-            {/* Votación activa */}
-            {votacionActiva ? (
-                <div className="bg-slate-800 rounded-xl p-5">
-                    <p className="text-xs text-yellow-400 uppercase tracking-wide mb-1">Votación abierta</p>
-                    <h2 className="font-bold text-lg mb-4">{votacionActiva.pregunta ?? votacionActiva.titulo}</h2>
+                <h2
+                    className="text-xl font-semibold leading-snug mb-5"
+                    style={{ fontFamily: 'var(--sala-font-display)', color: 'var(--sala-text)' }}
+                >
+                    {votacionActiva.pregunta}
+                </h2>
 
-                    {/* Voto propio */}
-                    {!votosEmitidos.includes('propio') && (
-                        <div className="mb-5">
-                            <p className="text-xs text-slate-500 uppercase mb-2">Tu voto</p>
-                            <div className="space-y-2">
-                                {votacionActiva.opciones?.map(opcion => (
-                                    <button
-                                        key={opcion.id}
-                                        onClick={() => emitirVoto(opcion.id)}
-                                        disabled={votando}
-                                        className="w-full py-4 text-base font-semibold rounded-xl bg-blue-600 hover:bg-blue-500 active:scale-95 transition disabled:opacity-50"
-                                    >
-                                        {opcion.texto}
-                                    </button>
-                                ))}
-                            </div>
+                {!yaVotoPropio && (
+                    <div className="mb-5">
+                        <p className="text-[10px] uppercase tracking-widest mb-2" style={{ color: 'var(--sala-text-muted)' }}>Tu voto</p>
+                        <div className="space-y-2">
+                            {votacionActiva.opciones.map(opcion => (
+                                <button
+                                    key={opcion.id}
+                                    onClick={() => setPendingOpcion(opcion)}
+                                    disabled={loading}
+                                    className="w-full py-3.5 text-sm font-semibold rounded-xl transition active:scale-95 disabled:opacity-50"
+                                    style={{
+                                        background: 'var(--sala-surface-raised)',
+                                        border: '1px solid var(--sala-border)',
+                                        color: 'var(--sala-text)',
+                                    }}
+                                    onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--sala-amber)'}
+                                    onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--sala-border)'}
+                                >
+                                    {opcion.texto}
+                                </button>
+                            ))}
                         </div>
-                    )}
+                    </div>
+                )}
 
-                    {/* Votos como apoderado */}
-                    {poderes.map(poder => (
-                        !votosEmitidos.includes(poder.poderdante_id) && (
-                            <div key={poder.id} className="border-t border-slate-700 pt-4 mb-4">
-                                <p className="text-xs text-yellow-400 uppercase mb-2">
-                                    En nombre de: {poder.poderdante?.user?.name}
-                                </p>
+                {yaVotoPropio && resultados && (
+                    <div className="mb-4">
+                        {resultados.map(r => (
+                            <ResultBar
+                                key={r.opcion_id}
+                                opcion={r}
+                                resultados={resultados}
+                                esVotada={false}
+                            />
+                        ))}
+                        <p className="text-xs mt-3 text-center" style={{ color: 'var(--sala-green)' }}>
+                            ✓ Tu voto fue registrado
+                        </p>
+                    </div>
+                )}
+
+                {poderes.map(poder => {
+                    const yaVotoPoder = yaVotoPor.includes(poder.poderdante_id)
+                    return (
+                        <div key={poder.id} className="border-t pt-4 mt-4" style={{ borderColor: 'var(--sala-border)' }}>
+                            <p className="text-[10px] uppercase tracking-widest mb-2" style={{ color: 'var(--sala-amber)' }}>
+                                En nombre de: {poder.poderdante?.user?.name}
+                            </p>
+                            {!yaVotoPoder ? (
                                 <div className="space-y-2">
-                                    {votacionActiva.opciones?.map(opcion => (
+                                    {votacionActiva.opciones.map(opcion => (
                                         <button
                                             key={opcion.id}
-                                            onClick={() => emitirVoto(opcion.id, poder.poderdante_id)}
-                                            disabled={votando}
-                                            className="w-full py-3 text-sm font-medium rounded-xl bg-yellow-700 hover:bg-yellow-600 active:scale-95 transition disabled:opacity-50"
+                                            onClick={() => setPendingOpcion({ ...opcion, _enNombreDe: poder.poderdante_id })}
+                                            disabled={loading}
+                                            className="w-full py-3 text-sm font-medium rounded-xl transition active:scale-95 disabled:opacity-50"
+                                            style={{
+                                                background: 'var(--sala-surface-raised)',
+                                                border: '1px solid var(--sala-amber-border)',
+                                                color: 'var(--sala-text)',
+                                            }}
                                         >
                                             {opcion.texto}
                                         </button>
                                     ))}
                                 </div>
-                            </div>
-                        )
-                    ))}
+                            ) : (
+                                <p className="text-xs" style={{ color: 'var(--sala-green)' }}>✓ Voto registrado</p>
+                            )}
+                        </div>
+                    )
+                })}
+            </div>
+        </>
+    )
+}
 
-                    {votosEmitidos.length > 0 && (
-                        <p className="text-center text-green-400 text-sm mt-3">
-                            ✓ {votosEmitidos.length} voto(s) registrado(s)
+function FeedItem({ item }) {
+    const iconMap = {
+        en_curso:       { icon: '▶', color: 'var(--sala-green)',  bg: 'var(--sala-green-bg)' },
+        ante_sala:      { icon: '◉', color: 'var(--sala-blue)',   bg: 'var(--sala-blue-bg)' },
+        suspendida:     { icon: '⏸', color: 'var(--sala-orange)', bg: 'var(--sala-orange-bg)' },
+        finalizada:     { icon: '⏹', color: 'var(--sala-red)',    bg: 'var(--sala-red-bg)' },
+        cancelada:      { icon: '✕', color: 'var(--sala-red)',    bg: 'var(--sala-red-bg)' },
+        reprogramada:   { icon: '↺', color: 'var(--sala-red)',    bg: 'var(--sala-red-bg)' },
+    }
+    const estadoLabels = {
+        en_curso:     'Reunión iniciada',
+        ante_sala:    'Ante sala abierta',
+        suspendida:   'Reunión suspendida',
+        finalizada:   'Reunión finalizada',
+        cancelada:    'Reunión cancelada',
+        reprogramada: 'Reunión reprogramada',
+    }
+
+    if (item.tipo === 'estado_reunion') {
+        const { icon, color, bg } = iconMap[item.estado] ?? { icon: '●', color: 'var(--sala-text-muted)', bg: 'transparent' }
+        return (
+            <div className="flex items-center gap-3 py-2.5">
+                <span className="w-7 h-7 rounded-full flex items-center justify-center text-xs flex-shrink-0" style={{ background: bg, color }}>
+                    {icon}
+                </span>
+                <span className="text-sm flex-1" style={{ color: 'var(--sala-text-muted)' }}>
+                    {estadoLabels[item.estado] ?? item.estado}
+                </span>
+                <span className="text-xs tabular-nums flex-shrink-0" style={{ color: 'var(--sala-text-faint)' }}>
+                    {formatTime(item.timestamp)}
+                </span>
+            </div>
+        )
+    }
+
+    if (item.tipo === 'votacion_cerrada') {
+        return (
+            <div
+                className="rounded-xl p-3 my-1.5"
+                style={{ background: 'var(--sala-surface)', border: '1px solid var(--sala-border)' }}
+            >
+                <div className="flex items-start gap-2.5">
+                    <span className="text-base flex-shrink-0 mt-0.5">🗳</span>
+                    <div className="flex-1 min-w-0">
+                        <p className="text-xs font-medium truncate" style={{ color: 'var(--sala-text)' }}>
+                            {item.pregunta}
                         </p>
-                    )}
+                        <p className="text-xs mt-0.5" style={{ color: 'var(--sala-green)' }}>
+                            Ganó: {item.ganadora} ({item.ganadora_pct}%)
+                        </p>
+                    </div>
+                    <span className="text-xs tabular-nums flex-shrink-0" style={{ color: 'var(--sala-text-faint)' }}>
+                        {formatTime(item.timestamp)}
+                    </span>
                 </div>
-            ) : (
-                <div className="bg-slate-800 rounded-xl p-10 text-center">
-                    <div className="text-5xl mb-4">⏳</div>
-                    <p className="text-slate-400 text-sm">
-                        Esperando que el administrador abra una votación...
-                    </p>
+            </div>
+        )
+    }
+
+    if (item.tipo === 'aviso') {
+        return (
+            <div className="flex items-start gap-3 py-2.5">
+                <span className="text-base flex-shrink-0">📢</span>
+                <span className="text-sm flex-1" style={{ color: 'var(--sala-text-muted)' }}>{item.mensaje}</span>
+                <span className="text-xs tabular-nums flex-shrink-0" style={{ color: 'var(--sala-text-faint)' }}>
+                    {formatTime(item.timestamp)}
+                </span>
+            </div>
+        )
+    }
+
+    return null
+}
+
+function TerminalBanner({ estado, countdown }) {
+    const labels = {
+        finalizada:   'La reunión ha finalizado.',
+        cancelada:    'La reunión fue cancelada.',
+        reprogramada: 'La reunión fue reprogramada.',
+    }
+    return (
+        <div
+            className="fixed inset-x-0 top-0 z-40 px-4 py-3 text-center text-sm font-medium"
+            style={{ background: 'var(--sala-red)', color: '#fff' }}
+        >
+            {labels[estado] ?? 'La reunión terminó.'} Redirigiendo en {countdown}s…
+        </div>
+    )
+}
+
+// ─── main component ────────────────────────────────────────────────────────────
+
+export default function SalaShow({
+    reunion,
+    quorum: initialQuorum,
+    poderes = [],
+    yaVotoPor: initialYaVotoPor = [],
+    votacionAbierta = null,
+    resultadosActuales: initialResultados = null,
+    feedInicial = [],
+    estadoReunion: initialEstadoReunion,
+}) {
+    const [connStatus, setConnStatus]       = useState('connected')
+    const [quorum, setQuorum]               = useState(initialQuorum)
+    const [estadoReunion, setEstadoReunion] = useState(initialEstadoReunion)
+    const [votacionActiva, setVotacionActiva] = useState(
+        votacionAbierta ? {
+            votacion_id: votacionAbierta.id,
+            pregunta:    votacionAbierta.pregunta,
+            estado:      votacionAbierta.estado,
+            opciones:    votacionAbierta.opciones ?? [],
+        } : null
+    )
+    const [votando, setVotando]             = useState(false)
+    const [yaVotoPor, setYaVotoPor]         = useState(initialYaVotoPor)
+    const [resultados, setResultados]       = useState(initialResultados)
+    const [aviso, setAviso]                 = useState(null)
+    const [feed, setFeed]                   = useState([...feedInicial].reverse())
+    const [terminalCountdown, setTerminalCountdown] = useState(null)
+    const countdownRef = useRef(null)
+    const votacionActivaRef = useRef(votacionActiva)
+    useEffect(() => { votacionActivaRef.current = votacionActiva }, [votacionActiva])
+
+    useEffect(() => {
+        const channel = echo.channel(`reunion.${reunion.id}`)
+
+        channel
+            .listen('QuorumActualizado', (e) => setQuorum(e.quorumData))
+            .listen('EstadoVotacionCambiado', (e) => {
+                if (e.estado === 'abierta') {
+                    setVotacionActiva(e)
+                    setResultados(null)
+                } else {
+                    setVotacionActiva(null)
+                    setResultados(null)
+                }
+            })
+            .listen('VotacionModificada', (e) => {
+                if (e.accion === 'updated' && votacionActivaRef.current?.votacion_id === e.votacion_id) {
+                    setVotacionActiva(prev => ({
+                        ...prev,
+                        pregunta: e.pregunta,
+                        opciones: e.opciones ?? prev.opciones,
+                    }))
+                }
+            })
+            .listen('AvisoEnviado', (e) => {
+                setAviso({ mensaje: e.mensaje, ts: e.enviado_at })
+                setFeed(prev => [{ tipo: 'aviso', mensaje: e.mensaje, timestamp: e.enviado_at }, ...prev])
+                setTimeout(() => setAviso(null), 10000)
+            })
+            .listen('ResultadosPublicosVotacion', (e) => {
+                if (votacionActivaRef.current && e.votacion_id === votacionActivaRef.current.votacion_id) {
+                    setResultados(e.resultados)
+                }
+            })
+            .listen('EstadoReunionCambiado', (e) => {
+                setEstadoReunion(e.estado)
+                setFeed(prev => [{ tipo: 'estado_reunion', estado: e.estado, timestamp: e.timestamp }, ...prev])
+                if (TERMINAL_STATES.includes(e.estado)) {
+                    startTerminalCountdown()
+                }
+            })
+
+        echo.connector.pusher?.connection?.bind('connected',      () => setConnStatus('connected'))
+        echo.connector.pusher?.connection?.bind('connecting',     () => setConnStatus('reconnecting'))
+        echo.connector.pusher?.connection?.bind('disconnected',   () => setConnStatus('disconnected'))
+        echo.connector.pusher?.connection?.bind('unavailable',    () => setConnStatus('disconnected'))
+
+        echo.join(`presence-reunion.${reunion.id}`)
+
+        return () => {
+            echo.leave(`reunion.${reunion.id}`)
+            echo.leave(`presence-reunion.${reunion.id}`)
+            if (countdownRef.current) clearInterval(countdownRef.current)
+        }
+    }, [reunion.id])
+
+    function startTerminalCountdown() {
+        setTerminalCountdown(10)
+        countdownRef.current = setInterval(() => {
+            setTerminalCountdown(prev => {
+                if (prev <= 1) {
+                    clearInterval(countdownRef.current)
+                    router.visit('/historial')
+                    return 0
+                }
+                return prev - 1
+            })
+        }, 1000)
+    }
+
+    const emitirVoto = (opcionId, enNombreDeId = null) => {
+        if (votando) return
+        setVotando(true)
+        router.post('/votos', {
+            votacion_id:  votacionActiva.votacion_id,
+            opcion_id:    opcionId,
+            en_nombre_de: enNombreDeId,
+        }, {
+            preserveScroll: true,
+            onSuccess: () => setYaVotoPor(prev => [...prev, enNombreDeId ?? 'propio']),
+            onFinish:  () => setVotando(false),
+        })
+    }
+
+    const isTerminal = TERMINAL_STATES.includes(estadoReunion)
+
+    return (
+        <div style={{ minHeight: '100dvh', background: 'var(--sala-bg)', fontFamily: 'var(--sala-font-body)', color: 'var(--sala-text)' }}>
+            {aviso && (
+                <div className="fixed top-16 left-1/2 -translate-x-1/2 z-50 w-[calc(100%-2rem)] max-w-sm rounded-xl px-4 py-3 shadow-2xl flex items-start gap-3"
+                    style={{ background: 'var(--sala-amber)', color: '#0a0f1e' }}
+                >
+                    <span className="text-lg">📢</span>
+                    <span className="flex-1 text-sm font-medium">{aviso.mensaje}</span>
+                    <button onClick={() => setAviso(null)} className="font-bold text-lg leading-none opacity-60 hover:opacity-100">✕</button>
                 </div>
             )}
-        </SalaLayout>
-        </>
+
+            {isTerminal && terminalCountdown !== null && (
+                <TerminalBanner estado={estadoReunion} countdown={terminalCountdown} />
+            )}
+
+            <StatusBar connStatus={connStatus} estadoReunion={estadoReunion} quorum={quorum} />
+
+            <div className="px-4 py-5 max-w-lg mx-auto">
+                <div className="mb-5">
+                    <p className="text-xs uppercase tracking-wide mb-0.5" style={{ color: 'var(--sala-text-muted)' }}>
+                        {reunion.tipo}
+                    </p>
+                    <h1 className="text-lg font-semibold" style={{ color: 'var(--sala-text)' }}>
+                        {reunion.titulo}
+                    </h1>
+                </div>
+
+                <VotacionCard
+                    votacionActiva={votacionActiva}
+                    resultados={resultados}
+                    yaVotoPor={yaVotoPor}
+                    poderes={poderes}
+                    onVotar={emitirVoto}
+                    loading={votando}
+                />
+
+                {feed.length > 0 && (
+                    <div>
+                        <p className="text-[10px] uppercase tracking-widest mb-3" style={{ color: 'var(--sala-text-faint)' }}>
+                            Cronología
+                        </p>
+                        <div className="divide-y" style={{ borderColor: 'var(--sala-border)' }}>
+                            {feed.map((item, i) => (
+                                <FeedItem key={i} item={item} />
+                            ))}
+                        </div>
+                    </div>
+                )}
+            </div>
+        </div>
     )
 }
