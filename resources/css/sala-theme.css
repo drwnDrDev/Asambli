@@ -1,0 +1,35 @@
+/* resources/css/sala-theme.css */
+@import url('https://fonts.bunny.net/css?family=fraunces:400,600,700ital&display=swap');
+
+:root {
+  /* ── Sala dark background ─────────────── */
+  --sala-bg:             #0a0f1e;
+  --sala-surface:        #111827;
+  --sala-surface-raised: #1a2235;
+  --sala-border:         #1e2d45;
+
+  /* ── Accent: amber (votación activa) ───── */
+  --sala-amber:          #f59e0b;
+  --sala-amber-dark:     #d97706;
+  --sala-amber-glow:     rgba(245, 158, 11, 0.15);
+  --sala-amber-border:   rgba(245, 158, 11, 0.4);
+
+  /* ── Status colors ──────────────────────── */
+  --sala-green:          #10b981;
+  --sala-green-bg:       rgba(16, 185, 129, 0.12);
+  --sala-orange:         #f97316;
+  --sala-orange-bg:      rgba(249, 115, 22, 0.12);
+  --sala-red:            #ef4444;
+  --sala-red-bg:         rgba(239, 68, 68, 0.10);
+  --sala-blue:           #3b82f6;
+  --sala-blue-bg:        rgba(59, 130, 246, 0.10);
+
+  /* ── Text ───────────────────────────────── */
+  --sala-text:           #e8edf5;
+  --sala-text-muted:     #6b7a99;
+  --sala-text-faint:     #3d4f6e;
+
+  /* ── Typography ─────────────────────────── */
+  --sala-font-display:   'Fraunces', Georgia, serif;
+  --sala-font-body:      'DM Sans', sans-serif;
+}

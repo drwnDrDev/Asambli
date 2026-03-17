@@ -1,4 +1,5 @@
 @import './admin-theme.css';
+@import './sala-theme.css';
 
 @tailwind base;
 @tailwind components;
