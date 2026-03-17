@@ -108,3 +108,42 @@ it('historial includes finalizada, cancelada, and reprogramada reuniones', funct
     $props = $response->json('props');
     expect(count($props['reuniones']))->toBe(3);
 });
+
+it('show includes resultadosActuales with correct format when copropietario already voted', function () {
+    $tenant = Tenant::factory()->create();
+    app()->instance('current_tenant', $tenant);
+
+    $user = User::factory()->create(['tenant_id' => $tenant->id, 'rol' => 'copropietario']);
+    $copro = Copropietario::factory()->create(['user_id' => $user->id, 'tenant_id' => $tenant->id]);
+
+    $reunion = Reunion::factory()->create(['tenant_id' => $tenant->id, 'estado' => ReunionEstado::EnCurso]);
+    $votacion = Votacion::factory()->create(['reunion_id' => $reunion->id, 'tenant_id' => $tenant->id, 'estado' => 'abierta']);
+    $opcion1 = \App\Models\OpcionVotacion::create(['votacion_id' => $votacion->id, 'texto' => 'SÍ', 'orden' => 1]);
+    \App\Models\OpcionVotacion::create(['votacion_id' => $votacion->id, 'texto' => 'NO', 'orden' => 2]);
+
+    // Cast a vote so yaVotoPor is not empty
+    \App\Models\Voto::create([
+        'tenant_id'           => $tenant->id,
+        'votacion_id'         => $votacion->id,
+        'copropietario_id'    => $copro->id,
+        'en_nombre_de'        => null,
+        'opcion_id'           => $opcion1->id,
+        'peso'                => 0.5,
+        'ip_address'          => '127.0.0.1',
+        'user_agent'          => 'test',
+        'hash_verificacion'   => 'hash123',
+    ]);
+
+    $response = $this->actingAs($user)
+        ->withHeaders(['X-Inertia' => 'true', 'X-Inertia-Version' => inertiaVersion()])
+        ->get("/sala/{$reunion->id}");
+
+    $props = $response->json('props');
+    expect($props['resultadosActuales'])->not->toBeNull()
+        ->and($props['resultadosActuales'])->toBeArray()
+        ->and(count($props['resultadosActuales']))->toBe(2);
+
+    foreach ($props['resultadosActuales'] as $resultado) {
+        expect($resultado)->toHaveKeys(['opcion_id', 'texto', 'count', 'peso_total']);
+    }
+});
