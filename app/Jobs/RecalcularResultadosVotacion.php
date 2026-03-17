@@ -42,5 +42,6 @@ class RecalcularResultadosVotacion implements ShouldQueue
         }
 
         broadcast(new \App\Events\ResultadosVotacionActualizados($votacion, $resultados->toArray(), $ultimoVotoUnidad));
+        broadcast(new \App\Events\ResultadosPublicosVotacion($votacion, $resultados->toArray()));
     }
 }
