@@ -78,7 +78,24 @@ class ReunionController extends Controller
             ->map(fn($c) => array_merge($c->toArray(), ['asistencia' => in_array($c->id, $asistencias)]));
         $votaciones = $reunion->votaciones()->with('opciones')->get();
 
-        return Inertia::render('Admin/Reuniones/Conducir', compact('reunion', 'quorum', 'copropietarios', 'votaciones'));
+        // Resultados actuales para cualquier votación abierta
+        $resultadosIniciales = [];
+        $votacionAbierta = $votaciones->firstWhere('estado', 'abierta');
+        if ($votacionAbierta) {
+            $resultadosIniciales[$votacionAbierta->id] = $votacionAbierta->opciones->map(function ($opcion) use ($votacionAbierta) {
+                $votos = \App\Models\Voto::withoutGlobalScopes()
+                    ->where('votacion_id', $votacionAbierta->id)
+                    ->where('opcion_id', $opcion->id);
+                return [
+                    'opcion_id'  => $opcion->id,
+                    'texto'      => $opcion->texto,
+                    'count'      => $votos->count(),
+                    'peso_total' => (float) $votos->sum('peso'),
+                ];
+            })->toArray();
+        }
+
+        return Inertia::render('Admin/Reuniones/Conducir', compact('reunion', 'quorum', 'copropietarios', 'votaciones', 'resultadosIniciales'));
     }
 
     public function edit(Reunion $reunion)

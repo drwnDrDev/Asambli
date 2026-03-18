@@ -75,8 +75,15 @@ class VotoService
                 ]);
             });
 
-            // 8. Disparar job para recalcular y broadcast (fuera de la transacción)
-            RecalcularResultadosVotacion::dispatch($votacion->id, $copropietario->id);
+            // 8. Recalcular y broadcast sincrónicamente (sin depender de queue worker)
+            try {
+                RecalcularResultadosVotacion::dispatchSync($votacion->id, $copropietario->id);
+            } catch (\Exception $broadcastEx) {
+                \Illuminate\Support\Facades\Log::error('broadcast_resultados_failed', [
+                    'votacion_id' => $votacion->id,
+                    'error' => $broadcastEx->getMessage(),
+                ]);
+            }
 
             return ['success' => true];
 

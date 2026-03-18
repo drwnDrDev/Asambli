@@ -74,11 +74,11 @@ function ModalConectados({ conectados, onClose }) {
 }
 
 // ─── Conducir (Layout C) ───────────────────────────────────────────
-export default function Conducir({ reunion, quorum: initialQuorum, copropietarios = [], votaciones: initialVotaciones = [] }) {
+export default function Conducir({ reunion, quorum: initialQuorum, copropietarios = [], votaciones: initialVotaciones = [], resultadosIniciales = {} }) {
     const { flash, errors: pageErrors } = usePage().props
     const [quorum, setQuorum] = useState(initialQuorum)
     const [votaciones, setVotaciones] = useState(initialVotaciones)
-    const [resultados, setResultados] = useState({})
+    const [resultados, setResultados] = useState(resultadosIniciales)
     const [conectados, setConectados] = useState([])
     const [showConectados, setShowConectados] = useState(false)
     const [ticker, setTicker] = useState([])

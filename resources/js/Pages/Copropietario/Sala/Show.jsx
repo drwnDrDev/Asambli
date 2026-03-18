@@ -402,6 +402,11 @@ export default function SalaShow({
     const votacionActivaRef = useRef(votacionActiva)
     useEffect(() => { votacionActivaRef.current = votacionActiva }, [votacionActiva])
 
+    // Sync resultados when Inertia refreshes props after voting
+    useEffect(() => {
+        setResultados(initialResultados)
+    }, [initialResultados])
+
     useEffect(() => {
         const channel = echo.channel(`reunion.${reunion.id}`)
 
