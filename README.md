@@ -25,11 +25,87 @@ Votaciones en tiempo real, quorum dinamico, reportes auditables con hash SHA-256
 
 Instala esto **en tu maquina host** antes de continuar:
 
-- [Git](https://git-scm.com/) + **Git Bash** (en Windows es obligatorio — no uses PowerShell ni CMD)
+- [Git](https://git-scm.com/)
 - [Docker Desktop](https://www.docker.com/products/docker-desktop/) con Docker Compose v2 incluido
 - Nada mas. Node, PHP y Composer corren **dentro del contenedor**.
 
-> **macOS / Linux:** reemplaza `WWWGROUP=1000 WWWUSER=1000` por los valores de `id -u` e `id -g` de tu usuario.
+Elige tu entorno segun tu sistema operativo:
+
+| Sistema | Opcion recomendada |
+|---------|-------------------|
+| Windows | **WSL2 + Ubuntu** (ver seccion abajo) — es la opcion mas estable |
+| Windows (alternativa) | Git Bash (MINGW64) — funciona pero con algunas limitaciones |
+| macOS / Linux | Terminal nativa |
+
+---
+
+## Entorno Windows — Opcion A: WSL2 (recomendado)
+
+WSL2 ofrece mejor rendimiento de I/O, compatibilidad total con scripts Unix y es el backend preferido de Docker Desktop en Windows.
+
+### 1. Habilitar WSL2
+
+Abre PowerShell como Administrador y ejecuta:
+
+```powershell
+wsl --install
+```
+
+Esto instala WSL2 con Ubuntu por defecto. Reinicia cuando lo pida.
+
+Si ya tienes WSL instalado, asegurate de estar en version 2:
+
+```powershell
+wsl --set-default-version 2
+wsl --list --verbose   # verifica que tu distro dice "2" en la columna VERSION
+```
+
+### 2. Configurar Docker Desktop para WSL2
+
+1. Abre Docker Desktop → **Settings → General** → activa **"Use the WSL 2 based engine"**
+2. Ve a **Settings → Resources → WSL Integration** → activa tu distro de Ubuntu
+
+Verifica desde dentro de WSL:
+
+```bash
+docker --version          # debe mostrar la version de Docker
+docker compose version    # debe mostrar v2.x
+```
+
+### 3. Clonar el repositorio dentro de WSL2
+
+> **Importante:** Clona el repo **dentro del filesystem de WSL2** (`~/` o `/home/tu-usuario/`), no en `/mnt/c/...`.
+> Trabajar en `/mnt/c/` tiene un rendimiento muy degradado y puede causar problemas con permisos.
+
+```bash
+# Dentro de la terminal WSL2 (Ubuntu):
+cd ~
+git clone <URL-del-repo> asambli
+cd asambli
+```
+
+### 4. Variables de usuario para Docker
+
+Dentro de WSL2 usa los valores reales de tu usuario:
+
+```bash
+id -u   # tu WWWUSER
+id -g   # tu WWWGROUP
+```
+
+En la mayoria de instalaciones nuevas de Ubuntu en WSL2 ambos son `1000`.
+Usa esos valores al levantar Docker (ver paso 3).
+
+---
+
+## Entorno Windows — Opcion B: Git Bash
+
+Si prefieres no usar WSL2, puedes trabajar directamente desde Git Bash (MINGW64):
+
+- Instala [Git for Windows](https://gitforwindows.org/) — incluye Git Bash
+- Usa siempre Git Bash, **nunca PowerShell ni CMD**
+- El prefijo `WWWGROUP=1000 WWWUSER=1000` es fijo para esta opcion
+- Clona el repo en una ruta sin espacios, por ejemplo `C:\drwnDev\asambli`
 
 ---
 
@@ -50,8 +126,16 @@ Copia el archivo de ejemplo:
 cp .env.example .env
 ```
 
-Luego edita `.env` y reemplaza **todo el bloque de configuracion** con los valores de abajo.
-Estas son las variables minimas para dev local con Docker:
+El archivo `.env.example` ya contiene los valores correctos para desarrollo local con Docker.
+Solo necesitas ajustar lo siguiente segun tu caso:
+
+| Variable | Cuando cambiarla |
+|----------|-----------------|
+| `APP_KEY` | Se genera en el paso 4 — dejar vacio por ahora |
+| `WWWGROUP` / `WWWUSER` | Solo si `id -u` / `id -g` en tu sistema no son `1000` |
+| `BYPASS_QUORUM` | Dejar en `false` en produccion. `true` solo para pruebas locales de votaciones sin quorum |
+
+El bloque completo de variables es:
 
 ```env
 APP_NAME=ASAMBLI
@@ -65,6 +149,8 @@ APP_FALLBACK_LOCALE=es
 APP_FAKER_LOCALE=es_CO
 
 LOG_CHANNEL=stack
+LOG_STACK=single
+LOG_DEPRECATIONS_CHANNEL=null
 LOG_LEVEL=debug
 
 # Base de datos (MySQL dentro del contenedor Docker)
@@ -83,10 +169,14 @@ REDIS_PORT=6379
 
 SESSION_DRIVER=database
 SESSION_LIFETIME=120
-QUEUE_CONNECTION=database
-CACHE_STORE=redis
+SESSION_ENCRYPT=false
+SESSION_PATH=/
+SESSION_DOMAIN=null
+
 BROADCAST_CONNECTION=reverb
 FILESYSTEM_DISK=local
+QUEUE_CONNECTION=database
+CACHE_STORE=redis
 
 # Reverb - WebSockets (valores para dev local)
 REVERB_APP_ID=asambli
@@ -96,26 +186,35 @@ REVERB_HOST=localhost
 REVERB_PORT=8080
 REVERB_SCHEME=http
 
+VITE_APP_NAME="${APP_NAME}"
 VITE_REVERB_APP_KEY="${REVERB_APP_KEY}"
 VITE_REVERB_HOST="${REVERB_HOST}"
 VITE_REVERB_PORT="${REVERB_PORT}"
 VITE_REVERB_SCHEME="${REVERB_SCHEME}"
 
 MAIL_MAILER=log
-```
+MAIL_FROM_ADDRESS="noreply@asambli.co"
+MAIL_FROM_NAME="${APP_NAME}"
 
-> **Atencion:** `APP_KEY` se genera en el paso 4. Dejalo vacio por ahora.
+# Flag de desarrollo — NO llevar a produccion
+# true = permite votar sin importar el % de quorum confirmado
+BYPASS_QUORUM=false
+```
 
 ---
 
 ## 3. Levantar Docker
 
-```bash
-# Windows (Git Bash) — siempre con estas variables de entorno:
-WWWGROUP=1000 WWWUSER=1000 docker compose up -d
+**WSL2 o macOS/Linux:**
 
-# Alternativa con el wrapper ./sail:
-./sail up -d
+```bash
+WWWGROUP=$(id -g) WWWUSER=$(id -u) docker compose up -d
+```
+
+**Git Bash (Windows nativo):**
+
+```bash
+WWWGROUP=1000 WWWUSER=1000 docker compose up -d
 ```
 
 La primera vez Docker descarga las imagenes y construye el contenedor PHP (~3-5 min).
@@ -297,12 +396,46 @@ Laravel no pluraliza bien en espanol. Estos modelos definen `$table` explicitame
 
 ---
 
-## Notas para Windows
+## 12. Solucion de problemas frecuentes
 
-- Usa siempre **Git Bash** (MINGW64), no PowerShell ni CMD.
-- El prefijo `WWWGROUP=1000 WWWUSER=1000` es necesario para que los archivos generados dentro del contenedor tengan los permisos correctos en tu disco.
-- Si Docker no levanta, verifica que Docker Desktop este corriendo antes de ejecutar `docker compose up`.
-- El proyecto corre en **http://localhost** (puerto 80), no en el 8000.
+### Docker no levanta en Windows
+
+- Verifica que Docker Desktop este corriendo antes de ejecutar `docker compose up`.
+- En WSL2: asegurate de que la integracion de WSL este activada en Docker Desktop (Settings → Resources → WSL Integration).
+- Si ves errores de permisos, verifica que `WWWGROUP` y `WWWUSER` coincidan con `id -g` / `id -u`.
+
+### El puerto 80 esta ocupado
+
+Otro proceso (IIS, Apache local, otro contenedor) puede estar usando el puerto 80. Detienelo o cambia el puerto en `docker-compose.yml`.
+
+### Cambios en el frontend no se reflejan
+
+```bash
+./sail npm run build   # reconstruye los assets
+```
+
+O usa `./sail npm run dev` durante el desarrollo para hot-reload automatico.
+
+### Error de manifest de Vite en tests
+
+Agrega el header Inertia en tus tests HTTP:
+
+```php
+$this->actingAs($user)
+     ->withHeaders(['X-Inertia' => 'true'])
+     ->get('/ruta')
+     ->assertStatus(200);
+```
+
+### Quorum no se cumple en pruebas locales
+
+Activa el flag de desarrollo en `.env`:
+
+```env
+BYPASS_QUORUM=true
+```
+
+> Nunca llevar este flag a produccion.
 
 ---
 
