@@ -24,4 +24,6 @@ Homestead.json
 Homestead.yaml
 Thumbs.db
 node_modules
-/.pnpm-store
+/.pnpm-
+CLAUDE.md
+/docs

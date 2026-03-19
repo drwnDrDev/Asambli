@@ -91,10 +91,20 @@ expect($response->status())->not->toBe(403);
 > Implementado en `config/app.php` (`bypass_quorum`) y `app/Services/VotoService.php`.
 > En producción esta variable no debe existir (el default es `false`).
 
+## Broadcast de resultados (CRÍTICO)
+
+El job `RecalcularResultadosVotacion` usa **`dispatchSync()`** — NO `dispatch()`.
+
+- Con `dispatch()` el job va a la cola y requiere Horizon corriendo. En la práctica esto causó que los resultados no se vieran en tiempo real (11 jobs acumulados sin procesar).
+- Con `dispatchSync()` el recálculo y broadcast ocurren sincrónicamente en el mismo request del voto.
+- **Horizon NO es necesario** para el flujo de votación en tiempo real.
+- El broadcast está envuelto en try-catch: si falla, el voto ya está en la BD y el error se loggea.
+
 ## Plan de implementación
 `docs/plans/2026-03-04-asambli-implementation-plan.md`
 
 **Estado:** Tasks 1–24 completadas ✅ — Tasks 25–26 (deploy) pendientes hasta decisión del usuario.
+Flujo completo de reunión en tiempo real implementado y debuggeado (2026-03-18).
 
 ## Comandos frecuentes
 ```bash
