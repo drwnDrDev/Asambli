@@ -12,13 +12,13 @@ Broadcast::channel('reunion.{reunionId}', function ($user, $reunionId) {
 
 Broadcast::channel('presence-reunion.{reunionId}', function ($user, $reunionId) {
     $copropietario = $user->copropietario()->with('unidades')->first();
-    $primeraUnidad = $copropietario?->unidades->first();
+    $unidades = $copropietario?->unidades ?? collect();
 
     return [
         'id'     => $user->id,
         'nombre' => $user->name,
-        'unidad' => $primeraUnidad?->numero,
-        'coef'   => $primeraUnidad?->coeficiente,
+        'unidad' => $unidades->pluck('numero')->join(', ') ?: null,
+        'coef'   => $unidades->sum('coeficiente'),
         'rol'    => $user->rol,
     ];
 });

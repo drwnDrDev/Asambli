@@ -29,12 +29,14 @@
     <table>
         <tr><th>Unidad</th><th>Copropietario</th><th>Coeficiente</th><th>Hora</th></tr>
         @foreach($asistentes as $a)
-        <tr>
-            <td>{{ $a->copropietario->unidad->numero }}</td>
-            <td>{{ $a->copropietario->user->name }}</td>
-            <td>{{ $a->copropietario->unidad->coeficiente }}%</td>
-            <td>{{ $a->hora_confirmacion?->format('H:i') }}</td>
-        </tr>
+            @foreach($a->copropietario->unidades as $unidad)
+            <tr>
+                <td>{{ $unidad->numero }}</td>
+                <td>{{ $a->copropietario->user->name }}</td>
+                <td>{{ $unidad->coeficiente }}%</td>
+                <td>{{ $a->hora_confirmacion?->format('H:i') }}</td>
+            </tr>
+            @endforeach
         @endforeach
     </table>
 

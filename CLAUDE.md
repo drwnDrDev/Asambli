@@ -57,6 +57,32 @@ Laravel no pluraliza correctamente en español. Estas tablas requieren:
 | `Poder` | `poderes` |
 | `OpcionVotacion` | `opciones_votacion` |
 
+## Relación Copropietario ↔ Unidad (CRÍTICO)
+
+- `Copropietario` tiene `unidades()` → **hasMany** (un propietario puede tener varias unidades)
+- `Unidad` tiene `copropietario()` → **belongsTo**
+- `Asistencia` solo tiene `copropietario_id` — **no tiene `unidad_id`**
+- La relación singular `->unidad` **no existe** — siempre usar `->unidades` (plural)
+
+### Cómo mostrar unidades según contexto
+
+| Contexto | Formato |
+|----------|---------|
+| PDF acta / CSV | Una fila por unidad (explícito y auditable) |
+| Vistas React (listas, tablas) | Números unidos: `"101, 201"` · coeficiente sumado |
+| Canal de presencia WebSocket | `unidades->pluck('numero')->join(', ')` · `unidades->sum('coeficiente')` |
+
+### Eager loading correcto
+```php
+// ✅ Correcto
+->with('copropietario.user', 'copropietario.unidades')
+$a->copropietario->unidades  // Collection
+
+// ❌ Incorrecto — relación no existe
+->with('copropietario.unidad')
+$a->copropietario->unidad
+```
+
 ## Patrones clave
 
 ### Factories en tests
@@ -104,7 +130,8 @@ El job `RecalcularResultadosVotacion` usa **`dispatchSync()`** — NO `dispatch(
 `docs/plans/2026-03-04-asambli-implementation-plan.md`
 
 **Estado:** Tasks 1–24 completadas ✅ — Tasks 25–26 (deploy) pendientes hasta decisión del usuario.
-Flujo completo de reunión en tiempo real implementado y debuggeado (2026-03-18).
+
+**Ciclo 1 completo (2026-03-19):** Flujo end-to-end funcional — conducción, votación en tiempo real, sala copropietario, exportación PDF/CSV, auditoría.
 
 ## Comandos frecuentes
 ```bash

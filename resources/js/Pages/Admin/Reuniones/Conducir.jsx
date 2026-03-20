@@ -563,7 +563,7 @@ export default function Conducir({ reunion, quorum: initialQuorum, copropietario
                                     <div>
                                         <p className="text-sm font-medium text-gray-800">{c.user?.name}</p>
                                         <p className="text-xs text-gray-400">
-                                            Unidad {c.unidades?.[0]?.numero ?? '—'} · {c.unidades?.[0]?.coeficiente ?? '—'}%
+                                            {(c.unidades ?? []).map(u => u.numero).join(', ') || '—'} · {((c.unidades ?? []).reduce((s, u) => s + parseFloat(u.coeficiente ?? 0), 0)).toFixed(2)}%
                                         </p>
                                     </div>
                                     {c.asistencia ? (

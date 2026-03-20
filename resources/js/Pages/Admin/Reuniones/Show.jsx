@@ -368,8 +368,8 @@ export default function Show({ reunion, quorum, copropietarios = [], votaciones:
                         {copropietarios.map(c => (
                             <tr key={c.id} className="border-b border-gray-50 hover:bg-gray-50">
                                 <td className="px-4 py-3">{c.user?.name}</td>
-                                <td className="px-4 py-3 text-gray-500">{c.unidad?.numero}</td>
-                                <td className="px-4 py-3 text-gray-500">{c.unidad?.coeficiente}%</td>
+                                <td className="px-4 py-3 text-gray-500">{(c.unidades ?? []).map(u => u.numero).join(', ') || '—'}</td>
+                                <td className="px-4 py-3 text-gray-500">{((c.unidades ?? []).reduce((s, u) => s + parseFloat(u.coeficiente ?? 0), 0)).toFixed(2)}%</td>
                                 <td className="px-4 py-3">
                                     {c.asistencia ? (
                                         <span className="text-green-600 text-xs font-medium">✓ Presente</span>

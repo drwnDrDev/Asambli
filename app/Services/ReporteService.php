@@ -19,7 +19,7 @@ class ReporteService
 
         $asistentes = Asistencia::where('reunion_id', $reunion->id)
             ->where('confirmada_por_admin', true)
-            ->with('copropietario.user', 'copropietario.unidad')
+            ->with('copropietario.user', 'copropietario.unidades')
             ->get();
 
         $votaciones = Votacion::withoutGlobalScopes()
@@ -52,16 +52,18 @@ class ReporteService
 
         $asistentes = Asistencia::where('reunion_id', $reunion->id)
             ->where('confirmada_por_admin', true)
-            ->with('copropietario.user', 'copropietario.unidad')
+            ->with('copropietario.user', 'copropietario.unidades')
             ->get();
 
         foreach ($asistentes as $a) {
-            $rows[] = implode(',', [
-                $a->copropietario->unidad->numero,
-                '"' . $a->copropietario->user->name . '"',
-                $a->copropietario->unidad->coeficiente,
-                $a->hora_confirmacion?->format('d/m/Y H:i:s'),
-            ]) . "\n";
+            foreach ($a->copropietario->unidades as $unidad) {
+                $rows[] = implode(',', [
+                    $unidad->numero,
+                    '"' . $a->copropietario->user->name . '"',
+                    $unidad->coeficiente,
+                    $a->hora_confirmacion?->format('d/m/Y H:i:s'),
+                ]) . "\n";
+            }
         }
 
         return implode('', $rows);
