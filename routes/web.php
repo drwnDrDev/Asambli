@@ -3,9 +3,11 @@
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Admin\CopropietarioController;
 use App\Http\Controllers\Admin\PadronController;
+use App\Http\Controllers\Admin\PoderController as AdminPoderController;
 use App\Http\Controllers\Admin\ReunionController;
 use App\Http\Controllers\Admin\VotacionController;
 use App\Http\Controllers\Auth\MagicLinkController;
+use App\Http\Controllers\Copropietario\PoderController as CopropietarioPoderController;
 use App\Http\Controllers\Copropietario\SalaReunionController;
 use App\Http\Controllers\Copropietario\VotoController;
 use App\Http\Controllers\ProfileController;
@@ -77,6 +79,13 @@ Route::middleware(['auth', 'role:administrador,super_admin'])
         Route::get('padron', [PadronController::class, 'index'])->name('padron.index');
         Route::post('padron/import', [PadronController::class, 'import'])->name('padron.import');
 
+        // Poderes
+        Route::get('reuniones/{reunion}/poderes', [AdminPoderController::class, 'index'])->name('reuniones.poderes.index');
+        Route::post('reuniones/{reunion}/poderes', [AdminPoderController::class, 'store'])->name('reuniones.poderes.store');
+        Route::patch('reuniones/{reunion}/poderes/{poder}/aprobar', [AdminPoderController::class, 'aprobar'])->name('reuniones.poderes.aprobar');
+        Route::patch('reuniones/{reunion}/poderes/{poder}/rechazar', [AdminPoderController::class, 'rechazar'])->name('reuniones.poderes.rechazar');
+        Route::delete('reuniones/{reunion}/poderes/{poder}', [AdminPoderController::class, 'destroy'])->name('reuniones.poderes.destroy');
+
         // Copropietarios
         Route::resource('copropietarios', CopropietarioController::class);
         Route::post('copropietarios/{copropietario}/generar-pin', [CopropietarioController::class, 'generatePin'])->name('copropietarios.generar-pin');
@@ -103,6 +112,9 @@ Route::middleware(['auth', 'role:copropietario,administrador,super_admin'])
         Route::get('/sala/{reunion}', [SalaReunionController::class, 'show'])->name('show');
         Route::get('/historial', [SalaReunionController::class, 'historial'])->name('historial');
         Route::post('/votos', [VotoController::class, 'store'])->name('votos.store');
+        Route::get('/sala/{reunion}/poderes/crear', [CopropietarioPoderController::class, 'create'])->name('poderes.create');
+        Route::post('/sala/{reunion}/poderes', [CopropietarioPoderController::class, 'store'])->name('poderes.store');
+        Route::delete('/sala/{reunion}/poderes/{poder}', [CopropietarioPoderController::class, 'destroy'])->name('poderes.destroy');
     });
 
 // Super-admin routes

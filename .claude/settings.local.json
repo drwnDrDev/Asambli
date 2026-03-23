@@ -49,7 +49,9 @@
       "Bash(grep:*)",
       "Bash(git:*)",
       "Bash(curl:*)",
-      "Bash(WWWGROUP=1000 WWWUSER=1000 docker compose up -d 2>&1)"
+      "Bash(WWWGROUP=1000 WWWUSER=1000 docker compose up -d 2>&1)",
+      "Bash(docker compose:*)",
+      "Bash(claude:*)"
     ]
   }
 }

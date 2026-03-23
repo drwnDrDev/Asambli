@@ -15,10 +15,11 @@ Broadcast::channel('presence-reunion.{reunionId}', function ($user, $reunionId) 
     $unidades = $copropietario?->unidades ?? collect();
 
     return [
-        'id'     => $user->id,
-        'nombre' => $user->name,
-        'unidad' => $unidades->pluck('numero')->join(', ') ?: null,
-        'coef'   => $unidades->sum('coeficiente'),
-        'rol'    => $user->rol,
+        'id'         => $user->id,
+        'nombre'     => $user->name,
+        'unidad'     => $unidades->pluck('numero')->join(', ') ?: null,
+        'coef'       => $unidades->sum('coeficiente'),
+        'rol'        => $user->rol,
+        'es_externo' => (bool) ($copropietario?->es_externo ?? false),
     ];
 });

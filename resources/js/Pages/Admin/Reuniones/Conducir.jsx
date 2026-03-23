@@ -54,7 +54,10 @@ function ModalConectados({ conectados, onClose }) {
                             {filtered.map(c => (
                                 <tr key={c.id} className="border-b border-gray-50 hover:bg-gray-50">
                                     <td className="px-5 py-2 font-medium">{c.unidad ?? '—'}</td>
-                                    <td className="px-5 py-2 text-gray-700">{c.nombre}</td>
+                                    <td className="px-5 py-2 text-gray-700">
+                                        {c.nombre}
+                                        {c.es_externo && <span className="ml-1.5 text-[10px] font-bold bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded">D</span>}
+                                    </td>
                                     <td className="px-5 py-2 text-right text-gray-600">{c.coef != null ? `${parseFloat(c.coef).toFixed(2)}%` : '—'}</td>
                                 </tr>
                             ))}
@@ -424,6 +427,7 @@ export default function Conducir({ reunion, quorum: initialQuorum, copropietario
                                         <div className="flex items-center gap-2">
                                             <span className="w-2 h-2 bg-green-400 rounded-full" />
                                             <span className="text-sm font-medium text-gray-800">{c.nombre}</span>
+                                            {c.es_externo && <span className="text-[10px] font-bold bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded">D</span>}
                                         </div>
                                         <div className="text-right">
                                             <span className="text-xs text-gray-500">Apt. {c.unidad ?? '—'}</span>
@@ -617,17 +621,28 @@ export default function Conducir({ reunion, quorum: initialQuorum, copropietario
 
                     {/* Asistencia confirmada */}
                     <div className="bg-white rounded-lg shadow p-4">
-                        <h2 className="font-semibold text-gray-900 mb-3">
-                            Asistencia confirmada
-                            <span className="ml-2 text-sm font-normal text-gray-500">
-                                {asistenciaConfirmada} de {copropietarios.length}
-                            </span>
-                        </h2>
+                        <div className="flex items-center justify-between mb-3">
+                            <h2 className="font-semibold text-gray-900">
+                                Asistencia confirmada
+                                <span className="ml-2 text-sm font-normal text-gray-500">
+                                    {asistenciaConfirmada} de {copropietarios.length}
+                                </span>
+                            </h2>
+                            <a
+                                href={`/admin/reuniones/${reunion.id}/poderes`}
+                                className="text-xs text-blue-600 hover:text-blue-800 font-medium"
+                            >
+                                Poderes →
+                            </a>
+                        </div>
                         <div className="space-y-1 max-h-60 overflow-y-auto">
                             {copropietarios.map(c => (
                                 <div key={c.id} className="flex justify-between items-center py-1.5 border-b border-gray-50">
                                     <div>
-                                        <p className="text-sm font-medium text-gray-800">{c.user?.name}</p>
+                                        <div className="flex items-center gap-1.5">
+                                            <p className="text-sm font-medium text-gray-800">{c.user?.name}</p>
+                                            {c.es_externo && <span className="text-[10px] font-bold bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded">D</span>}
+                                        </div>
                                         <p className="text-xs text-gray-400">
                                             {(c.unidades ?? []).map(u => u.numero).join(', ') || '—'} · {((c.unidades ?? []).reduce((s, u) => s + parseFloat(u.coeficiente ?? 0), 0)).toFixed(2)}%
                                         </p>

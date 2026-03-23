@@ -151,7 +151,7 @@ function ResultBar({ opcion, resultados, esVotada }) {
     )
 }
 
-function VotacionCard({ votacionActiva, resultados, yaVotoPor, poderes, onVotar, loading }) {
+function VotacionCard({ votacionActiva, resultados, yaVotoPor, poderes, onVotar, loading, esDelegadoExterno }) {
     const [pendingOpcion, setPendingOpcion] = useState(null)
     const yaVotoPropio = yaVotoPor.includes('propio')
 
@@ -202,7 +202,7 @@ function VotacionCard({ votacionActiva, resultados, yaVotoPor, poderes, onVotar,
                     {votacionActiva.pregunta}
                 </h2>
 
-                {!yaVotoPropio && (
+                {!yaVotoPropio && !esDelegadoExterno && (
                     <div className="mb-5">
                         <p className="text-[10px] uppercase tracking-widest mb-2" style={{ color: 'var(--sala-text-muted)' }}>Tu voto</p>
                         <div className="space-y-2">
@@ -227,7 +227,7 @@ function VotacionCard({ votacionActiva, resultados, yaVotoPor, poderes, onVotar,
                     </div>
                 )}
 
-                {yaVotoPropio && resultados && (
+                {yaVotoPropio && resultados && !esDelegadoExterno && (
                     <div className="mb-4">
                         {resultados.map(r => (
                             <ResultBar
@@ -392,6 +392,7 @@ export default function SalaShow({
     resultadosActuales: initialResultados = null,
     feedInicial = [],
     estadoReunion: initialEstadoReunion,
+    esDelegadoExterno = false,
 }) {
     const { errors } = usePage().props
 
@@ -556,6 +557,14 @@ export default function SalaShow({
                     </div>
                 )}
 
+                {esDelegadoExterno && (
+                    <div
+                        className="rounded-xl px-4 py-3 mb-4 text-xs font-medium"
+                        style={{ background: 'rgba(251,191,36,0.12)', border: '1px solid var(--sala-amber-border)', color: 'var(--sala-amber)' }}
+                    >
+                        Estás participando como <strong>delegado</strong>. Vota en nombre de los copropietarios que te autorizaron.
+                    </div>
+                )}
                 <VotacionCard
                     votacionActiva={votacionActiva}
                     resultados={resultados}
@@ -563,6 +572,7 @@ export default function SalaShow({
                     poderes={poderes}
                     onVotar={emitirVoto}
                     loading={votando}
+                    esDelegadoExterno={esDelegadoExterno}
                 />
 
                 {feed.length > 0 && (

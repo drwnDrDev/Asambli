@@ -35,6 +35,24 @@ class SalaReunionController extends Controller
     {
         $copropietario = Copropietario::where('user_id', auth()->id())->first();
 
+        // Bloquear si el copropietario ya otorgó un poder aprobado para esta reunión
+        if ($copropietario) {
+            $poderActivo = Poder::withoutGlobalScopes()
+                ->where('reunion_id', $reunion->id)
+                ->where('poderdante_id', $copropietario->id)
+                ->where('estado', 'aprobado')
+                ->with('apoderado.user')
+                ->first();
+
+            if ($poderActivo) {
+                return Inertia::render('Copropietario/Sala/DelegadoActivo', [
+                    'reunion'       => $reunion,
+                    'delegadoNombre'=> $poderActivo->apoderado?->user?->name ?? 'Delegado',
+                    'delegadoEmpresa' => $poderActivo->apoderado?->empresa,
+                ]);
+            }
+        }
+
         // Auto-register attendance when copropietario enters ante_sala or en_curso
         if ($copropietario && in_array($reunion->estado, [ReunionEstado::AnteSala, ReunionEstado::EnCurso])) {
             Asistencia::updateOrCreate(
@@ -51,6 +69,7 @@ class SalaReunionController extends Controller
             ? Poder::withoutGlobalScopes()
                 ->where('reunion_id', $reunion->id)
                 ->where('apoderado_id', $copropietario->id)
+                ->where('estado', 'aprobado')
                 ->with('poderdante.user')
                 ->get()
             : collect();
@@ -93,9 +112,11 @@ class SalaReunionController extends Controller
             ? $reunion->estado->value
             : $reunion->estado;
 
+        $esDelegadoExterno = $copropietario?->es_externo ?? false;
+
         return Inertia::render('Copropietario/Sala/Show', compact(
             'reunion', 'quorum', 'poderes', 'yaVotoPor', 'votacionAbierta',
-            'resultadosActuales', 'feedInicial', 'estadoReunion'
+            'resultadosActuales', 'feedInicial', 'estadoReunion', 'esDelegadoExterno'
         ));
     }
 

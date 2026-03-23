@@ -27,18 +27,53 @@
 
     <h2>2. Asistentes</h2>
     <table>
-        <tr><th>Unidad</th><th>Copropietario</th><th>Coeficiente</th><th>Hora</th></tr>
+        <tr><th>Unidad</th><th>Copropietario / Delegado</th><th>Coeficiente</th><th>Hora</th><th>Tipo</th></tr>
         @foreach($asistentes as $a)
+            @if($a->copropietario->es_externo)
+            {{-- Delegado externo: no tiene unidades propias --}}
+            <tr>
+                <td>—</td>
+                <td>{{ $a->copropietario->user->name }}{{ $a->copropietario->empresa ? ' (' . $a->copropietario->empresa . ')' : '' }}</td>
+                <td>—</td>
+                <td>{{ $a->hora_confirmacion?->format('H:i') }}</td>
+                <td style="color:#d97706;font-weight:bold">DELEGADO</td>
+            </tr>
+            @else
             @foreach($a->copropietario->unidades as $unidad)
             <tr>
                 <td>{{ $unidad->numero }}</td>
                 <td>{{ $a->copropietario->user->name }}</td>
                 <td>{{ $unidad->coeficiente }}%</td>
                 <td>{{ $a->hora_confirmacion?->format('H:i') }}</td>
+                <td></td>
             </tr>
             @endforeach
+            @endif
         @endforeach
     </table>
+
+    {{-- Sección de representaciones (poderes) --}}
+    @php
+        $poderesAprobados = \App\Models\Poder::withoutGlobalScopes()
+            ->where('reunion_id', $reunion->id)
+            ->where('estado', 'aprobado')
+            ->with('apoderado.user', 'poderdante.user', 'poderdante.unidades')
+            ->get();
+    @endphp
+    @if($poderesAprobados->isNotEmpty())
+    <h2>2b. Representaciones (Poderes)</h2>
+    <table>
+        <tr><th>Delegado</th><th>Representa a</th><th>Unidad(es)</th><th>Coeficiente</th></tr>
+        @foreach($poderesAprobados as $p)
+        <tr>
+            <td>{{ $p->apoderado?->user?->name }}{{ $p->apoderado?->empresa ? ' (' . $p->apoderado->empresa . ')' : '' }}</td>
+            <td>{{ $p->poderdante?->user?->name }}</td>
+            <td>{{ $p->poderdante?->unidades?->pluck('numero')->join(', ') ?? '—' }}</td>
+            <td>{{ number_format($p->poderdante?->unidades?->sum('coeficiente') ?? 0, 4) }}%</td>
+        </tr>
+        @endforeach
+    </table>
+    @endif
 
     <h2>3. Votaciones</h2>
     @foreach($votaciones as $v)

@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Jobs\RecalcularResultadosVotacion;
 use App\Models\Copropietario;
+use App\Models\Poder;
 use App\Models\Votacion;
 use App\Models\Voto;
 use Illuminate\Http\Request;
@@ -35,6 +36,19 @@ class VotoService
                 // 3. Verificar votación abierta
                 if ($votacion->estado !== 'abierta') {
                     throw new \Exception('La votación no está abierta.');
+                }
+
+                // 4a. Validar poder si vota en nombre de otro
+                if ($enNombreDeId !== null) {
+                    $tienePoder = Poder::withoutGlobalScopes()
+                        ->where('reunion_id', $votacion->reunion_id)
+                        ->where('apoderado_id', $copropietario->id)
+                        ->where('poderdante_id', $enNombreDeId)
+                        ->where('estado', 'aprobado')
+                        ->exists();
+                    if (!$tienePoder) {
+                        throw new \Exception('No tiene poder aprobado para votar en nombre de este copropietario.');
+                    }
                 }
 
                 // 4. Verificar no duplicado

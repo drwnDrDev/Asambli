@@ -41,21 +41,25 @@ export default function Index({ reuniones = [] }) {
             ) : (
                 <div className="space-y-3">
                     {reuniones.map(r => (
-                        <Link
-                            key={r.id}
-                            href={`/sala/${r.id}`}
-                            className="block bg-slate-800 rounded-xl p-4 hover:bg-slate-700 transition"
-                        >
-                            <div className="flex justify-between items-start">
-                                <div>
-                                    <p className="font-semibold">{r.titulo}</p>
+                        <div key={r.id} className="bg-slate-800 rounded-xl p-4">
+                            <div className="flex justify-between items-start mb-3">
+                                <Link href={`/sala/${r.id}`} className="flex-1">
+                                    <p className="font-semibold hover:text-amber-400 transition">{r.titulo}</p>
                                     <p className="text-xs text-slate-400 mt-1 capitalize">{r.tipo}</p>
-                                </div>
+                                </Link>
                                 <span className={`text-xs font-medium capitalize ${ESTADO_COLOR[r.estado] ?? 'text-slate-400'}`}>
                                     {ESTADO_LABEL[r.estado] ?? r.estado}
                                 </span>
                             </div>
-                        </Link>
+                            {['ante_sala', 'en_curso'].includes(r.estado) && (
+                                <Link
+                                    href={`/sala/${r.id}/poderes/crear`}
+                                    className="text-xs text-slate-400 hover:text-amber-400 transition"
+                                >
+                                    + Registrar poder / delegar voto
+                                </Link>
+                            )}
+                        </div>
                     ))}
                 </div>
             )}
