@@ -98,12 +98,32 @@ export default function Conducir({ reunion, quorum: initialQuorum, copropietario
     const [editingId, setEditingId] = useState(null)
     const [editData, setEditData] = useState({ pregunta: '', descripcion: '', opciones: [] })
 
+    // Closed votacion results toggle
+    const [expandedVotacionId, setExpandedVotacionId] = useState(null)
+
+    // Ref to gate the quorum-presencia call until 'here' event is received
+    const hasReceivedHereRef = useRef(false)
+
     // Ticker time updater
     const [, setTickerTick] = useState(0)
     useEffect(() => {
         const interval = setInterval(() => setTickerTick(t => t + 1), 5000)
         return () => clearInterval(interval)
     }, [])
+
+    // ─── Quórum real-time desde canal de presencia ───────────────
+    useEffect(() => {
+        if (!hasReceivedHereRef.current) return
+        const copros = conectados.filter(c => c.rol === 'copropietario')
+        const coefPresente = copros.reduce((s, c) => s + (parseFloat(c.coef) || 0), 0)
+        const count = copros.length
+        const csrfToken = document.head.querySelector('meta[name="csrf-token"]')?.content ?? ''
+        fetch(`/admin/reuniones/${reunion.id}/quorum-presencia`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken, 'X-Requested-With': 'XMLHttpRequest' },
+            body: JSON.stringify({ coef_presente: coefPresente, copropietarios_count: count }),
+        }).then(r => r.json()).then(data => setQuorum(data)).catch(() => {})
+    }, [conectados])
 
     // ─── Echo subscriptions ─────────────────────────────────────
     useEffect(() => {
@@ -141,7 +161,7 @@ export default function Conducir({ reunion, quorum: initialQuorum, copropietario
         // 3. Presence channel
         const presenceChannel = echo.join(`presence-reunion.${reunion.id}`)
         presenceChannel
-            .here((members) => setConectados(members))
+            .here((members) => { hasReceivedHereRef.current = true; setConectados(members) })
             .joining((member) => setConectados(prev => [...prev, member]))
             .leaving((member) => setConectados(prev => prev.filter(m => m.id !== member.id)))
 
@@ -467,33 +487,79 @@ export default function Conducir({ reunion, quorum: initialQuorum, copropietario
                                     )
                                 }
 
+                                const isExpanded = expandedVotacionId === v.id
+                                const vResultados = getResultados(v.id)
+                                const vTotalPeso  = vResultados.reduce((s, r) => s + (parseFloat(r.peso_total) || 0), 0)
+                                const vGanadora   = v.estado === 'cerrada' && vResultados.length > 0
+                                    ? vResultados.reduce((max, r) => parseFloat(r.peso_total) > parseFloat(max.peso_total) ? r : max, vResultados[0])
+                                    : null
+
                                 return (
-                                    <div key={v.id} className="flex items-center gap-2 py-2 border-b border-gray-50">
-                                        <span className={`flex-shrink-0 w-2 h-2 rounded-full ${
-                                            v.estado === 'abierta' ? 'bg-green-500' :
-                                            v.estado === 'cerrada' ? 'bg-gray-400' :
-                                            'bg-yellow-400'
-                                        }`} />
-                                        <span className="text-xs font-medium uppercase text-gray-400 w-12 flex-shrink-0">
-                                            {v.estado === 'abierta' ? 'ABIER' : v.estado === 'cerrada' ? 'CERR' : 'PEND'}
-                                        </span>
-                                        <span className="text-sm text-gray-800 flex-1 truncate">{v.pregunta}</span>
-                                        <div className="flex gap-1 flex-shrink-0">
-                                            {v.estado === 'creada' && (
-                                                <>
-                                                    <button onClick={() => abrirVotacion(v.id)}
-                                                        className="text-xs bg-green-600 text-white px-2 py-0.5 rounded hover:bg-green-700 transition">Abrir</button>
-                                                    <button onClick={() => startEdit(v)}
-                                                        className="text-xs text-blue-600 hover:text-blue-800 px-1">Editar</button>
-                                                    <button onClick={() => deleteVotacion(v.id)}
-                                                        className="text-xs text-red-400 hover:text-red-600 px-1">✕</button>
-                                                </>
-                                            )}
-                                            {v.estado === 'abierta' && (
-                                                <button onClick={() => cerrarVotacion(v.id)}
-                                                    className="text-xs bg-red-600 text-white px-2 py-0.5 rounded hover:bg-red-700 transition">Cerrar</button>
-                                            )}
+                                    <div key={v.id} className="py-2 border-b border-gray-50">
+                                        <div className="flex items-center gap-2">
+                                            <span className={`flex-shrink-0 w-2 h-2 rounded-full ${
+                                                v.estado === 'abierta' ? 'bg-green-500' :
+                                                v.estado === 'cerrada' ? 'bg-gray-400' :
+                                                'bg-yellow-400'
+                                            }`} />
+                                            <span className="text-xs font-medium uppercase text-gray-400 w-12 flex-shrink-0">
+                                                {v.estado === 'abierta' ? 'ABIER' : v.estado === 'cerrada' ? 'CERR' : 'PEND'}
+                                            </span>
+                                            <span className="text-sm text-gray-800 flex-1 truncate">{v.pregunta}</span>
+                                            <div className="flex gap-1 flex-shrink-0 items-center">
+                                                {v.estado === 'creada' && (
+                                                    <>
+                                                        <button onClick={() => abrirVotacion(v.id)}
+                                                            className="text-xs bg-green-600 text-white px-2 py-0.5 rounded hover:bg-green-700 transition">Abrir</button>
+                                                        <button onClick={() => startEdit(v)}
+                                                            className="text-xs text-blue-600 hover:text-blue-800 px-1">Editar</button>
+                                                        <button onClick={() => deleteVotacion(v.id)}
+                                                            className="text-xs text-red-400 hover:text-red-600 px-1">✕</button>
+                                                    </>
+                                                )}
+                                                {v.estado === 'abierta' && (
+                                                    <button onClick={() => cerrarVotacion(v.id)}
+                                                        className="text-xs bg-red-600 text-white px-2 py-0.5 rounded hover:bg-red-700 transition">Cerrar</button>
+                                                )}
+                                                {v.estado === 'cerrada' && (
+                                                    <button
+                                                        onClick={() => setExpandedVotacionId(isExpanded ? null : v.id)}
+                                                        className="text-xs text-gray-500 hover:text-gray-700 px-1"
+                                                        title="Ver resultados"
+                                                    >
+                                                        {isExpanded ? '▲' : '▼'}
+                                                    </button>
+                                                )}
+                                            </div>
                                         </div>
+
+                                        {/* Resultados expandibles para cerradas */}
+                                        {v.estado === 'cerrada' && isExpanded && (
+                                            <div className="mt-2 ml-14 space-y-1.5 pb-1">
+                                                {vGanadora && (
+                                                    <p className="text-xs text-green-700 font-medium mb-1.5">
+                                                        Ganó: {vGanadora.texto} ({vTotalPeso > 0 ? ((parseFloat(vGanadora.peso_total) / vTotalPeso) * 100).toFixed(1) : 0}%)
+                                                    </p>
+                                                )}
+                                                {vResultados.map(r => {
+                                                    const pct = vTotalPeso > 0 ? ((parseFloat(r.peso_total) / vTotalPeso) * 100) : 0
+                                                    return (
+                                                        <div key={r.opcion_id}>
+                                                            <div className="flex justify-between text-xs text-gray-600 mb-0.5">
+                                                                <span className={r.opcion_id === vGanadora?.opcion_id ? 'font-semibold text-green-700' : ''}>{r.texto}</span>
+                                                                <span>{pct.toFixed(1)}% · {r.count}v</span>
+                                                            </div>
+                                                            <div className="w-full bg-gray-100 rounded-full h-1.5">
+                                                                <div
+                                                                    className={`h-1.5 rounded-full ${r.opcion_id === vGanadora?.opcion_id ? 'bg-green-500' : 'bg-gray-400'}`}
+                                                                    style={{ width: `${Math.max(pct, pct > 0 ? 1 : 0)}%` }}
+                                                                />
+                                                            </div>
+                                                        </div>
+                                                    )
+                                                })}
+                                            </div>
+                                        )}
                                     </div>
                                 )
                             })}

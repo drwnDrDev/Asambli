@@ -1,6 +1,6 @@
 // resources/js/Pages/Copropietario/Sala/Show.jsx
 import { useState, useEffect, useRef } from 'react'
-import { router } from '@inertiajs/react'
+import { router, usePage } from '@inertiajs/react'
 import SalaLayout from '@/Layouts/SalaLayout'
 import echo from '@/echo'
 
@@ -314,6 +314,18 @@ function FeedItem({ item }) {
         )
     }
 
+    if (item.tipo === 'votacion_abierta') {
+        return (
+            <div className="flex items-start gap-3 py-2.5">
+                <span className="text-base flex-shrink-0">🗳</span>
+                <span className="text-sm flex-1" style={{ color: 'var(--sala-amber)' }}>Votación abierta: {item.pregunta}</span>
+                <span className="text-xs tabular-nums flex-shrink-0" style={{ color: 'var(--sala-text-faint)' }}>
+                    {formatTime(item.timestamp)}
+                </span>
+            </div>
+        )
+    }
+
     if (item.tipo === 'votacion_cerrada') {
         return (
             <div
@@ -381,6 +393,8 @@ export default function SalaShow({
     feedInicial = [],
     estadoReunion: initialEstadoReunion,
 }) {
+    const { errors } = usePage().props
+
     const [connStatus, setConnStatus]       = useState('connected')
     const [quorum, setQuorum]               = useState(initialQuorum)
     const [estadoReunion, setEstadoReunion] = useState(initialEstadoReunion)
@@ -400,12 +414,13 @@ export default function SalaShow({
     const [terminalCountdown, setTerminalCountdown] = useState(null)
     const countdownRef = useRef(null)
     const votacionActivaRef = useRef(votacionActiva)
+    const resultadosRef = useRef(resultados)
     useEffect(() => { votacionActivaRef.current = votacionActiva }, [votacionActiva])
+    useEffect(() => { resultadosRef.current = resultados }, [resultados])
 
-    // Sync resultados when Inertia refreshes props after voting
-    useEffect(() => {
-        setResultados(initialResultados)
-    }, [initialResultados])
+    // Sync from server props after Inertia redirect (e.g. after voting)
+    useEffect(() => { setYaVotoPor(initialYaVotoPor) }, [initialYaVotoPor])
+    useEffect(() => { setResultados(initialResultados) }, [initialResultados])
 
     useEffect(() => {
         const channel = echo.channel(`reunion.${reunion.id}`)
@@ -413,12 +428,24 @@ export default function SalaShow({
         channel
             .listen('QuorumActualizado', (e) => setQuorum(e.quorumData))
             .listen('EstadoVotacionCambiado', (e) => {
+                const now = new Date().toISOString()
                 if (e.estado === 'abierta') {
                     setVotacionActiva(e)
                     setResultados(null)
+                    setFeed(prev => [{ tipo: 'votacion_abierta', pregunta: e.pregunta, timestamp: now }, ...prev])
                 } else {
+                    // Calculate winner from last known resultados before clearing
+                    const cur = resultadosRef.current
+                    const feedItem = { tipo: 'votacion_cerrada', pregunta: votacionActivaRef.current?.pregunta ?? e.pregunta, timestamp: now }
+                    if (cur && cur.length > 0) {
+                        const total = cur.reduce((s, r) => s + r.peso_total, 0)
+                        const ganadora = cur.reduce((max, r) => r.peso_total > max.peso_total ? r : max, cur[0])
+                        feedItem.ganadora = ganadora.texto
+                        feedItem.ganadora_pct = total > 0 ? Math.round((ganadora.peso_total / total) * 100 * 10) / 10 : 0
+                    }
                     setVotacionActiva(null)
                     setResultados(null)
+                    setFeed(prev => [feedItem, ...prev])
                 }
             })
             .listen('VotacionModificada', (e) => {
@@ -485,8 +512,8 @@ export default function SalaShow({
             en_nombre_de: enNombreDeId,
         }, {
             preserveScroll: true,
-            onSuccess: () => setYaVotoPor(prev => [...prev, enNombreDeId ?? 'propio']),
-            onFinish:  () => setVotando(false),
+            // yaVotoPor and resultados are synced from server props via useEffect
+            onFinish: () => setVotando(false),
         })
     }
 
@@ -519,6 +546,15 @@ export default function SalaShow({
                         {reunion.titulo}
                     </h1>
                 </div>
+
+                {errors?.voto && (
+                    <div
+                        className="rounded-xl px-4 py-3 mb-4 text-sm"
+                        style={{ background: 'var(--sala-red-bg)', border: '1px solid var(--sala-red)', color: 'var(--sala-red)' }}
+                    >
+                        ⚠ {errors.voto}
+                    </div>
+                )}
 
                 <VotacionCard
                     votacionActiva={votacionActiva}

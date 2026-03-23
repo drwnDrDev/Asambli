@@ -71,7 +71,8 @@ export default function Proyeccion({ reunion, votacion: initialVotacion, resulta
         ? Math.max(...resultados.map(r => parseFloat(r.peso_total) || 0))
         : 0
 
-    const totalVotos = resultados.reduce((sum, r) => sum + (r.count || 0), 0)
+    const totalVotos  = resultados.reduce((sum, r) => sum + (r.count || 0), 0)
+    const totalPeso   = resultados.reduce((sum, r) => sum + (parseFloat(r.peso_total) || 0), 0)
 
     return (
         <ProyeccionLayout onTickerToggle={() => setTickerVisible(v => !v)} tickerVisible={tickerVisible}>
@@ -112,8 +113,8 @@ export default function Proyeccion({ reunion, votacion: initialVotacion, resulta
                                 const barWidth = maxPeso > 0
                                     ? Math.max((parseFloat(r.peso_total) / maxPeso) * 100, r.count > 0 ? 2 : 0)
                                     : 0
-                                const pctVotos = totalVotos > 0
-                                    ? ((r.count / totalVotos) * 100).toFixed(0)
+                                const pctPeso = totalPeso > 0
+                                    ? ((parseFloat(r.peso_total) / totalPeso) * 100).toFixed(1)
                                     : 0
                                 const colorClass = BAR_COLORS[i % BAR_COLORS.length]
 
@@ -122,7 +123,7 @@ export default function Proyeccion({ reunion, votacion: initialVotacion, resulta
                                         <div className="flex justify-between items-baseline mb-2">
                                             <span className="text-xl font-semibold text-white">{r.texto}</span>
                                             <span className="text-lg text-gray-300">
-                                                {pctVotos}% &nbsp;·&nbsp; {r.count}v &nbsp;·&nbsp; {parseFloat(r.peso_total || 0).toFixed(1)}% coef
+                                                {pctPeso}% &nbsp;·&nbsp; {r.count}v &nbsp;·&nbsp; {parseFloat(r.peso_total || 0).toFixed(1)}% coef
                                             </span>
                                         </div>
                                         <div className="w-full bg-gray-800 rounded-full h-8">

@@ -38,7 +38,8 @@ class RecalcularResultadosVotacion implements ShouldQueue
             $copropietario = \App\Models\Copropietario::withoutGlobalScopes()
                 ->with('unidades')
                 ->find($this->copropietarioId);
-            $ultimoVotoUnidad = $copropietario?->unidades->first()?->numero;
+            $numeros = $copropietario?->unidades->pluck('numero')->filter()->values();
+            $ultimoVotoUnidad = $numeros?->isNotEmpty() ? $numeros->join(', ') : null;
         }
 
         broadcast(new \App\Events\ResultadosVotacionActualizados($votacion, $resultados->toArray(), $ultimoVotoUnidad));

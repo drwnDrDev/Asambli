@@ -78,13 +78,12 @@ class ReunionController extends Controller
             ->map(fn($c) => array_merge($c->toArray(), ['asistencia' => in_array($c->id, $asistencias)]));
         $votaciones = $reunion->votaciones()->with('opciones')->get();
 
-        // Resultados actuales para cualquier votación abierta
+        // Resultados para votaciones abiertas Y cerradas
         $resultadosIniciales = [];
-        $votacionAbierta = $votaciones->firstWhere('estado', 'abierta');
-        if ($votacionAbierta) {
-            $resultadosIniciales[$votacionAbierta->id] = $votacionAbierta->opciones->map(function ($opcion) use ($votacionAbierta) {
+        foreach ($votaciones->whereIn('estado', ['abierta', 'cerrada']) as $votacion) {
+            $resultadosIniciales[$votacion->id] = $votacion->opciones->map(function ($opcion) use ($votacion) {
                 $votos = \App\Models\Voto::withoutGlobalScopes()
-                    ->where('votacion_id', $votacionAbierta->id)
+                    ->where('votacion_id', $votacion->id)
                     ->where('opcion_id', $opcion->id);
                 return [
                     'opcion_id'  => $opcion->id,
@@ -96,6 +95,39 @@ class ReunionController extends Controller
         }
 
         return Inertia::render('Admin/Reuniones/Conducir', compact('reunion', 'quorum', 'copropietarios', 'votaciones', 'resultadosIniciales'));
+    }
+
+    public function actualizarQuorumPresencia(Request $request, Reunion $reunion)
+    {
+        $request->validate([
+            'coef_presente'        => 'required|numeric|min:0',
+            'copropietarios_count' => 'required|integer|min:0',
+        ]);
+
+        if ($reunion->tipo_voto_peso === 'coeficiente') {
+            $total    = (float) \App\Models\Unidad::withoutGlobalScopes()
+                ->where('tenant_id', $reunion->tenant_id)->where('activo', true)->sum('coeficiente');
+            $presente = (float) $request->coef_presente;
+        } else {
+            $total    = (float) \App\Models\Copropietario::withoutGlobalScopes()
+                ->where('tenant_id', $reunion->tenant_id)->where('activo', true)->count();
+            $presente = (float) $request->copropietarios_count;
+        }
+
+        $pct = $total > 0 ? round(($presente / $total) * 100, 2) : 0;
+
+        $quorumData = [
+            'tipo'                => $reunion->tipo_voto_peso,
+            'total'               => $total,
+            'presente'            => $presente,
+            'porcentaje_presente' => $pct,
+            'quorum_requerido'    => (float) $reunion->quorum_requerido,
+            'tiene_quorum'        => $pct >= $reunion->quorum_requerido,
+        ];
+
+        broadcast(new \App\Events\QuorumActualizado($reunion->id, $quorumData));
+
+        return response()->json($quorumData);
     }
 
     public function edit(Reunion $reunion)
@@ -271,7 +303,15 @@ class ReunionController extends Controller
     public function enviarAviso(Request $request, Reunion $reunion)
     {
         $request->validate(['mensaje' => 'required|string|max:300']);
-        broadcast(new \App\Events\AvisoEnviado($reunion->id, $request->mensaje, now()->toIso8601String()));
+        $ts = now()->toIso8601String();
+
+        $reunion->logs()->create([
+            'user_id'  => auth()->id(),
+            'accion'   => 'aviso_enviado',
+            'metadata' => ['mensaje' => $request->mensaje],
+        ]);
+
+        broadcast(new \App\Events\AvisoEnviado($reunion->id, $request->mensaje, $ts));
         return back()->with('success', 'Aviso enviado.');
     }
 }

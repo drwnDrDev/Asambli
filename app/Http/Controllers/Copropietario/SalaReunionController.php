@@ -2,7 +2,10 @@
 
 namespace App\Http\Controllers\Copropietario;
 
+use App\Enums\ReunionEstado;
+use App\Events\QuorumActualizado;
 use App\Http\Controllers\Controller;
+use App\Models\Asistencia;
 use App\Models\Copropietario;
 use App\Models\Poder;
 use App\Models\Reunion;
@@ -20,7 +23,7 @@ class SalaReunionController extends Controller
         $reuniones = $copropietario
             ? Reunion::withoutGlobalScopes()
                 ->where('tenant_id', $copropietario->tenant_id)
-                ->whereIn('estado', ['convocada', 'en_curso'])
+                ->whereIn('estado', ['convocada', 'ante_sala', 'en_curso'])
                 ->orderByDesc('created_at')
                 ->get()
             : collect();
@@ -30,8 +33,19 @@ class SalaReunionController extends Controller
 
     public function show(Reunion $reunion)
     {
-        $quorum = $this->quorumService->calcular($reunion);
         $copropietario = Copropietario::where('user_id', auth()->id())->first();
+
+        // Auto-register attendance when copropietario enters ante_sala or en_curso
+        if ($copropietario && in_array($reunion->estado, [ReunionEstado::AnteSala, ReunionEstado::EnCurso])) {
+            Asistencia::updateOrCreate(
+                ['reunion_id' => $reunion->id, 'copropietario_id' => $copropietario->id],
+                ['confirmada_por_admin' => true, 'hora_confirmacion' => now()]
+            );
+            $quorum = $this->quorumService->calcular($reunion);
+            broadcast(new QuorumActualizado($reunion->id, $quorum));
+        } else {
+            $quorum = $this->quorumService->calcular($reunion);
+        }
 
         $poderes = $copropietario
             ? Poder::withoutGlobalScopes()
@@ -105,7 +119,22 @@ class SalaReunionController extends Controller
             ]);
         }
 
-        // 2. Closed votaciones with winner option
+        // 2. Avisos from logs
+        $avisoLogs = \App\Models\ReunionLog::withoutGlobalScopes()
+            ->where('reunion_id', $reunion->id)
+            ->where('accion', 'aviso_enviado')
+            ->orderBy('created_at')
+            ->get();
+
+        foreach ($avisoLogs as $log) {
+            $items->push([
+                'tipo'      => 'aviso',
+                'mensaje'   => $log->metadata['mensaje'] ?? '',
+                'timestamp' => $log->created_at->toIso8601String(),
+            ]);
+        }
+
+        // 3. Closed votaciones with winner option
         $votacionesCerradas = $reunion->votaciones()
             ->with('opciones')
             ->where('estado', 'cerrada')

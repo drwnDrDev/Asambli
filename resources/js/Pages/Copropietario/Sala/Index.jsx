@@ -1,14 +1,34 @@
+import { useEffect } from 'react'
 import SalaLayout from '@/Layouts/SalaLayout'
-import { Link } from '@inertiajs/react'
+import { Link, router } from '@inertiajs/react'
+import echo from '@/echo'
 
 const ESTADO_COLOR = {
     en_curso:   'text-green-400',
+    ante_sala:  'text-blue-400',
     convocada:  'text-blue-400',
     borrador:   'text-slate-400',
     finalizada: 'text-slate-500',
 }
 
+const ESTADO_LABEL = {
+    en_curso:  '● En curso',
+    ante_sala: '◉ Ante sala',
+}
+
 export default function Index({ reuniones = [] }) {
+    useEffect(() => {
+        if (reuniones.length === 0) return
+        reuniones.forEach(r => {
+            echo.channel(`reunion.${r.id}`).listen('EstadoReunionCambiado', () => {
+                router.reload({ preserveUrl: true })
+            })
+        })
+        return () => {
+            reuniones.forEach(r => echo.leave(`reunion.${r.id}`))
+        }
+    }, [])
+
     return (
         <SalaLayout>
             <h1 className="text-xl font-bold mb-6">Mis Reuniones</h1>
@@ -31,8 +51,8 @@ export default function Index({ reuniones = [] }) {
                                     <p className="font-semibold">{r.titulo}</p>
                                     <p className="text-xs text-slate-400 mt-1 capitalize">{r.tipo}</p>
                                 </div>
-                                <span className={`text-xs font-medium capitalize ${ESTADO_COLOR[r.estado]}`}>
-                                    {r.estado === 'en_curso' ? '● En curso' : r.estado}
+                                <span className={`text-xs font-medium capitalize ${ESTADO_COLOR[r.estado] ?? 'text-slate-400'}`}>
+                                    {ESTADO_LABEL[r.estado] ?? r.estado}
                                 </span>
                             </div>
                         </Link>
