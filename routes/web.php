@@ -109,13 +109,14 @@ Route::middleware(['auth', 'role:copropietario,administrador,super_admin'])
     ->name('sala.')
     ->group(function () {
         Route::get('/sala', [SalaReunionController::class, 'index'])->name('index');
-        Route::get('/sala/{reunion}', [SalaReunionController::class, 'show'])->name('show');
         Route::get('/historial', [SalaReunionController::class, 'historial'])->name('historial');
         Route::post('/votos', [VotoController::class, 'store'])->name('votos.store');
+        // Rutas estáticas de poderes ANTES que /sala/{reunion} para evitar colisión
         Route::get('/sala/poderes', [CopropietarioPoderController::class, 'index'])->name('poderes.index');
         Route::get('/sala/poderes/crear', [CopropietarioPoderController::class, 'create'])->name('poderes.create');
         Route::post('/sala/poderes', [CopropietarioPoderController::class, 'store'])->name('poderes.store');
         Route::delete('/sala/poderes/{poder}', [CopropietarioPoderController::class, 'destroy'])->name('poderes.destroy');
+        Route::get('/sala/{reunion}', [SalaReunionController::class, 'show'])->name('show');
     });
 
 // Super-admin routes
