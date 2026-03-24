@@ -629,7 +629,7 @@ export default function Conducir({ reunion, quorum: initialQuorum, copropietario
                                 </span>
                             </h2>
                             <a
-                                href={`/admin/reuniones/${reunion.id}/poderes`}
+                                href="/admin/poderes"
                                 className="text-xs text-blue-600 hover:text-blue-800 font-medium"
                             >
                                 Poderes →

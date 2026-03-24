@@ -79,12 +79,12 @@ Route::middleware(['auth', 'role:administrador,super_admin'])
         Route::get('padron', [PadronController::class, 'index'])->name('padron.index');
         Route::post('padron/import', [PadronController::class, 'import'])->name('padron.import');
 
-        // Poderes
-        Route::get('reuniones/{reunion}/poderes', [AdminPoderController::class, 'index'])->name('reuniones.poderes.index');
-        Route::post('reuniones/{reunion}/poderes', [AdminPoderController::class, 'store'])->name('reuniones.poderes.store');
-        Route::patch('reuniones/{reunion}/poderes/{poder}/aprobar', [AdminPoderController::class, 'aprobar'])->name('reuniones.poderes.aprobar');
-        Route::patch('reuniones/{reunion}/poderes/{poder}/rechazar', [AdminPoderController::class, 'rechazar'])->name('reuniones.poderes.rechazar');
-        Route::delete('reuniones/{reunion}/poderes/{poder}', [AdminPoderController::class, 'destroy'])->name('reuniones.poderes.destroy');
+        // Poderes (standalone, sin reunion)
+        Route::get('poderes', [AdminPoderController::class, 'index'])->name('poderes.index');
+        Route::post('poderes', [AdminPoderController::class, 'store'])->name('poderes.store');
+        Route::patch('poderes/{poder}/aprobar', [AdminPoderController::class, 'aprobar'])->name('poderes.aprobar');
+        Route::patch('poderes/{poder}/rechazar', [AdminPoderController::class, 'rechazar'])->name('poderes.rechazar');
+        Route::delete('poderes/{poder}', [AdminPoderController::class, 'destroy'])->name('poderes.destroy');
 
         // Copropietarios
         Route::resource('copropietarios', CopropietarioController::class);
@@ -112,9 +112,10 @@ Route::middleware(['auth', 'role:copropietario,administrador,super_admin'])
         Route::get('/sala/{reunion}', [SalaReunionController::class, 'show'])->name('show');
         Route::get('/historial', [SalaReunionController::class, 'historial'])->name('historial');
         Route::post('/votos', [VotoController::class, 'store'])->name('votos.store');
-        Route::get('/sala/{reunion}/poderes/crear', [CopropietarioPoderController::class, 'create'])->name('poderes.create');
-        Route::post('/sala/{reunion}/poderes', [CopropietarioPoderController::class, 'store'])->name('poderes.store');
-        Route::delete('/sala/{reunion}/poderes/{poder}', [CopropietarioPoderController::class, 'destroy'])->name('poderes.destroy');
+        Route::get('/sala/poderes', [CopropietarioPoderController::class, 'index'])->name('poderes.index');
+        Route::get('/sala/poderes/crear', [CopropietarioPoderController::class, 'create'])->name('poderes.create');
+        Route::post('/sala/poderes', [CopropietarioPoderController::class, 'store'])->name('poderes.store');
+        Route::delete('/sala/poderes/{poder}', [CopropietarioPoderController::class, 'destroy'])->name('poderes.destroy');
     });
 
 // Super-admin routes

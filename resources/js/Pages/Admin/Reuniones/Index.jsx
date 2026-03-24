@@ -63,12 +63,20 @@ export default function Index({ reuniones = [] }) {
                                         {r.fecha_programada ?? '—'}
                                     </td>
                                     <td className="px-4 py-3 text-right">
-                                        <Link
-                                            href={`/admin/reuniones/${r.id}`}
-                                            className="text-blue-600 hover:underline"
-                                        >
-                                            Ver →
-                                        </Link>
+                                        <div className="flex items-center justify-end gap-4">
+                                            <Link
+                                                href="/admin/poderes"
+                                                className="text-gray-400 hover:text-blue-600 text-xs"
+                                            >
+                                                Poderes
+                                            </Link>
+                                            <Link
+                                                href={`/admin/reuniones/${r.id}`}
+                                                className="text-blue-600 hover:underline"
+                                            >
+                                                Ver →
+                                            </Link>
+                                        </div>
                                     </td>
                                 </tr>
                             ))}

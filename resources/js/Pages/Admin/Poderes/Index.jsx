@@ -1,26 +1,26 @@
 import { useState } from 'react'
 import { router, useForm, usePage } from '@inertiajs/react'
 import AdminLayout from '@/Layouts/AdminLayout'
-import { Link } from '@inertiajs/react'
 
 const ESTADO_COLOR = {
     pendiente: 'bg-yellow-100 text-yellow-700',
     aprobado:  'bg-green-100 text-green-700',
     rechazado: 'bg-red-100 text-red-700',
     revocado:  'bg-gray-100 text-gray-600',
+    expirado:  'bg-slate-100 text-slate-500',
 }
 
-function PoderRow({ poder, reunionId, onAprobar, onRechazar, onRevocar }) {
+function PoderRow({ poder, onAprobar, onRechazar, onRevocar }) {
     const apoderado = poder.apoderado
     const poderdante = poder.poderdante
 
     return (
-        <div className="flex items-start justify-between py-3 border-b border-gray-100 gap-3">
+        <div className="flex items-start justify-between py-3 border-b border-gray-100 gap-3 last:border-0">
             <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-0.5">
                     <p className="text-sm font-medium text-gray-800 truncate">{apoderado?.user?.name}</p>
                     {apoderado?.es_externo && (
-                        <span className="text-[10px] font-bold bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded flex-shrink-0">D</span>
+                        <span className="text-[10px] font-bold bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded flex-shrink-0">Externo</span>
                     )}
                     {apoderado?.empresa && (
                         <span className="text-xs text-gray-400 truncate">{apoderado.empresa}</span>
@@ -68,67 +68,63 @@ function PoderRow({ poder, reunionId, onAprobar, onRechazar, onRevocar }) {
     )
 }
 
-export default function PoderesIndex({ reunion, poderes = {}, copropietarios = [] }) {
+export default function PoderesIndex({ poderes = {}, copropietarios = [] }) {
     const { flash } = usePage().props
     const [tab, setTab] = useState('pendiente')
     const [showCrear, setShowCrear] = useState(false)
 
     const { data, setData, post, processing, errors, reset } = useForm({
-        poderdante_id:    '',
-        delegado_nombre:  '',
-        delegado_email:   '',
-        delegado_telefono:'',
+        poderdante_id:     '',
+        delegado_nombre:   '',
+        delegado_email:    '',
+        delegado_telefono: '',
         delegado_documento:'',
-        delegado_empresa: '',
-        documento_url:    '',
+        delegado_empresa:  '',
+        documento_url:     '',
     })
 
+    const tabs = ['pendiente', 'aprobado', 'rechazado', 'revocado', 'expirado']
+    const counts = tabs.reduce((acc, t) => ({ ...acc, [t]: (poderes[t] ?? []).length }), {})
     const listaTab = poderes[tab] ?? []
 
     const handleAprobar = (poderId) => {
-        router.patch(`/admin/reuniones/${reunion.id}/poderes/${poderId}/aprobar`, {}, { preserveScroll: true })
+        router.patch(`/admin/poderes/${poderId}/aprobar`, {}, { preserveScroll: true })
     }
 
     const handleRechazar = (poderId) => {
         const motivo = window.prompt('Motivo del rechazo (opcional):')
         if (motivo === null) return
-        router.patch(`/admin/reuniones/${reunion.id}/poderes/${poderId}/rechazar`, { motivo }, { preserveScroll: true })
+        router.patch(`/admin/poderes/${poderId}/rechazar`, { motivo }, { preserveScroll: true })
     }
 
     const handleRevocar = (poderId) => {
         if (!window.confirm('¿Revocar este poder?')) return
-        router.delete(`/admin/reuniones/${reunion.id}/poderes/${poderId}`, { preserveScroll: true })
+        router.delete(`/admin/poderes/${poderId}`, { preserveScroll: true })
     }
 
     const submitCrear = (e) => {
         e.preventDefault()
-        post(`/admin/reuniones/${reunion.id}/poderes`, {
+        post('/admin/poderes', {
             preserveScroll: true,
             onSuccess: () => { reset(); setShowCrear(false) },
         })
     }
 
-    const tabs = ['pendiente', 'aprobado', 'rechazado', 'revocado']
-    const counts = tabs.reduce((acc, t) => ({ ...acc, [t]: (poderes[t] ?? []).length }), {})
-
     return (
-        <AdminLayout title={`Poderes — ${reunion.titulo}`}>
-            <div className="mb-4 flex items-center gap-3">
-                <Link href={`/admin/reuniones/${reunion.id}/conducir`} className="text-sm text-gray-500 hover:text-gray-700">
-                    ← Conducir
-                </Link>
-                <h1 className="text-lg font-semibold text-gray-900">Poderes</h1>
-                <span className="text-sm text-gray-500">{reunion.titulo}</span>
-            </div>
-
+        <AdminLayout title="Poderes">
             {flash?.success && (
                 <div className="mb-4 bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg text-sm">
                     {flash.success}
                 </div>
             )}
 
+            <p className="text-sm text-app-text-muted mb-4">
+                Los poderes activos permiten que un delegado vote en nombre de un copropietario.
+                Se expiran automáticamente al finalizar una reunión.
+            </p>
+
             {/* Tabs */}
-            <div className="flex gap-2 mb-4 border-b border-gray-200 pb-0">
+            <div className="flex gap-1 mb-4 border-b border-gray-200 pb-0 flex-wrap">
                 {tabs.map(t => (
                     <button
                         key={t}
@@ -232,7 +228,6 @@ export default function PoderesIndex({ reunion, poderes = {}, copropietarios = [
                         <PoderRow
                             key={poder.id}
                             poder={poder}
-                            reunionId={reunion.id}
                             onAprobar={handleAprobar}
                             onRechazar={handleRechazar}
                             onRevocar={handleRevocar}

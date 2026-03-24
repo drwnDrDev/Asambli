@@ -1,7 +1,7 @@
 import AdminLayout from '@/Layouts/AdminLayout'
 import { Link, usePage, router } from '@inertiajs/react'
 
-export default function Show({ copropietario }) {
+export default function Show({ copropietario, poderesActivos = [] }) {
     const { flash } = usePage().props
     const { user, unidades = [] } = copropietario
 
@@ -145,6 +145,28 @@ export default function Show({ copropietario }) {
                     </button>
                 </div>
             </div>
+
+            {/* Poderes activos */}
+            {poderesActivos.length > 0 && (
+                <div className="mt-5 bg-surface rounded-xl border border-surface-border p-6">
+                    <h3 className="text-sm font-semibold text-app-text-muted uppercase tracking-wide mb-4">
+                        Poderes activos ({poderesActivos.length})
+                    </h3>
+                    <div className="space-y-3">
+                        {poderesActivos.map(p => (
+                            <div key={p.id} className="flex items-center justify-between text-sm border-b border-surface-border pb-3 last:border-0 last:pb-0">
+                                <div>
+                                    <p className="text-app-text-primary font-medium">{p.apoderado?.user?.name}</p>
+                                    <p className="text-xs text-app-text-muted mt-0.5">{p.reunion?.titulo}</p>
+                                </div>
+                                <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${p.estado === 'aprobado' ? 'bg-success-bg text-success' : 'bg-warning/20 text-warning'}`}>
+                                    {p.estado}
+                                </span>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
 
             <div className="mt-5 flex items-center gap-3">
                 <Link

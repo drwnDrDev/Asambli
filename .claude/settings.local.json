@@ -51,7 +51,10 @@
       "Bash(curl:*)",
       "Bash(WWWGROUP=1000 WWWUSER=1000 docker compose up -d 2>&1)",
       "Bash(docker compose:*)",
-      "Bash(claude:*)"
+      "Bash(claude:*)",
+      "Bash(WWWGROUP=1000 WWWUSER=1000 docker compose exec laravel.test php artisan migrate 2>&1)",
+      "Bash(WWWGROUP=1000 WWWUSER=1000 docker compose exec laravel.test php artisan route:list --name=poderes 2>&1)",
+      "Bash(WWWGROUP=1000 WWWUSER=1000 docker compose exec laravel.test php artisan config:clear)"
     ]
   }
 }

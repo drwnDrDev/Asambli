@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Traits\BelongsToTenant;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Poder extends Model
 {
@@ -17,6 +18,8 @@ class Poder extends Model
         'aprobado_por', 'rechazado_motivo', 'invitacion_enviada_at',
     ];
 
+    // Estados posibles: pendiente, aprobado, rechazado, revocado, expirado
+
     protected $casts = [
         'invitacion_enviada_at' => 'datetime',
     ];
@@ -24,21 +27,36 @@ class Poder extends Model
     protected static function booted(): void
     {
         static::creating(function ($poder) {
-            $tenant = app('current_tenant');
-            $maxPoderes = $tenant->max_poderes_por_delegado;
+            // Validar: un solo poder activo por poderdante
+            $yaActivo = static::withoutGlobalScopes()
+                ->where('poderdante_id', $poder->poderdante_id)
+                ->whereIn('estado', ['pendiente', 'aprobado'])
+                ->exists();
 
-            $count = static::withoutGlobalScopes()
-                ->where('reunion_id', $poder->reunion_id)
+            if ($yaActivo) {
+                throw new \Exception('Este copropietario ya tiene un poder activo.');
+            }
+
+            // Validar: el apoderado no supera el máximo de poderes recibidos
+            $tenant = app('current_tenant');
+            $maxPoderes = $tenant->max_poderes_por_delegado ?? 2;
+
+            $countApoderado = static::withoutGlobalScopes()
                 ->where('apoderado_id', $poder->apoderado_id)
                 ->whereIn('estado', ['pendiente', 'aprobado'])
                 ->count();
 
-            if ($count >= $maxPoderes) {
+            if ($countApoderado >= $maxPoderes) {
                 throw new \Exception(
-                    "Este apoderado ya tiene el máximo de {$maxPoderes} poderes en esta reunión."
+                    "Este delegado ya tiene el máximo de {$maxPoderes} poderes activos."
                 );
             }
         });
+    }
+
+    public function reunion()
+    {
+        return $this->belongsTo(Reunion::class);
     }
 
     public function apoderado()

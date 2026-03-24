@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Copropietario;
 use App\Http\Controllers\Controller;
 use App\Models\Copropietario;
 use App\Models\Poder;
-use App\Models\Reunion;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -14,55 +13,66 @@ use Inertia\Inertia;
 
 class PoderController extends Controller
 {
-    public function create(Reunion $reunion)
+    public function index()
     {
-        return Inertia::render('Copropietario/Sala/Poderes/Create', [
-            'reunion' => $reunion,
+        $copropietario = Copropietario::where('user_id', auth()->id())->firstOrFail();
+
+        $miPoder = Poder::withoutGlobalScopes()
+            ->where('poderdante_id', $copropietario->id)
+            ->whereIn('estado', ['pendiente', 'aprobado'])
+            ->with('apoderado.user')
+            ->latest()
+            ->first();
+
+        return Inertia::render('Copropietario/Sala/Poderes/Index', [
+            'miPoder' => $miPoder,
         ]);
     }
 
-    public function store(Request $request, Reunion $reunion)
+    public function create()
+    {
+        $copropietario = Copropietario::where('user_id', auth()->id())->firstOrFail();
+
+        $yaActivo = Poder::withoutGlobalScopes()
+            ->where('poderdante_id', $copropietario->id)
+            ->whereIn('estado', ['pendiente', 'aprobado'])
+            ->exists();
+
+        return Inertia::render('Copropietario/Sala/Poderes/Create', [
+            'yaActivo' => $yaActivo,
+        ]);
+    }
+
+    public function store(Request $request)
     {
         $data = $request->validate([
-            'delegado_nombre'  => 'required|string|max:255',
-            'delegado_email'   => 'required|email',
-            'delegado_telefono'=> 'nullable|string|max:30',
+            'delegado_nombre'   => 'required|string|max:255',
+            'delegado_email'    => 'required|email',
+            'delegado_telefono' => 'nullable|string|max:30',
             'delegado_documento'=> 'nullable|string|max:50',
-            'delegado_empresa' => 'nullable|string|max:150',
+            'delegado_empresa'  => 'nullable|string|max:150',
         ]);
 
         $copropietario = Copropietario::where('user_id', auth()->id())->firstOrFail();
         $tenant = app('current_tenant');
 
-        // Verificar que el copropietario no tenga ya un poder activo para esta reunión
-        $yaExiste = Poder::withoutGlobalScopes()
-            ->where('reunion_id', $reunion->id)
-            ->where('poderdante_id', $copropietario->id)
-            ->whereIn('estado', ['pendiente', 'aprobado'])
-            ->exists();
-
-        if ($yaExiste) {
-            return back()->withErrors(['delegado_email' => 'Ya tienes un poder registrado para esta reunión.']);
-        }
-
-        DB::transaction(function () use ($data, $reunion, $copropietario, $tenant) {
+        DB::transaction(function () use ($data, $copropietario, $tenant) {
             $apoderado = $this->resolverOCrearDelegado($data, $tenant);
 
             Poder::create([
-                'tenant_id'    => $tenant->id,
-                'reunion_id'   => $reunion->id,
-                'apoderado_id' => $apoderado->id,
-                'poderdante_id'=> $copropietario->id,
+                'tenant_id'      => $tenant->id,
+                'apoderado_id'   => $apoderado->id,
+                'poderdante_id'  => $copropietario->id,
                 'registrado_por' => auth()->id(),
-                'estado'       => 'pendiente',
+                'estado'         => 'pendiente',
             ]);
         });
 
-        return redirect()->route('sala.index')
-            ->with('success', 'Solicitud de poder enviada. El administrador la revisará pronto.');
+        return redirect()->route('sala.poderes.index')
+            ->with('success', 'Solicitud enviada. El administrador la revisará pronto.');
     }
 
-    public function destroy(Reunion $reunion, Poder $poder)
+    public function destroy(Poder $poder)
     {
         $copropietario = Copropietario::where('user_id', auth()->id())->firstOrFail();
 
@@ -71,7 +81,8 @@ class PoderController extends Controller
 
         $poder->update(['estado' => 'rechazado', 'rechazado_motivo' => 'Retirado por el copropietario']);
 
-        return back()->with('success', 'Solicitud de poder retirada.');
+        return redirect()->route('sala.poderes.index')
+            ->with('success', 'Solicitud de poder retirada.');
     }
 
     private function resolverOCrearDelegado(array $data, $tenant): Copropietario

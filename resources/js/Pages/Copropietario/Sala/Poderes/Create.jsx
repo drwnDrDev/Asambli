@@ -2,7 +2,7 @@ import { useForm } from '@inertiajs/react'
 import SalaLayout from '@/Layouts/SalaLayout'
 import { Link } from '@inertiajs/react'
 
-export default function Create({ reunion }) {
+export default function Create({ yaActivo = false }) {
     const { data, setData, post, processing, errors } = useForm({
         delegado_nombre:   '',
         delegado_email:    '',
@@ -13,23 +13,42 @@ export default function Create({ reunion }) {
 
     const submit = (e) => {
         e.preventDefault()
-        post(`/sala/${reunion.id}/poderes`)
+        post('/sala/poderes')
+    }
+
+    if (yaActivo) {
+        return (
+            <SalaLayout>
+                <div className="max-w-md mx-auto text-center py-12">
+                    <div className="text-4xl mb-4">⚠️</div>
+                    <h2 className="text-lg font-semibold mb-2">Ya tienes un poder activo</h2>
+                    <p className="text-slate-400 text-sm mb-6">
+                        Solo puedes tener un poder activo a la vez. Retíralo antes de registrar uno nuevo.
+                    </p>
+                    <Link
+                        href="/sala/poderes"
+                        className="inline-block bg-amber-500 hover:bg-amber-400 text-slate-900 font-semibold px-6 py-2.5 rounded-xl text-sm transition"
+                    >
+                        Ver mi poder
+                    </Link>
+                </div>
+            </SalaLayout>
+        )
     }
 
     return (
         <SalaLayout>
             <div className="max-w-md mx-auto">
-                <Link href="/sala" className="text-sm text-slate-400 hover:text-slate-300 mb-4 inline-block">
+                <Link href="/sala/poderes" className="text-sm text-slate-400 hover:text-slate-300 mb-4 inline-block">
                     ← Volver
                 </Link>
                 <h1 className="text-xl font-bold mb-1">Registrar poder</h1>
                 <p className="text-slate-400 text-sm mb-6">
-                    Reunión: <span className="text-white">{reunion.titulo}</span>
+                    Autoriza a una persona para votar en tu nombre en la próxima reunión.
                 </p>
 
                 <div className="bg-slate-800 rounded-xl p-4 mb-6 text-sm text-slate-300">
-                    Al registrar un poder, autorizas a la persona indicada a votar en tu nombre.
-                    Tu acceso a la sala quedará bloqueado una vez que el administrador apruebe el poder.
+                    Una vez aprobado por el administrador, tu acceso a la sala quedará bloqueado y tu delegado podrá votar en tu nombre.
                 </div>
 
                 <form onSubmit={submit} className="space-y-4">

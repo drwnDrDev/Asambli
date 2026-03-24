@@ -51,14 +51,6 @@ export default function Index({ reuniones = [] }) {
                                     {ESTADO_LABEL[r.estado] ?? r.estado}
                                 </span>
                             </div>
-                            {['ante_sala', 'en_curso'].includes(r.estado) && (
-                                <Link
-                                    href={`/sala/${r.id}/poderes/crear`}
-                                    className="text-xs text-slate-400 hover:text-amber-400 transition"
-                                >
-                                    + Registrar poder / delegar voto
-                                </Link>
-                            )}
                         </div>
                     ))}
                 </div>

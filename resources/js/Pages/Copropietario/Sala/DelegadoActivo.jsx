@@ -1,7 +1,7 @@
 import SalaLayout from '@/Layouts/SalaLayout'
 import { Link } from '@inertiajs/react'
 
-export default function DelegadoActivo({ reunion, delegadoNombre, delegadoEmpresa }) {
+export default function DelegadoActivo({ delegadoNombre, delegadoEmpresa }) {
     return (
         <SalaLayout>
             <div className="min-h-[60vh] flex items-center justify-center">
@@ -18,9 +18,11 @@ export default function DelegadoActivo({ reunion, delegadoNombre, delegadoEmpres
                         )}
                     </div>
                     <p className="text-slate-400 text-sm mb-6">
-                        Tu representante está autorizado para votar en nombre tuyo en la reunión{' '}
-                        <span className="text-white font-medium">{reunion.titulo}</span>.
+                        Tu representante está autorizado para votar en tu nombre.
                         No puedes acceder a la sala mientras el poder esté activo.
+                    </p>
+                    <p className="text-slate-500 text-xs mb-6">
+                        Si tienes dudas, comunícate con el administrador del conjunto.
                     </p>
                     <Link
                         href="/sala"

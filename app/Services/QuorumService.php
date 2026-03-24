@@ -40,7 +40,6 @@ class QuorumService
         $coeficienteDelegados = 0.0;
         if ($presenteIds->isNotEmpty()) {
             $poderdanteIds = Poder::withoutGlobalScopes()
-                ->where('reunion_id', $reunion->id)
                 ->where('estado', 'aprobado')
                 ->whereIn('apoderado_id', $presenteIds)
                 ->pluck('poderdante_id');
@@ -88,7 +87,6 @@ class QuorumService
         $poderdantesRepresentados = 0;
         if ($presenteIds->isNotEmpty()) {
             $poderdantesRepresentados = Poder::withoutGlobalScopes()
-                ->where('reunion_id', $reunion->id)
                 ->where('estado', 'aprobado')
                 ->whereIn('apoderado_id', $presenteIds)
                 ->count();

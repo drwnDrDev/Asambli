@@ -36,7 +36,7 @@ class Copropietario extends Model
         return $this->hasMany(Poder::class, 'apoderado_id');
     }
 
-    public function poderesComoPolerdante()
+    public function poderesOtorgados()
     {
         return $this->hasMany(Poder::class, 'poderdante_id');
     }

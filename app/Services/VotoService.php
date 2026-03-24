@@ -41,7 +41,6 @@ class VotoService
                 // 4a. Validar poder si vota en nombre de otro
                 if ($enNombreDeId !== null) {
                     $tienePoder = Poder::withoutGlobalScopes()
-                        ->where('reunion_id', $votacion->reunion_id)
                         ->where('apoderado_id', $copropietario->id)
                         ->where('poderdante_id', $enNombreDeId)
                         ->where('estado', 'aprobado')

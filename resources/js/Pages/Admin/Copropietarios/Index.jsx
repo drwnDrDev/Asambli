@@ -84,6 +84,9 @@ export default function Index({ copropietarios = [] }) {
                                                 {!c.user?.onboarded_at && (
                                                     <span className="text-[11px] bg-warning/20 text-warning px-1.5 py-0.5 rounded">Sin activar</span>
                                                 )}
+                                                {c.poderes_activos_count > 0 && (
+                                                    <span className="text-[11px] bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded">Con poder</span>
+                                                )}
                                             </div>
                                         </td>
                                         <td className="px-5 py-3.5">

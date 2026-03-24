@@ -35,10 +35,9 @@ class SalaReunionController extends Controller
     {
         $copropietario = Copropietario::where('user_id', auth()->id())->first();
 
-        // Bloquear si el copropietario ya otorgó un poder aprobado para esta reunión
+        // Bloquear si el copropietario tiene un poder aprobado activo
         if ($copropietario) {
             $poderActivo = Poder::withoutGlobalScopes()
-                ->where('reunion_id', $reunion->id)
                 ->where('poderdante_id', $copropietario->id)
                 ->where('estado', 'aprobado')
                 ->with('apoderado.user')
@@ -46,8 +45,7 @@ class SalaReunionController extends Controller
 
             if ($poderActivo) {
                 return Inertia::render('Copropietario/Sala/DelegadoActivo', [
-                    'reunion'       => $reunion,
-                    'delegadoNombre'=> $poderActivo->apoderado?->user?->name ?? 'Delegado',
+                    'delegadoNombre'  => $poderActivo->apoderado?->user?->name ?? 'Delegado',
                     'delegadoEmpresa' => $poderActivo->apoderado?->empresa,
                 ]);
             }
@@ -67,7 +65,6 @@ class SalaReunionController extends Controller
 
         $poderes = $copropietario
             ? Poder::withoutGlobalScopes()
-                ->where('reunion_id', $reunion->id)
                 ->where('apoderado_id', $copropietario->id)
                 ->where('estado', 'aprobado')
                 ->with('poderdante.user')

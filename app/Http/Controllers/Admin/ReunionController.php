@@ -186,6 +186,13 @@ class ReunionController extends Controller
         $this->transicionService->transicionar(
             $reunion, ReunionEstado::Finalizada, auth()->user(), $request->observacion
         );
+
+        // Expirar todos los poderes activos del tenant al finalizar la reunión
+        \App\Models\Poder::withoutGlobalScopes()
+            ->where('tenant_id', $reunion->tenant_id)
+            ->whereIn('estado', ['pendiente', 'aprobado'])
+            ->update(['estado' => 'expirado', 'reunion_id' => $reunion->id]);
+
         return back()->with('success', 'Reunión finalizada.');
     }
 

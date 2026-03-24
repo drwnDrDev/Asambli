@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Copropietario;
+use App\Models\Poder;
 use App\Models\Unidad;
 use App\Models\User;
 use App\Notifications\OnboardingInvitation;
@@ -18,6 +19,10 @@ class CopropietarioController extends Controller
     public function index()
     {
         $copropietarios = Copropietario::with(['user', 'unidades'])
+            ->withCount([
+                'poderesOtorgados as poderes_activos_count' => fn ($q) =>
+                    $q->whereIn('estado', ['pendiente', 'aprobado']),
+            ])
             ->orderBy('created_at', 'desc')
             ->get();
 
@@ -88,8 +93,16 @@ class CopropietarioController extends Controller
     {
         $copropietario->load(['user', 'unidades']);
 
+        $poderesActivos = Poder::withoutGlobalScopes()
+            ->where('poderdante_id', $copropietario->id)
+            ->whereIn('estado', ['pendiente', 'aprobado'])
+            ->with('apoderado.user', 'reunion')
+            ->orderByDesc('created_at')
+            ->get();
+
         return Inertia::render('Admin/Copropietarios/Show', [
-            'copropietario' => $copropietario,
+            'copropietario'  => $copropietario,
+            'poderesActivos' => $poderesActivos,
         ]);
     }
 
