@@ -81,6 +81,7 @@ Route::middleware(['auth', 'role:administrador,super_admin'])
 
         // Poderes (standalone, sin reunion)
         Route::get('poderes', [AdminPoderController::class, 'index'])->name('poderes.index');
+        Route::get('poderes/verificar-delegado', [AdminPoderController::class, 'verificarDelegado'])->name('poderes.verificar-delegado');
         Route::post('poderes', [AdminPoderController::class, 'store'])->name('poderes.store');
         Route::patch('poderes/{poder}/aprobar', [AdminPoderController::class, 'aprobar'])->name('poderes.aprobar');
         Route::patch('poderes/{poder}/rechazar', [AdminPoderController::class, 'rechazar'])->name('poderes.rechazar');
@@ -113,6 +114,7 @@ Route::middleware(['auth', 'role:copropietario,administrador,super_admin'])
         Route::post('/votos', [VotoController::class, 'store'])->name('votos.store');
         // Rutas estáticas de poderes ANTES que /sala/{reunion} para evitar colisión
         Route::get('/sala/poderes', [CopropietarioPoderController::class, 'index'])->name('poderes.index');
+        Route::get('/sala/poderes/verificar-delegado', [CopropietarioPoderController::class, 'verificarDelegado'])->name('poderes.verificar-delegado');
         Route::get('/sala/poderes/crear', [CopropietarioPoderController::class, 'create'])->name('poderes.create');
         Route::post('/sala/poderes', [CopropietarioPoderController::class, 'store'])->name('poderes.store');
         Route::delete('/sala/poderes/{poder}', [CopropietarioPoderController::class, 'destroy'])->name('poderes.destroy');
