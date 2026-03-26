@@ -19,3 +19,15 @@ test('copropietario cannot access admin routes', function () {
          ->get('/admin/dashboard')
          ->assertStatus(403);
 });
+
+test('deactivated admin cannot access admin routes', function () {
+    $tenant = Tenant::factory()->create();
+    $admin = User::factory()->create([
+        'tenant_id' => $tenant->id,
+        'rol' => 'administrador',
+        'activo' => false,
+    ]);
+    $this->actingAs($admin)
+         ->get('/admin/dashboard')
+         ->assertStatus(403);
+});
