@@ -11,6 +11,7 @@ use App\Http\Controllers\Copropietario\PoderController as CopropietarioPoderCont
 use App\Http\Controllers\Copropietario\SalaReunionController;
 use App\Http\Controllers\Copropietario\VotoController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\SuperAdmin\DashboardController as SuperAdminDashboardController;
 use App\Http\Controllers\SuperAdmin\TenantController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
@@ -126,6 +127,7 @@ Route::middleware(['auth', 'role:super_admin'])
     ->prefix('super-admin')
     ->name('super-admin.')
     ->group(function () {
+        Route::get('/dashboard', [SuperAdminDashboardController::class, 'index'])->name('dashboard');
         Route::resource('tenants', TenantController::class);
     });
 
