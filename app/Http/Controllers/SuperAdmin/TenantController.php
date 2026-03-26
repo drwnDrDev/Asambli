@@ -112,6 +112,8 @@ class TenantController extends Controller
 
     public function storeAdmin(Request $request, Tenant $tenant)
     {
+        abort_if(!$tenant->activo, 422, 'No se pueden agregar admins a un conjunto desactivado.');
+
         $data = $request->validate([
             'nombre'   => 'required|string|max:255',
             'email'    => 'required|email|unique:users,email',
@@ -137,7 +139,7 @@ class TenantController extends Controller
         abort_if($user->tenant_id !== $tenant->id, 404);
 
         $user->update(['activo' => !$user->activo]);
-
+        // After update(), $user->activo reflects the NEW value
         return redirect()->route('super-admin.tenants.show', $tenant)
             ->with('success', $user->activo ? 'Usuario activado.' : 'Usuario desactivado.');
     }
