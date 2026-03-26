@@ -5,6 +5,7 @@ use App\Http\Controllers\Admin\CopropietarioController;
 use App\Http\Controllers\Admin\PadronController;
 use App\Http\Controllers\Admin\PoderController as AdminPoderController;
 use App\Http\Controllers\Admin\ReunionController;
+use App\Http\Controllers\Admin\TenantSettingsController;
 use App\Http\Controllers\Admin\VotacionController;
 use App\Http\Controllers\Auth\MagicLinkController;
 use App\Http\Controllers\Copropietario\PoderController as CopropietarioPoderController;
@@ -87,6 +88,10 @@ Route::middleware(['auth', 'role:administrador,super_admin'])
         Route::patch('poderes/{poder}/aprobar', [AdminPoderController::class, 'aprobar'])->name('poderes.aprobar');
         Route::patch('poderes/{poder}/rechazar', [AdminPoderController::class, 'rechazar'])->name('poderes.rechazar');
         Route::delete('poderes/{poder}', [AdminPoderController::class, 'destroy'])->name('poderes.destroy');
+
+        // Configuración del conjunto
+        Route::get('/configuracion', [TenantSettingsController::class, 'edit'])->name('configuracion');
+        Route::patch('/configuracion', [TenantSettingsController::class, 'update'])->name('configuracion.update');
 
         // Copropietarios
         Route::resource('copropietarios', CopropietarioController::class);
