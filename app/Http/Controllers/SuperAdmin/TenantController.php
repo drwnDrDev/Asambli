@@ -108,6 +108,33 @@ class TenantController extends Controller
             ->with('success', 'Conjunto desactivado.');
     }
 
+    public function auditoria(Request $request, Tenant $tenant)
+    {
+        $reuniones = $tenant->reuniones()->orderByDesc('fecha_programada')->get(['id', 'titulo']);
+
+        $logsQuery = \App\Models\ReunionLog::whereHas('reunion', fn ($q) =>
+                $q->withoutGlobalScopes()->where('tenant_id', $tenant->id)
+            )
+            ->with(['user:id,name', 'reunion:id,titulo'])
+            ->orderByDesc('created_at');
+
+        if ($request->filled('reunion_id')) {
+            $logsQuery->where('reunion_id', $request->reunion_id);
+        }
+        if ($request->filled('accion')) {
+            $logsQuery->where('accion', 'like', '%' . $request->accion . '%');
+        }
+
+        $logs = $logsQuery->paginate(50)->withQueryString();
+
+        return Inertia::render('SuperAdmin/Tenants/Auditoria', [
+            'tenant'    => $tenant,
+            'logs'      => $logs,
+            'reuniones' => $reuniones,
+            'filters'   => $request->only(['reunion_id', 'accion']),
+        ]);
+    }
+
     // --- Gestión de usuarios del tenant ---
 
     public function storeAdmin(Request $request, Tenant $tenant)

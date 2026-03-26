@@ -15,6 +15,11 @@ class ReunionLog extends Model
         'created_at' => 'datetime',
     ];
 
+    public function reunion()
+    {
+        return $this->belongsTo(\App\Models\Reunion::class);
+    }
+
     // Agregando esta relación con user:
     public function user()
     {

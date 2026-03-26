@@ -131,6 +131,7 @@ Route::middleware(['auth', 'role:super_admin'])
         Route::resource('tenants', TenantController::class);
         Route::post('tenants/{tenant}/admins', [TenantController::class, 'storeAdmin'])->name('tenants.admins.store');
         Route::patch('tenants/{tenant}/users/{user}/toggle', [TenantController::class, 'toggleUser'])->name('tenants.users.toggle');
+        Route::get('tenants/{tenant}/auditoria', [TenantController::class, 'auditoria'])->name('tenants.auditoria');
     });
 
 require __DIR__.'/auth.php';
