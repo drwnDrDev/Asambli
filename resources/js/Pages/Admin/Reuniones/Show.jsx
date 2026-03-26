@@ -285,7 +285,11 @@ export default function Show({ reunion, quorum, copropietarios = [], votaciones:
                             </a>
                             <a href={`/admin/reuniones/${reunion.id}/reporte/csv`}
                                 className="text-sm bg-gray-700 text-white px-4 py-2 rounded-lg hover:bg-gray-800 transition">
-                                Exportar CSV
+                                CSV Asistencia
+                            </a>
+                            <a href={`/admin/reuniones/${reunion.id}/reporte/csv-votos`}
+                                className="text-sm bg-gray-700 text-white px-4 py-2 rounded-lg hover:bg-gray-800 transition">
+                                CSV Votos
                             </a>
                         </>
                     )}
