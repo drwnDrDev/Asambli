@@ -6,12 +6,17 @@ use App\Events\VotacionModificada;
 use App\Http\Controllers\Controller;
 use App\Models\OpcionVotacion;
 use App\Models\Reunion;
+use App\Models\ReunionLog;
 use App\Models\Votacion;
+use App\Models\Voto;
+use App\Services\QuorumService;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
 class VotacionController extends Controller
 {
+    public function __construct(private QuorumService $quorumService) {}
+
     public function store(Request $request, Reunion $reunion)
     {
         $data = $request->validate([
@@ -76,9 +81,7 @@ class VotacionController extends Controller
         }
 
         $votacion->load('opciones');
-        $reunionId = $votacion->reunion_id;
 
-        // Snapshot para el broadcast antes de eliminar
         $payload = new VotacionModificada($votacion, 'deleted');
 
         $votacion->opciones()->delete();
@@ -91,16 +94,65 @@ class VotacionController extends Controller
 
     public function abrir(Votacion $votacion)
     {
+        $votacion->load('reunion');
+        $quorum = $this->quorumService->calcular($votacion->reunion);
+
         $votacion->update(['estado' => 'abierta', 'abierta_at' => now()]);
         $votacion->load('opciones');
         broadcast(new \App\Events\EstadoVotacionCambiado($votacion));
+
+        ReunionLog::create([
+            'reunion_id' => $votacion->reunion_id,
+            'user_id'    => auth()->id(),
+            'accion'     => 'votacion_abierta',
+            'metadata'   => [
+                'votacion_id'       => $votacion->id,
+                'pregunta'          => $votacion->pregunta,
+                'quorum_porcentaje' => $quorum['porcentaje_presente'],
+                'quorum_presente'   => $quorum['presente'],
+                'quorum_total'      => $quorum['total'],
+                'tiene_quorum'      => $quorum['tiene_quorum'],
+                'quorum_requerido'  => $quorum['quorum_requerido'],
+            ],
+        ]);
+
         return back()->with('success', 'Votación abierta.');
     }
 
     public function cerrar(Votacion $votacion)
     {
+        $votacion->load('reunion', 'opciones');
+
+        $totalVotos = Voto::withoutGlobalScopes()
+            ->where('votacion_id', $votacion->id)
+            ->count();
+
+        $ganadora = $votacion->opciones->map(function ($opcion) use ($votacion) {
+            return [
+                'texto'      => $opcion->texto,
+                'peso_total' => (float) Voto::withoutGlobalScopes()
+                    ->where('votacion_id', $votacion->id)
+                    ->where('opcion_id', $opcion->id)
+                    ->sum('peso'),
+            ];
+        })->sortByDesc('peso_total')->first();
+
         $votacion->update(['estado' => 'cerrada', 'cerrada_at' => now()]);
         broadcast(new \App\Events\EstadoVotacionCambiado($votacion));
+
+        ReunionLog::create([
+            'reunion_id' => $votacion->reunion_id,
+            'user_id'    => auth()->id(),
+            'accion'     => 'votacion_cerrada',
+            'metadata'   => [
+                'votacion_id'       => $votacion->id,
+                'pregunta'          => $votacion->pregunta,
+                'total_votos'       => $totalVotos,
+                'resultado_ganador' => $ganadora['texto'] ?? null,
+                'peso_ganador'      => $ganadora['peso_total'] ?? 0,
+            ],
+        ]);
+
         return back()->with('success', 'Votación cerrada.');
     }
 
