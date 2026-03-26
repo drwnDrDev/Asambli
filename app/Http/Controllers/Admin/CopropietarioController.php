@@ -187,12 +187,25 @@ class CopropietarioController extends Controller
 
     public function destroy(Copropietario $copropietario)
     {
+        if ($copropietario->es_externo) {
+            $tienePoderActivo = Poder::where('apoderado_id', $copropietario->id)
+                ->where('estado', 'aprobado')
+                ->whereHas('reunion', fn ($q) =>
+                    $q->whereNotIn('estado', ['finalizada', 'cancelada'])
+                )
+                ->exists();
+
+            if ($tienePoderActivo) {
+                return back()->with('error', 'No se puede eliminar: este delegado tiene un poder activo en una reunión vigente. Revoca el poder primero.');
+            }
+        }
+
         $user = $copropietario->user;
-        $copropietario->delete(); // nullOnDelete liberará sus unidades
+        $copropietario->delete();
         $user?->delete();
 
         return redirect()->route('admin.copropietarios.index')
-            ->with('success', 'Copropietario eliminado.');
+            ->with('success', 'Eliminado correctamente.');
     }
 
     public function generatePin(Copropietario $copropietario)
