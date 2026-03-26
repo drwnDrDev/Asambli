@@ -19,6 +19,10 @@ class RequireRole
             abort(403, 'No autorizado.');
         }
 
+        if (!$request->user()->activo) {
+            abort(403, 'Cuenta desactivada.');
+        }
+
         return $next($request);
     }
 }

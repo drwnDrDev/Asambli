@@ -24,6 +24,7 @@ class User extends Authenticatable
         'email',
         'password',
         'rol',
+        'activo',
         'quick_pin',
         'pin_expires_at',
         'onboarded_at',
@@ -49,6 +50,7 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'activo' => 'boolean',
             'onboarded_at' => 'datetime',
             'pin_expires_at' => 'datetime',
         ];
