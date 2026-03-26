@@ -89,9 +89,11 @@ Route::middleware(['auth', 'role:administrador,super_admin'])
         Route::patch('poderes/{poder}/rechazar', [AdminPoderController::class, 'rechazar'])->name('poderes.rechazar');
         Route::delete('poderes/{poder}', [AdminPoderController::class, 'destroy'])->name('poderes.destroy');
 
-        // Configuración del conjunto
-        Route::get('/configuracion', [TenantSettingsController::class, 'edit'])->name('configuracion');
-        Route::patch('/configuracion', [TenantSettingsController::class, 'update'])->name('configuracion.update');
+        // Configuración del conjunto (solo administrador — super_admin no tiene current_tenant)
+        Route::middleware('role:administrador')->group(function () {
+            Route::get('/configuracion', [TenantSettingsController::class, 'edit'])->name('configuracion');
+            Route::patch('/configuracion', [TenantSettingsController::class, 'update'])->name('configuracion.update');
+        });
 
         // Copropietarios
         Route::resource('copropietarios', CopropietarioController::class);

@@ -23,7 +23,7 @@ class TenantSettingsController extends Controller
             'nombre'                  => 'required|string|max:255',
             'direccion'               => 'nullable|string|max:255',
             'ciudad'                  => 'nullable|string|max:100',
-            'max_poderes_por_delegado' => 'integer|min:1|max:10',
+            'max_poderes_por_delegado' => 'required|integer|min:1|max:10',
         ]);
 
         $tenant->update($data);

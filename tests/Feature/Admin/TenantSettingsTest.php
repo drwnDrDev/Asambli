@@ -43,3 +43,11 @@ test('copropietario no puede acceder a configuración', function () {
         ->get('/admin/configuracion')
         ->assertStatus(403);
 });
+
+test('super_admin no puede acceder a configuración de tenant', function () {
+    $superAdmin = User::factory()->create(['tenant_id' => null, 'rol' => 'super_admin', 'activo' => true]);
+
+    $this->actingAs($superAdmin)
+        ->get('/admin/configuracion')
+        ->assertStatus(403);
+});
