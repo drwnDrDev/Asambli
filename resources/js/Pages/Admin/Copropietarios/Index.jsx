@@ -25,10 +25,9 @@ export default function Index({ copropietarios, filters }) {
 
     const destroy = (c) => {
         const esExterno = c.es_externo
-        const tieneHistorial = (c.poderes_como_apoderado ?? []).length > 0
         let msg = `¿Eliminar ${esExterno ? 'este delegado externo' : 'este copropietario'}?`
-        if (esExterno && tieneHistorial) {
-            msg += '\n\nEste externo tiene poderes en el historial. También se eliminarán.'
+        if (esExterno) {
+            msg += '\n\nNota: si este externo tiene un poder activo en una reunión vigente, la eliminación será bloqueada.'
         }
         msg += '\nEsta acción también eliminará su usuario.'
         if (confirm(msg)) {
@@ -205,7 +204,7 @@ function ExternosTable({ data, onDestroy }) {
             </thead>
             <tbody className="divide-y divide-surface-border">
                 {data.map(c => {
-                    const ultimoPoder = (c.poderes_como_apoderado ?? [])[0]
+                    const ultimoPoder = c.ultimo_poder_como_apoderado ?? null
                     const estadoPoder = ultimoPoder?.estado
                     return (
                         <tr key={c.id} className="hover:bg-surface-hover transition-colors">

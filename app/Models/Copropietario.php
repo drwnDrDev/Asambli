@@ -36,13 +36,13 @@ class Copropietario extends Model
         return $this->hasMany(Poder::class, 'apoderado_id');
     }
 
+    public function ultimoPoderComoApoderado()
+    {
+        return $this->hasOne(\App\Models\Poder::class, 'apoderado_id')->latestOfMany();
+    }
+
     public function poderesOtorgados()
     {
         return $this->hasMany(Poder::class, 'poderdante_id');
-    }
-
-    public function scopeExterno($query)
-    {
-        return $query->where('es_externo', true);
     }
 }

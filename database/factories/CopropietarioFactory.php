@@ -23,6 +23,7 @@ class CopropietarioFactory extends Factory
             'tipo_documento' => fake()->randomElement($tipos),
             'numero_documento' => fake()->unique()->numerify('##########'),
             'es_residente' => true,
+            'es_externo'   => false,
             'activo' => true,
         ];
     }

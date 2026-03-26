@@ -18,7 +18,9 @@ class CopropietarioController extends Controller
 {
     public function index(Request $request)
     {
-        $tab    = $request->get('tab', 'copropietarios'); // 'copropietarios' | 'externos'
+        $tab    = in_array($request->get('tab'), ['copropietarios', 'externos'])
+            ? $request->get('tab')
+            : 'copropietarios'; // 'copropietarios' | 'externos'
         $search = $request->get('search', '');
 
         $esExterno = $tab === 'externos';
@@ -31,11 +33,9 @@ class CopropietarioController extends Controller
             ]);
 
         if ($esExterno) {
-            // Load poderes for externos to show status badge
-            // NOTE: Do NOT use ->limit() inside with() — it breaks eager loading
-            // Use [0] in the JSX to get the most recent poder
-            $query->with(['poderesComoApoderado' => function ($q) {
-                $q->with('reunion:id,titulo,estado')->orderByDesc('created_at');
+            // Load only the latest poder per externo via latestOfMany()
+            $query->with(['ultimoPoderComoApoderado' => function ($q) {
+                $q->with('reunion:id,titulo,estado');
             }]);
         }
 
