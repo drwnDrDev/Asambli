@@ -262,6 +262,15 @@ class ReunionController extends Controller
         ]);
     }
 
+    public function reporteCsvVotos(Reunion $reunion)
+    {
+        $csv = $this->reporteService->generarCsvVotos($reunion);
+        return response($csv, 200, [
+            'Content-Type'        => 'text/csv; charset=UTF-8',
+            'Content-Disposition' => "attachment; filename=votos-{$reunion->id}.csv",
+        ]);
+    }
+
     public function auditoria(Reunion $reunion)
     {
         $logs = $reunion->logs()->with('user')->orderBy('created_at')->get();

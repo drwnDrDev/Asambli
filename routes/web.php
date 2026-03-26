@@ -62,6 +62,7 @@ Route::middleware(['auth', 'role:administrador,super_admin'])
         Route::post('reuniones/{reunion}/copropietarios/{copropietario}/asistencia', [ReunionController::class, 'confirmarAsistencia'])->name('reuniones.confirmar-asistencia');
         Route::get('reuniones/{reunion}/reporte/pdf', [ReunionController::class, 'reportePdf'])->name('reuniones.reporte-pdf');
         Route::get('reuniones/{reunion}/reporte/csv', [ReunionController::class, 'reporteCsv'])->name('reuniones.reporte-csv');
+        Route::get('reuniones/{reunion}/reporte/csv-votos', [ReunionController::class, 'reporteCsvVotos'])->name('reuniones.reporte-csv-votos');
         Route::get('reuniones/{reunion}/auditoria', [ReunionController::class, 'auditoria'])->name('reuniones.auditoria');
         Route::get('reuniones/{reunion}/conducir', [ReunionController::class, 'conducir'])->name('reuniones.conducir');
         Route::post('reuniones/{reunion}/generar-qr', [ReunionController::class, 'generarQr'])->name('reuniones.generar-qr');
