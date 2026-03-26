@@ -77,7 +77,7 @@
 
     <h2>3. Votaciones</h2>
     @foreach($votaciones as $v)
-    <p><strong>{{ $v->titulo }}</strong> ({{ $v->estado }})</p>
+    <p><strong>{{ $v->pregunta }}</strong> ({{ $v->estado }})</p>
     <table>
         <tr><th>Opción</th><th>Votos</th><th>Peso</th><th>%</th></tr>
         @php $pesoTotal = collect($v->resultados)->sum('peso_total'); @endphp
@@ -90,6 +90,32 @@
         </tr>
         @endforeach
     </table>
+
+    @if(count($v->votos_detalle) > 0)
+    <p style="font-size:10px;color:#555;margin-top:4px">Detalle individual de votos:</p>
+    <table>
+        <tr>
+            <th>Copropietario</th>
+            <th>Unidad(es)</th>
+            <th>Opción</th>
+            <th>Peso</th>
+            <th>Vota por</th>
+            <th>Hora</th>
+            <th>Hash</th>
+        </tr>
+        @foreach($v->votos_detalle as $d)
+        <tr>
+            <td>{{ $d['copropietario'] }}</td>
+            <td>{{ $d['unidades'] }}</td>
+            <td>{{ $d['opcion'] }}</td>
+            <td>{{ number_format($d['peso'], 4) }}</td>
+            <td>{{ $d['en_nombre_de'] ? 'En nombre de: ' . $d['en_nombre_de'] : 'Propio' }}</td>
+            <td>{{ $d['hora'] }}</td>
+            <td style="font-family:monospace;font-size:9px">{{ $d['hash'] }}...</td>
+        </tr>
+        @endforeach
+    </table>
+    @endif
     @endforeach
 
     <h2>4. Log de Eventos</h2>
