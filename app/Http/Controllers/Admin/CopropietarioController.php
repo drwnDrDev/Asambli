@@ -16,18 +16,43 @@ use Inertia\Inertia;
 
 class CopropietarioController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $copropietarios = Copropietario::with(['user', 'unidades'])
+        $tab    = $request->get('tab', 'copropietarios'); // 'copropietarios' | 'externos'
+        $search = $request->get('search', '');
+
+        $esExterno = $tab === 'externos';
+
+        $query = Copropietario::with(['user', 'unidades'])
+            ->where('es_externo', $esExterno)
             ->withCount([
                 'poderesOtorgados as poderes_activos_count' => fn ($q) =>
                     $q->whereIn('estado', ['pendiente', 'aprobado']),
-            ])
-            ->orderBy('created_at', 'desc')
-            ->get();
+            ]);
+
+        if ($esExterno) {
+            // Load poderes for externos to show status badge
+            // NOTE: Do NOT use ->limit() inside with() — it breaks eager loading
+            // Use [0] in the JSX to get the most recent poder
+            $query->with(['poderesComoApoderado' => function ($q) {
+                $q->with('reunion:id,titulo,estado')->orderByDesc('created_at');
+            }]);
+        }
+
+        if ($search) {
+            $query->where(function ($q) use ($search) {
+                $q->whereHas('user', fn ($sq) =>
+                    $sq->where('name', 'like', "%{$search}%")
+                       ->orWhere('email', 'like', "%{$search}%")
+                )->orWhere('numero_documento', 'like', "%{$search}%");
+            });
+        }
+
+        $copropietarios = $query->orderBy('created_at', 'desc')->paginate(20)->withQueryString();
 
         return Inertia::render('Admin/Copropietarios/Index', [
             'copropietarios' => $copropietarios,
+            'filters'        => ['tab' => $tab, 'search' => $search],
         ]);
     }
 
