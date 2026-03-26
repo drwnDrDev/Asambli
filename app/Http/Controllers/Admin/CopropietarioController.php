@@ -189,7 +189,7 @@ class CopropietarioController extends Controller
     {
         if ($copropietario->es_externo) {
             $tienePoderActivo = Poder::where('apoderado_id', $copropietario->id)
-                ->where('estado', 'aprobado')
+                ->whereIn('estado', ['pendiente', 'aprobado'])
                 ->whereHas('reunion', fn ($q) =>
                     $q->whereNotIn('estado', ['finalizada', 'cancelada'])
                 )

@@ -156,7 +156,44 @@ test('se puede eliminar externo cuyo poder corresponde a reunion finalizada', fu
 
     $this->actingAs($this->admin)
         ->delete("/admin/copropietarios/{$externo->id}")
-        ->assertRedirect();
+        ->assertRedirect()
+        ->assertSessionHas('success')
+        ->assertSessionMissing('error');
 
     expect(Copropietario::find($externo->id))->toBeNull(); // deleted
+});
+
+test('no se puede eliminar externo con poder pendiente en reunion vigente', function () {
+    $userExt = User::factory()->create(['tenant_id' => $this->tenant->id, 'rol' => 'copropietario']);
+    $externo = Copropietario::factory()->create([
+        'tenant_id'  => $this->tenant->id,
+        'user_id'    => $userExt->id,
+        'es_externo' => true,
+    ]);
+
+    $adminUser = User::factory()->create(['tenant_id' => $this->tenant->id, 'rol' => 'administrador']);
+    $reunion = Reunion::factory()->create(['creado_por' => $adminUser->id, 'estado' => 'ante_sala']);
+
+    $poderdanteUser = User::factory()->create(['tenant_id' => $this->tenant->id, 'rol' => 'copropietario']);
+    $poderdante = Copropietario::factory()->create([
+        'tenant_id'  => $this->tenant->id,
+        'user_id'    => $poderdanteUser->id,
+        'es_externo' => false,
+    ]);
+
+    Poder::create([
+        'tenant_id'      => $this->tenant->id,
+        'reunion_id'     => $reunion->id,
+        'apoderado_id'   => $externo->id,
+        'poderdante_id'  => $poderdante->id,
+        'registrado_por' => $adminUser->id,
+        'estado'         => 'pendiente',
+    ]);
+
+    $this->actingAs($this->admin)
+        ->delete("/admin/copropietarios/{$externo->id}")
+        ->assertRedirect()
+        ->assertSessionHas('error');
+
+    expect(Copropietario::find($externo->id))->not->toBeNull(); // still exists
 });
