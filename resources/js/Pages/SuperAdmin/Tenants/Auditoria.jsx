@@ -74,8 +74,8 @@ export default function Auditoria({ tenant, logs, reuniones, filters }) {
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-surface-border">
-                        {logs.data.map((log, i) => (
-                            <tr key={i} className="hover:bg-surface-hover transition-colors">
+                        {logs.data.map((log) => (
+                            <tr key={log.id} className="hover:bg-surface-hover transition-colors">
                                 <td className="px-5 py-3 text-app-text-muted whitespace-nowrap text-xs">{log.created_at}</td>
                                 <td className="px-5 py-3 text-app-text-secondary text-xs">{log.reunion?.titulo ?? '—'}</td>
                                 <td className="px-5 py-3 font-medium text-app-text-primary">{log.accion}</td>

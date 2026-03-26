@@ -119,7 +119,7 @@ class TenantController extends Controller
             ->orderByDesc('created_at');
 
         if ($request->filled('reunion_id')) {
-            $logsQuery->where('reunion_id', $request->reunion_id);
+            $logsQuery->where('reunion_id', (int) $request->reunion_id);
         }
         if ($request->filled('accion')) {
             $logsQuery->where('accion', 'like', '%' . $request->accion . '%');
