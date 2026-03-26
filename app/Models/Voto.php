@@ -19,4 +19,19 @@ class Voto extends Model
         'peso' => 'decimal:5',
         'created_at' => 'datetime',
     ];
+
+    public function votante()
+    {
+        return $this->belongsTo(Copropietario::class, 'copropietario_id');
+    }
+
+    public function poderdante()
+    {
+        return $this->belongsTo(Copropietario::class, 'en_nombre_de');
+    }
+
+    public function opcion()
+    {
+        return $this->belongsTo(OpcionVotacion::class, 'opcion_id');
+    }
 }
