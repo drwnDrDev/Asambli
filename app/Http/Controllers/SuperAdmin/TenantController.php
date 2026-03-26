@@ -52,7 +52,7 @@ class TenantController extends Controller
                     'tenant_id' => $tenant->id,
                     'name'      => $data['admin_nombre'],
                     'email'     => $data['admin_email'],
-                    'password'  => $data['admin_password'],
+                    'password'  => bcrypt($data['admin_password']),
                     'rol'       => 'administrador',
                     'activo'    => true,
                 ]);
@@ -110,12 +110,12 @@ class TenantController extends Controller
 
     public function auditoria(Request $request, Tenant $tenant)
     {
-        $reuniones = $tenant->reuniones()->orderByDesc('fecha_programada')->get(['id', 'titulo']);
+        $reuniones = $tenant->reuniones()->withoutGlobalScopes()->orderByDesc('fecha_programada')->get(['id', 'titulo']);
 
         $logsQuery = \App\Models\ReunionLog::whereHas('reunion', fn ($q) =>
                 $q->withoutGlobalScopes()->where('tenant_id', $tenant->id)
             )
-            ->with(['user:id,name', 'reunion:id,titulo'])
+            ->with(['user:id,name', 'reunion' => fn ($q) => $q->withoutGlobalScopes()->select('id', 'titulo')])
             ->orderByDesc('created_at');
 
         if ($request->filled('reunion_id')) {
@@ -151,7 +151,7 @@ class TenantController extends Controller
             'tenant_id' => $tenant->id,
             'name'      => $data['nombre'],
             'email'     => $data['email'],
-            'password'  => $data['password'],
+            'password'  => bcrypt($data['password']),
             'rol'       => 'administrador',
             'activo'    => true,
         ]);
