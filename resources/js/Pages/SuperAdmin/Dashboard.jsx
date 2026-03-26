@@ -35,7 +35,13 @@ export default function Dashboard({ stats, tenants_recientes }) {
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-surface-border">
-                        {tenants_recientes.map(t => (
+                        {tenants_recientes.length === 0 ? (
+                            <tr>
+                                <td colSpan={4} className="px-5 py-10 text-center text-app-text-muted text-sm">
+                                    No hay conjuntos registrados aún.
+                                </td>
+                            </tr>
+                        ) : tenants_recientes.map(t => (
                             <tr key={t.id} className="hover:bg-surface-hover transition-colors">
                                 <td className="px-5 py-3 font-medium text-app-text-primary">{t.nombre}</td>
                                 <td className="px-5 py-3 text-app-text-secondary">{t.ciudad ?? '—'}</td>

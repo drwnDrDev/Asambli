@@ -33,3 +33,24 @@ test('administrador no puede ver el dashboard de super admin', function () {
         ->get('/super-admin/dashboard')
         ->assertStatus(403);
 });
+
+test('copropietario no puede ver el dashboard de super admin', function () {
+    $tenant = Tenant::factory()->create();
+    $user = User::factory()->create(['tenant_id' => $tenant->id, 'rol' => 'copropietario']);
+
+    $this->actingAs($user)
+        ->get('/super-admin/dashboard')
+        ->assertStatus(403);
+});
+
+test('super admin desactivado no puede acceder al dashboard', function () {
+    $superAdmin = User::factory()->create([
+        'tenant_id' => null,
+        'rol' => 'super_admin',
+        'activo' => false,
+    ]);
+
+    $this->actingAs($superAdmin)
+        ->get('/super-admin/dashboard')
+        ->assertStatus(403);
+});
