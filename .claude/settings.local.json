@@ -61,7 +61,9 @@
       "Bash(for f:*)",
       "Bash(do echo:*)",
       "Read(//home/dwndz/Projects/Asambli/**)",
-      "Bash(done)"
+      "Bash(done)",
+      "Bash(gh --version)",
+      "Bash(gh auth:*)"
     ]
   }
 }
