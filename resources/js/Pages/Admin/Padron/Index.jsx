@@ -62,16 +62,44 @@ export default function Index({ resumen }) {
                 )}
 
                 {/* Instrucciones */}
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-sm text-blue-800">
-                    <p className="font-semibold mb-2">Formato del archivo (CSV o Excel):</p>
-                    <code className="block bg-blue-100 rounded p-2 text-xs font-mono">
-                        numero,nombre,email,coeficiente<br/>
-                        101,Juan Pérez,juan@ejemplo.com,3.45<br/>
-                        102,María García,maria@ejemplo.com,2.80
-                    </code>
-                    <p className="mt-2 text-xs text-blue-600">
-                        Campos requeridos: numero, email, coeficiente. La suma de coeficientes debe ser ≤ 100.
-                        Columnas opcionales: nombre, tipo, torre, piso, es_residente, telefono.
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-sm text-blue-800 space-y-3">
+                    <p className="font-semibold">Formato del archivo (CSV o Excel)</p>
+
+                    <div>
+                        <p className="text-xs font-semibold text-blue-700 mb-1">Campos obligatorios:</p>
+                        <ul className="text-xs text-blue-800 space-y-1 ml-2">
+                            <li><span className="font-mono font-bold">numero</span> — número de la unidad (ej: 101)</li>
+                            <li><span className="font-mono font-bold">email</span> — correo del copropietario</li>
+                            <li><span className="font-mono font-bold">coeficiente</span> — coeficiente de copropiedad (ej: 3.4500)</li>
+                            <li><span className="font-mono font-bold">tipo_documento</span> — CC, CE, NIT, PP, TI o PEP</li>
+                            <li><span className="font-mono font-bold">numero_documento</span> — número del documento de identidad</li>
+                        </ul>
+                    </div>
+
+                    <div>
+                        <p className="text-xs font-semibold text-blue-700 mb-1">Campos opcionales:</p>
+                        <ul className="text-xs text-blue-800 space-y-1 ml-2">
+                            <li><span className="font-mono">nombre</span> — nombre completo (si no va, se usa el email)</li>
+                            <li><span className="font-mono">torre</span> — torre o bloque (ej: A, B, 1). <strong>Requerido si el conjunto tiene varias torres con numeración repetida.</strong></li>
+                            <li><span className="font-mono">tipo</span> — apartamento, local, parqueadero u otro (default: apartamento)</li>
+                            <li><span className="font-mono">piso</span> — piso de la unidad</li>
+                            <li><span className="font-mono">telefono</span> — teléfono de contacto</li>
+                            <li><span className="font-mono">es_residente</span> — true/false (default: true)</li>
+                        </ul>
+                    </div>
+
+                    <div>
+                        <p className="text-xs font-semibold text-blue-700 mb-1">Ejemplo con torres:</p>
+                        <code className="block bg-blue-100 rounded p-2 text-xs font-mono whitespace-pre">
+{`numero,torre,nombre,email,tipo_documento,numero_documento,coeficiente
+101,A,Juan Pérez,juan@ejemplo.com,CC,12345678,3.4500
+101,B,María García,maria@ejemplo.com,CC,87654321,3.4500
+102,A,Carlos López,carlos@ejemplo.com,CC,11223344,2.8000`}
+                        </code>
+                    </div>
+
+                    <p className="text-xs text-blue-600 border-t border-blue-200 pt-2">
+                        La suma de todos los coeficientes debe ser ≤ 100. La combinación <strong>numero + torre</strong> identifica de forma única cada unidad dentro del conjunto.
                     </p>
                 </div>
 
