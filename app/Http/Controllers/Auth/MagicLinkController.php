@@ -14,7 +14,9 @@ class MagicLinkController extends Controller
         $link = $this->service->validate($token);
 
         if (!$link) {
-            abort(410, 'Este enlace ha expirado o ya fue utilizado.');
+            return auth()->check()
+                ? redirect()->route('sala.index')
+                : redirect()->route('login');
         }
 
         $this->service->consume($link);
