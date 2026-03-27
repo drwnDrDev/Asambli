@@ -35,10 +35,19 @@ class PadronImportService
             foreach ($records as $index => $row) {
                 $line = $index + 2;
 
+                // Campos requeridos
                 if (empty($row['numero']) || empty($row['email']) || empty($row['coeficiente'])) {
                     $errors[] = "Línea {$line}: campos requeridos faltantes (numero, email, coeficiente).";
                     continue;
                 }
+
+                if (empty($row['tipo_documento']) || empty($row['numero_documento'])) {
+                    $errors[] = "Línea {$line}: tipo_documento y numero_documento son obligatorios.";
+                    continue;
+                }
+
+                // Normalizar torre: null → '' para garantizar unicidad correcta
+                $torre = isset($row['torre']) && $row['torre'] !== null ? (string) $row['torre'] : '';
 
                 try {
                     $user = User::withoutGlobalScopes()->firstOrCreate(
@@ -51,31 +60,25 @@ class PadronImportService
                         ]
                     );
 
-                    $coproData = [
-                        'es_residente' => isset($row['es_residente'])
-                            ? filter_var($row['es_residente'], FILTER_VALIDATE_BOOLEAN)
-                            : true,
-                        'telefono' => $row['telefono'] ?? null,
-                        'activo'   => true,
-                    ];
-
-                    if (!empty($row['tipo_documento'])) {
-                        $coproData['tipo_documento']   = $row['tipo_documento'];
-                        $coproData['numero_documento'] = $row['numero_documento'] ?? null;
-                    }
-
                     $copropietario = Copropietario::withoutGlobalScopes()->updateOrCreate(
                         ['tenant_id' => $tenant->id, 'user_id' => $user->id],
-                        $coproData
+                        [
+                            'tipo_documento'   => $row['tipo_documento'],
+                            'numero_documento' => $row['numero_documento'],
+                            'es_residente'     => isset($row['es_residente'])
+                                ? filter_var($row['es_residente'], FILTER_VALIDATE_BOOLEAN)
+                                : true,
+                            'telefono' => $row['telefono'] ?? null,
+                            'activo'   => true,
+                        ]
                     );
 
                     Unidad::withoutGlobalScopes()->updateOrCreate(
-                        ['tenant_id' => $tenant->id, 'numero' => $row['numero']],
+                        ['tenant_id' => $tenant->id, 'numero' => $row['numero'], 'torre' => $torre],
                         [
                             'copropietario_id' => $copropietario->id,
                             'tipo'             => $row['tipo'] ?? 'apartamento',
                             'coeficiente'      => (float) str_replace(',', '.', $row['coeficiente']),
-                            'torre'            => $row['torre'] ?? null,
                             'piso'             => $row['piso'] ?? null,
                             'activo'           => true,
                         ]
