@@ -14,8 +14,10 @@ return new class extends Migration
 
         Schema::table('unidades', function (Blueprint $table) {
             $table->string('torre')->default('')->nullable(false)->change();
-            $table->dropUnique(['tenant_id', 'numero']);
+            // Crear nuevo índice PRIMERO — MySQL no permite eliminar el viejo
+            // si no existe otro índice que inicie por tenant_id (necesario para la FK)
             $table->unique(['tenant_id', 'numero', 'torre']);
+            $table->dropUnique(['tenant_id', 'numero']);
         });
     }
 
