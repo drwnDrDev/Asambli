@@ -61,11 +61,14 @@ class PadronImportService
                     );
 
                     $copropietario = Copropietario::withoutGlobalScopes()->updateOrCreate(
-                        ['tenant_id' => $tenant->id, 'user_id' => $user->id],
                         [
+                            'tenant_id'        => $tenant->id,
                             'tipo_documento'   => $row['tipo_documento'],
                             'numero_documento' => $row['numero_documento'],
-                            'es_residente'     => isset($row['es_residente'])
+                        ],
+                        [
+                            'user_id'      => $user->id,
+                            'es_residente' => isset($row['es_residente'])
                                 ? filter_var($row['es_residente'], FILTER_VALIDATE_BOOLEAN)
                                 : true,
                             'telefono' => $row['telefono'] ?? null,
