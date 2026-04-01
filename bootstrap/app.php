@@ -19,7 +19,8 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
 
         $middleware->alias([
-            'role' => \App\Http\Middleware\RequireRole::class,
+            'role'      => \App\Http\Middleware\RequireRole::class,
+            'auth.sala' => \App\Http\Middleware\AuthSala::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

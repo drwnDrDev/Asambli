@@ -33,7 +33,8 @@ class SalaReunionController extends Controller
 
     public function show(Reunion $reunion)
     {
-        $copropietario = Copropietario::where('user_id', auth()->id())->first();
+        $copropietario = auth('copropietario')->user()
+            ?? Copropietario::where('user_id', auth()->id())->first();
 
         // Bloquear si el copropietario tiene un poder aprobado activo
         if ($copropietario) {

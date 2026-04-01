@@ -125,19 +125,25 @@ Route::get('/sala/login/{reunion}', [\App\Http\Controllers\Auth\CopropietarioAcc
 Route::post('/sala/login/{reunion}', [\App\Http\Controllers\Auth\CopropietarioAccessController::class, 'store'])
     ->name('sala.login.store');
 
-// Copropietario (sala) routes
+// Copropietario (sala) routes — User-auth only (index, historial, poderes)
 Route::middleware(['auth', 'role:copropietario,administrador,super_admin'])
     ->name('sala.')
     ->group(function () {
         Route::get('/sala', [SalaReunionController::class, 'index'])->name('index');
         Route::get('/historial', [SalaReunionController::class, 'historial'])->name('historial');
-        Route::post('/votos', [VotoController::class, 'store'])->name('votos.store');
         // Rutas estáticas de poderes ANTES que /sala/{reunion} para evitar colisión
         Route::get('/sala/poderes', [CopropietarioPoderController::class, 'index'])->name('poderes.index');
         Route::get('/sala/poderes/verificar-delegado', [CopropietarioPoderController::class, 'verificarDelegado'])->name('poderes.verificar-delegado');
         Route::get('/sala/poderes/crear', [CopropietarioPoderController::class, 'create'])->name('poderes.create');
         Route::post('/sala/poderes', [CopropietarioPoderController::class, 'store'])->name('poderes.store');
         Route::delete('/sala/poderes/{poder}', [CopropietarioPoderController::class, 'destroy'])->name('poderes.destroy');
+    });
+
+// Sala routes accessible by BOTH User guard AND copropietario (PIN) guard
+Route::middleware(['auth.sala'])
+    ->name('sala.')
+    ->group(function () {
+        Route::post('/votos', [VotoController::class, 'store'])->name('votos.store');
         Route::get('/sala/{reunion}/estado-actual', [SalaReunionController::class, 'estadoActual'])->name('estado-actual');
         Route::get('/sala/{reunion}', [SalaReunionController::class, 'show'])->name('show');
     });
