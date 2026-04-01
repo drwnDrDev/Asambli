@@ -27,6 +27,7 @@ class ConvocatoriaService
                 ['copropietario_id' => $copropietario->id, 'reunion_id' => $reunion->id],
                 [
                     'pin_hash'      => password_hash($pin, PASSWORD_BCRYPT),
+                    'pin_plain'     => $pin,
                     'session_token' => null,
                     'activo'        => true,
                 ]

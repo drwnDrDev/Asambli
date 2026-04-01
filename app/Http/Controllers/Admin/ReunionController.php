@@ -156,6 +156,10 @@ class ReunionController extends Controller
             ->whereIn('estado', ['pendiente', 'aprobado'])
             ->update(['estado' => 'expirado', 'reunion_id' => $reunion->id]);
 
+        // Nullificar PINs en claro y desactivar accesos al cerrar la reunión
+        \App\Models\AccesoReunion::where('reunion_id', $reunion->id)
+            ->update(['pin_plain' => null, 'activo' => false]);
+
         return back()->with('success', 'Reunión finalizada.');
     }
 

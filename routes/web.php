@@ -72,6 +72,8 @@ Route::middleware(['auth', 'role:administrador,super_admin'])
         Route::get('reuniones/{reunion}/proyeccion', [ReunionController::class, 'proyeccion'])->name('reuniones.proyeccion');
         Route::post('reuniones/{reunion}/aviso', [ReunionController::class, 'enviarAviso'])->name('reuniones.aviso');
         Route::post('reuniones/{reunion}/quorum-presencia', [ReunionController::class, 'actualizarQuorumPresencia'])->name('reuniones.quorum-presencia');
+        Route::get('reuniones/{reunion}/lista-acceso', [\App\Http\Controllers\Admin\AccesoReunionController::class, 'show'])
+            ->name('reuniones.lista-acceso');
 
         // Votaciones (within a reunion context)
         Route::post('reuniones/{reunion}/votaciones', [VotacionController::class, 'store'])->name('votaciones.store');
