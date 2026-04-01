@@ -198,6 +198,13 @@ export default function Conducir({ reunion, quorum: initialQuorum, copropietario
 
     const votacionActiva = votaciones.find(v => v.estado === 'abierta')
 
+    // Quórum de presencia calculado desde conectados (distinto del quórum oficial DB)
+    const coprosConectados = conectados.filter(c => c.rol === 'copropietario')
+    const coefPresenciaOnline = coprosConectados.reduce((s, c) => s + (parseFloat(c.coef) || 0), 0)
+    const quorumPresenciaPct = quorum?.total > 0
+        ? Math.round((coefPresenciaOnline / quorum.total) * 100 * 10) / 10
+        : 0
+
     const timeAgo = (ts) => {
         const secs = Math.floor((Date.now() - ts) / 1000)
         if (secs < 60) return `hace ${secs}s`
@@ -297,7 +304,7 @@ export default function Conducir({ reunion, quorum: initialQuorum, copropietario
             )}
 
             {/* ── KPI Cards ───────────────────────────────────── */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+            <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
                 {/* Estado */}
                 <div className="bg-white rounded-lg shadow p-4">
                     <p className="text-xs text-gray-500 uppercase tracking-wider mb-1">Estado</p>
@@ -306,15 +313,26 @@ export default function Conducir({ reunion, quorum: initialQuorum, copropietario
                     </span>
                 </div>
 
-                {/* Quorum */}
-                <div className={`rounded-lg shadow p-4 border ${quorum.tiene_quorum ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}>
-                    <p className="text-xs text-gray-500 uppercase tracking-wider mb-1">Quorum</p>
-                    <p className="text-xl font-bold">
+                {/* Quórum Oficial (DB asistencias) */}
+                <div className={`rounded-lg shadow p-4 border ${quorum.tiene_quorum ? 'bg-blue-50 border-blue-200' : 'bg-red-50 border-red-200'}`}>
+                    <p className="text-xs text-blue-600 font-medium uppercase tracking-wider mb-1">Quórum Oficial</p>
+                    <p className="text-xl font-bold text-blue-800">
                         {quorum.porcentaje_presente}%
                         <span className="ml-1 text-sm">{quorum.tiene_quorum ? '✓' : '✗'}</span>
                     </p>
                     <p className="text-xs text-gray-500">
-                        Req: {quorum.quorum_requerido}% · {quorum.presente}/{quorum.total}
+                        Req: {quorum.quorum_requerido}% · Asistencias confirmadas
+                    </p>
+                </div>
+
+                {/* Presencia Online (WebSocket) */}
+                <div className="rounded-lg shadow p-4 border border-dashed border-gray-300 bg-gray-50">
+                    <p className="text-xs text-gray-500 font-medium uppercase tracking-wider mb-1">Presencia Online</p>
+                    <p className="text-xl font-bold text-gray-600">
+                        {quorumPresenciaPct}%
+                    </p>
+                    <p className="text-xs text-gray-400">
+                        {coprosConectados.length} conectados ahora
                     </p>
                 </div>
 
