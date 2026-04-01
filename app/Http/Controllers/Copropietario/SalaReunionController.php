@@ -191,6 +191,34 @@ class SalaReunionController extends Controller
         return $items->sortBy('timestamp')->values()->toArray();
     }
 
+    public function estadoActual(Reunion $reunion)
+    {
+        // Support both auth guards: new copropietario guard and legacy user-based
+        $copropietario = auth('copropietario')->user()
+            ?? Copropietario::where('user_id', auth()->id())->first();
+
+        $votacionActiva = $reunion->votaciones()
+            ->where('estado', 'abierta')
+            ->with('opciones')
+            ->first();
+
+        $yaVote = false;
+        if ($votacionActiva && $copropietario) {
+            $yaVote = Voto::withoutGlobalScopes()
+                ->where('votacion_id', $votacionActiva->id)
+                ->where(function ($q) use ($copropietario) {
+                    $q->where('copropietario_id', $copropietario->id)
+                      ->orWhere('en_nombre_de', $copropietario->id);
+                })
+                ->exists();
+        }
+
+        return response()->json([
+            'votacion_activa' => $votacionActiva,
+            'ya_vote'         => $yaVote,
+        ]);
+    }
+
     public function historial()
     {
         // withoutGlobalScopes() + explicit tenant_id — same pattern as show() and index()

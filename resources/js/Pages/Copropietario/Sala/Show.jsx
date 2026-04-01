@@ -423,6 +423,27 @@ export default function SalaShow({
     useEffect(() => { setYaVotoPor(initialYaVotoPor) }, [initialYaVotoPor])
     useEffect(() => { setResultados(initialResultados) }, [initialResultados])
 
+    // HTTP fetch: sync state on mount (handles reconnect/stale page)
+    useEffect(() => {
+        fetch(`/sala/${reunion.id}/estado-actual`, {
+            headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+        })
+            .then(r => r.ok ? r.json() : null)
+            .then(data => {
+                if (!data) return
+                if (data.votacion_activa) {
+                    setVotacionActiva({
+                        votacion_id: data.votacion_activa.id,
+                        pregunta:    data.votacion_activa.pregunta,
+                        estado:      data.votacion_activa.estado,
+                        opciones:    data.votacion_activa.opciones ?? [],
+                    })
+                    if (!data.ya_vote) setYaVotoPor([])
+                }
+            })
+            .catch(() => {}) // silently fail — WebSocket handles real-time updates
+    }, [reunion.id])
+
     useEffect(() => {
         const channel = echo.channel(`reunion.${reunion.id}`)
 

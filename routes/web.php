@@ -138,6 +138,7 @@ Route::middleware(['auth', 'role:copropietario,administrador,super_admin'])
         Route::get('/sala/poderes/crear', [CopropietarioPoderController::class, 'create'])->name('poderes.create');
         Route::post('/sala/poderes', [CopropietarioPoderController::class, 'store'])->name('poderes.store');
         Route::delete('/sala/poderes/{poder}', [CopropietarioPoderController::class, 'destroy'])->name('poderes.destroy');
+        Route::get('/sala/{reunion}/estado-actual', [SalaReunionController::class, 'estadoActual'])->name('estado-actual');
         Route::get('/sala/{reunion}', [SalaReunionController::class, 'show'])->name('show');
     });
 
