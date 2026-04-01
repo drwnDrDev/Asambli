@@ -11,17 +11,12 @@ class MagicLinkController extends Controller
 
     public function acceder(string $token)
     {
-        $link = $this->service->validate($token);
+        $link = $this->service->find($token);
 
-        if (!$link) {
-            return auth()->check()
-                ? redirect()->route('sala.index')
-                : redirect()->route('login');
+        if ($link && $link->reunion_id) {
+            return redirect("/sala/login/{$link->reunion_id}");
         }
 
-        $this->service->consume($link);
-        auth()->login($link->user);
-
-        return redirect()->route('sala.index');
+        return redirect('/login')->withErrors(['token' => 'Link inválido o expirado.']);
     }
 }

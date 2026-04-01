@@ -40,6 +40,11 @@ class MagicLinkService
         return $link;
     }
 
+    public function find(string $token): ?MagicLink
+    {
+        return MagicLink::where('token', $token)->first();
+    }
+
     public function consume(MagicLink $link): void
     {
         $link->update(['used_at' => now()]);
