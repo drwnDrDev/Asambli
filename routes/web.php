@@ -14,6 +14,7 @@ use App\Http\Controllers\Copropietario\VotoController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\SuperAdmin\DashboardController as SuperAdminDashboardController;
 use App\Http\Controllers\SuperAdmin\TenantController;
+use App\Http\Controllers\SuperAdmin\ReunionController as SuperAdminReunionController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -49,8 +50,10 @@ Route::middleware(['auth', 'role:administrador,super_admin'])
     ->group(function () {
         Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('dashboard');
 
-        // Reuniones
-        Route::resource('reuniones', ReunionController::class)->parameters(['reuniones' => 'reunion']);
+        // Reuniones (admin no puede crear/editar — eso lo hace super_admin)
+        Route::get('reuniones', [ReunionController::class, 'index'])->name('reuniones.index');
+        Route::get('reuniones/{reunion}', [ReunionController::class, 'show'])->name('reuniones.show');
+        Route::delete('reuniones/{reunion}', [ReunionController::class, 'destroy'])->name('reuniones.destroy');
         Route::post('reuniones/{reunion}/convocar', [ReunionController::class, 'convocar'])->name('reuniones.convocar');
         Route::post('reuniones/{reunion}/ante-sala', [ReunionController::class, 'abrirAnteSala'])->name('reuniones.ante-sala');
         Route::post('reuniones/{reunion}/iniciar', [ReunionController::class, 'iniciar'])->name('reuniones.iniciar');
@@ -146,6 +149,9 @@ Route::middleware(['auth', 'role:super_admin'])
         Route::post('tenants/{tenant}/admins', [TenantController::class, 'storeAdmin'])->name('tenants.admins.store');
         Route::patch('tenants/{tenant}/users/{user}/toggle', [TenantController::class, 'toggleUser'])->name('tenants.users.toggle');
         Route::get('tenants/{tenant}/auditoria', [TenantController::class, 'auditoria'])->name('tenants.auditoria');
+        Route::get('tenants/{tenant}/reuniones/create', [SuperAdminReunionController::class, 'create'])->name('reuniones.create');
+        Route::post('tenants/{tenant}/reuniones', [SuperAdminReunionController::class, 'store'])->name('reuniones.store');
+        Route::post('reuniones/{reunion}/reset-convocatoria', [SuperAdminReunionController::class, 'resetConvocatoria'])->name('reuniones.reset-convocatoria');
     });
 
 require __DIR__.'/auth.php';

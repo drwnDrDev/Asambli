@@ -33,26 +33,6 @@ class ReunionController extends Controller
         return Inertia::render('Admin/Reuniones/Index', compact('reuniones'));
     }
 
-    public function create()
-    {
-        return Inertia::render('Admin/Reuniones/Create');
-    }
-
-    public function store(Request $request)
-    {
-        $data = $request->validate([
-            'titulo' => 'required|string|max:255',
-            'tipo' => 'required|in:asamblea,consejo,extraordinaria',
-            'tipo_voto_peso' => 'required|in:coeficiente,unidad',
-            'quorum_requerido' => 'required|numeric|min:1|max:100',
-            'fecha_programada' => 'nullable|date',
-        ]);
-
-        $reunion = Reunion::create([...$data, 'creado_por' => auth()->id()]);
-
-        return redirect()->route('admin.reuniones.show', $reunion)->with('success', 'Reunión creada.');
-    }
-
     public function show(Reunion $reunion)
     {
         $quorum = $this->quorumService->calcular($reunion);
@@ -128,23 +108,6 @@ class ReunionController extends Controller
         broadcast(new \App\Events\QuorumActualizado($reunion->id, $quorumData));
 
         return response()->json($quorumData);
-    }
-
-    public function edit(Reunion $reunion)
-    {
-        return Inertia::render('Admin/Reuniones/Edit', compact('reunion'));
-    }
-
-    public function update(Request $request, Reunion $reunion)
-    {
-        $data = $request->validate([
-            'titulo' => 'required|string|max:255',
-            'fecha_programada' => 'nullable|date',
-        ]);
-
-        $reunion->update($data);
-
-        return redirect()->route('admin.reuniones.show', $reunion)->with('success', 'Reunión actualizada.');
     }
 
     public function destroy(Reunion $reunion)

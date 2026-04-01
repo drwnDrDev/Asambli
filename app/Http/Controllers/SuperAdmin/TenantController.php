@@ -69,15 +69,20 @@ class TenantController extends Controller
             'users' => fn ($q) => $q->where('rol', 'administrador')->orderBy('name'),
         ]);
 
+        $reuniones = \App\Models\Reunion::withoutGlobalScopes()
+            ->where('tenant_id', $tenant->id)
+            ->orderByDesc('created_at')
+            ->get(['id', 'titulo', 'estado', 'fecha_programada', 'convocatoria_envios']);
+
         $stats = [
-            'reuniones'      => $tenant->reuniones()->count(),
+            'reuniones'      => $reuniones->count(),
             'copropietarios' => Copropietario::withoutGlobalScopes()
                 ->where('tenant_id', $tenant->id)
                 ->where('es_externo', false)
                 ->count(),
         ];
 
-        return Inertia::render('SuperAdmin/Tenants/Show', compact('tenant', 'stats'));
+        return Inertia::render('SuperAdmin/Tenants/Show', compact('tenant', 'stats', 'reuniones'));
     }
 
     public function edit(Tenant $tenant)

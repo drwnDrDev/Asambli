@@ -2,7 +2,7 @@ import AdminLayout from '@/Layouts/AdminLayout'
 import { Link, router, useForm, usePage } from '@inertiajs/react'
 import { useState } from 'react'
 
-export default function Show({ tenant, stats }) {
+export default function Show({ tenant, stats, reuniones }) {
     const { flash } = usePage().props
     const [showAddAdmin, setShowAddAdmin] = useState(false)
     const { data, setData, post, processing, errors, reset } = useForm({
@@ -74,6 +74,52 @@ export default function Show({ tenant, stats }) {
                             </dd>
                         </div>
                     </dl>
+                </div>
+
+                {/* Reuniones */}
+                <div className="lg:col-span-3 bg-surface rounded-xl border border-surface-border overflow-hidden">
+                    <div className="flex items-center justify-between px-6 py-4 border-b border-surface-border">
+                        <h2 className="text-sm font-semibold text-app-text-primary">Reuniones</h2>
+                        <a href={`/super-admin/tenants/${tenant.id}/reuniones/create`}
+                            className="text-xs px-3 py-1.5 rounded-lg bg-brand text-white hover:opacity-90 transition">
+                            + Nueva reunión
+                        </a>
+                    </div>
+                    {reuniones.length === 0 ? (
+                        <p className="px-6 py-4 text-sm text-app-text-muted">Sin reuniones aún.</p>
+                    ) : (
+                        <table className="w-full text-sm">
+                            <thead className="bg-surface-hover text-app-text-muted text-xs uppercase">
+                                <tr>
+                                    <th className="px-4 py-2 text-left">Título</th>
+                                    <th className="px-4 py-2 text-left">Estado</th>
+                                    <th className="px-4 py-2 text-left">Fecha</th>
+                                    <th className="px-4 py-2 text-left">Envíos</th>
+                                    <th className="px-4 py-2"></th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-surface-border">
+                                {reuniones.map(r => (
+                                    <tr key={r.id}>
+                                        <td className="px-4 py-3 font-medium text-app-text-primary">{r.titulo}</td>
+                                        <td className="px-4 py-3 text-app-text-muted capitalize">{r.estado}</td>
+                                        <td className="px-4 py-3 text-app-text-muted">{r.fecha_programada ? new Date(r.fecha_programada).toLocaleDateString('es-CO') : '—'}</td>
+                                        <td className="px-4 py-3 text-app-text-muted">{r.convocatoria_envios}/2</td>
+                                        <td className="px-4 py-3 text-right">
+                                            {r.convocatoria_envios >= 2 && (
+                                                <button
+                                                    onClick={() => { if (confirm('¿Resetear contador de convocatorias?')) router.post(`/super-admin/reuniones/${r.id}/reset-convocatoria`, {}, { preserveScroll: true }) }}
+                                                    className="text-xs px-2 py-1 rounded border border-warning/30 bg-warning-bg text-warning hover:bg-warning/20 transition"
+                                                >
+                                                    Reset convocatoria
+                                                </button>
+                                            )}
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    )}
                 </div>
 
                 {/* Administradores */}
