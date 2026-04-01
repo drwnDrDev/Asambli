@@ -52,6 +52,11 @@ class Reunion extends Model
         return !$this->estado->esTerminal();
     }
 
+    public function tenant(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(\App\Models\Tenant::class)->withoutGlobalScopes();
+    }
+
     public function accesos(): \Illuminate\Database\Eloquent\Relations\HasMany
     {
         return $this->hasMany(\App\Models\AccesoReunion::class);

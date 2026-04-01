@@ -114,6 +114,12 @@ Route::post('/acceso-rapido', [QuickAccessController::class, 'storePin'])->name(
 Route::get('/sala/entrada/{token}', [QuickAccessController::class, 'showQr'])->name('quick-access.qr');
 Route::post('/sala/entrada/{token}', [QuickAccessController::class, 'storeQr'])->name('quick-access.qr.store');
 
+// Login copropietario con documento + PIN (sin autenticación)
+Route::get('/sala/login/{reunion}', [\App\Http\Controllers\Auth\CopropietarioAccessController::class, 'show'])
+    ->name('sala.login');
+Route::post('/sala/login/{reunion}', [\App\Http\Controllers\Auth\CopropietarioAccessController::class, 'store'])
+    ->name('sala.login.store');
+
 // Copropietario (sala) routes
 Route::middleware(['auth', 'role:copropietario,administrador,super_admin'])
     ->name('sala.')
