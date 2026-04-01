@@ -9,6 +9,7 @@ use App\Models\User;
 use App\Notifications\PoderAsignadoCopropietarioNotification;
 use App\Notifications\PoderDelegadoInvitation;
 use App\Services\MagicLinkService;
+use App\Services\PoderService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -16,6 +17,7 @@ use Inertia\Inertia;
 
 class PoderController extends Controller
 {
+    public function __construct(private readonly PoderService $poderService) {}
     public function index()
     {
         $poderes = Poder::withoutGlobalScopes()
@@ -116,12 +118,7 @@ class PoderController extends Controller
         abort_if($poder->tenant_id !== app('current_tenant')->id, 404);
         abort_if($poder->estado !== 'pendiente', 422, 'El poder no está pendiente de aprobación.');
 
-        $poder->update([
-            'estado'       => 'aprobado',
-            'aprobado_por' => auth()->id(),
-        ]);
-
-        $this->enviarNotificacion($poder->load('apoderado.user', 'poderdante.user'));
+        $this->poderService->aprobar($poder, $poder->reunion_id);
 
         return back()->with('success', 'Poder aprobado.');
     }
@@ -145,7 +142,7 @@ class PoderController extends Controller
     {
         abort_if($poder->tenant_id !== app('current_tenant')->id, 404);
 
-        $poder->update(['estado' => 'revocado']);
+        $this->poderService->revocar($poder);
 
         return back()->with('success', 'Poder revocado.');
     }
