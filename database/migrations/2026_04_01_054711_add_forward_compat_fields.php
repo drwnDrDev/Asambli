@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::table('reuniones', function (Blueprint $table) {
             $table->enum('modalidad', ['presencial', 'virtual'])->default('presencial')->after('tipo');
-            $table->tinyInteger('convocatoria_envios')->default(0)->after('convocatoria_enviada_at');
+            $table->unsignedTinyInteger('convocatoria_envios')->default(0)->after('convocatoria_enviada_at');
         });
 
         Schema::table('tenants', function (Blueprint $table) {
