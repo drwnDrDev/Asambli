@@ -2,6 +2,8 @@
 
 namespace App\Providers;
 
+use App\Guards\CopropietarioGuard;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Vite;
 use Illuminate\Support\ServiceProvider;
 
@@ -21,5 +23,9 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         Vite::prefetch(concurrency: 3);
+
+        Auth::extend('copropietario', function ($app, $name, array $config) {
+            return new CopropietarioGuard($app['request']);
+        });
     }
 }
