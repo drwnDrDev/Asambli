@@ -158,7 +158,7 @@ class ReunionController extends Controller
 
     public function convocar(Reunion $reunion)
     {
-        $this->convocatoriaService->enviar($reunion, auth()->user());
+        $this->convocatoriaService->enviar($reunion);
         return back()->with('success', 'Convocatoria enviada.');
     }
 

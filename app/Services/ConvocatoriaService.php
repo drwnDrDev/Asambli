@@ -2,38 +2,45 @@
 
 namespace App\Services;
 
+use App\Models\AccesoReunion;
 use App\Models\Copropietario;
 use App\Models\Reunion;
-use App\Models\ReunionLog;
-use App\Models\User;
-use App\Notifications\ConvocatoriaReunion;
+use App\Notifications\AccesoReunionNotification;
 
 class ConvocatoriaService
 {
-    public function __construct(private MagicLinkService $magicLinkService) {}
-
-    public function enviar(Reunion $reunion, User $admin): void
+    public function enviar(Reunion $reunion): void
     {
-        $copropietarios = Copropietario::withoutGlobalScopes()
-            ->where('tenant_id', $reunion->tenant_id)
+        if (! $reunion->puedeConvocar()) {
+            throw new \RuntimeException('Se alcanzó el límite de convocatorias para esta reunión.');
+        }
+
+        $copropietarios = Copropietario::where('tenant_id', $reunion->tenant_id)
             ->where('activo', true)
-            ->with('user')
+            ->whereNotNull('email')
             ->get();
 
         foreach ($copropietarios as $copropietario) {
-            if (! $copropietario->user) {
-                continue;
-            }
-            $link = $this->magicLinkService->generate($copropietario->user, $reunion->id);
-            $copropietario->user->notify(new ConvocatoriaReunion($reunion, $link));
+            $pin = AccesoReunion::generarPin();
+
+            AccesoReunion::updateOrCreate(
+                ['copropietario_id' => $copropietario->id, 'reunion_id' => $reunion->id],
+                [
+                    'pin_hash'      => password_hash($pin, PASSWORD_BCRYPT),
+                    'session_token' => null,
+                    'activo'        => true,
+                ]
+            );
+
+            $copropietario->notify(new AccesoReunionNotification($reunion, $pin));
         }
 
-        $reunion->update(['convocatoria_enviada_at' => now()]);
-        ReunionLog::create([
-            'reunion_id'  => $reunion->id,
-            'user_id'     => $admin->id,
+        $reunion->increment('convocatoria_envios');
+
+        $reunion->logs()->create([
             'accion'      => 'convocatoria_enviada',
-            'observacion' => "Convocatoria enviada a {$copropietarios->count()} copropietarios.",
+            'observacion' => "Convocatoria #{$reunion->convocatoria_envios} enviada a {$copropietarios->count()} copropietarios.",
+            'user_id'     => auth()->id(),
             'metadata'    => ['total_notificados' => $copropietarios->count()],
         ]);
     }
