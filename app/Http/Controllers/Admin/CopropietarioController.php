@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\AccesoReunion;
 use App\Models\Copropietario;
 use App\Models\Poder;
 use App\Models\Unidad;
@@ -125,9 +126,25 @@ class CopropietarioController extends Controller
             ->orderByDesc('created_at')
             ->get();
 
+        $accesos = AccesoReunion::withoutGlobalScopes()
+            ->where('copropietario_id', $copropietario->id)
+            ->where('activo', true)
+            ->whereNotNull('pin_plain')
+            ->with('reunion:id,titulo,fecha_programada,estado')
+            ->orderByDesc('updated_at')
+            ->get()
+            ->map(fn ($a) => [
+                'reunion_id'    => $a->reunion_id,
+                'titulo'        => $a->reunion?->titulo,
+                'fecha'         => $a->reunion?->fecha_programada?->format('d/m/Y'),
+                'estado'        => $a->reunion?->estado instanceof \BackedEnum ? $a->reunion->estado->value : $a->reunion?->estado,
+                'pin'           => $a->pin_plain,
+            ]);
+
         return Inertia::render('Admin/Copropietarios/Show', [
             'copropietario'  => $copropietario,
             'poderesActivos' => $poderesActivos,
+            'accesos'        => $accesos,
         ]);
     }
 

@@ -1,7 +1,7 @@
 import AdminLayout from '@/Layouts/AdminLayout'
 import { Link, usePage, router } from '@inertiajs/react'
 
-export default function Show({ copropietario, poderesActivos = [] }) {
+export default function Show({ copropietario, poderesActivos = [], accesos = [] }) {
     const { flash } = usePage().props
     const { user, unidades = [] } = copropietario
 
@@ -94,56 +94,43 @@ export default function Show({ copropietario, poderesActivos = [] }) {
                 </div>
             </div>
 
-            {/* Acceso: Onboarding y PIN */}
-            <div className="mt-5 grid grid-cols-1 lg:grid-cols-2 gap-5">
-                {/* Estado de activación */}
-                <div className="bg-surface rounded-xl border border-surface-border p-6">
-                    <h3 className="text-sm font-semibold text-app-text-muted uppercase tracking-wide mb-4">
-                        Estado de activación
-                    </h3>
-                    {user?.onboarded_at ? (
-                        <div className="text-success text-[13px] mb-4">
-                            ✓ Activo desde {new Date(user.onboarded_at).toLocaleDateString('es-CO')}
-                        </div>
-                    ) : (
-                        <div className="mb-4">
-                            <span className="text-[12px] text-sidebar-text bg-warning/20 px-2 py-0.5 rounded">Sin activar</span>
-                        </div>
-                    )}
-                    <button
-                        onClick={() => router.post(route('admin.copropietarios.reenviar-bienvenida', copropietario.id))}
-                        className="px-3 py-1.5 border border-surface-border text-xs font-medium text-app-text-secondary hover:text-brand hover:border-brand rounded-lg transition-colors"
-                    >
-                        Reenviar bienvenida
-                    </button>
-                </div>
-
-                {/* PIN de acceso rápido */}
-                <div className="bg-surface rounded-xl border border-surface-border p-6">
-                    <h3 className="text-sm font-semibold text-app-text-muted uppercase tracking-wide mb-4">
-                        PIN de acceso rápido
-                    </h3>
-                    {user?.quick_pin ? (
-                        <div className="mb-3 text-sm">
-                            <p className="text-app-text-muted mb-0.5">PIN actual: <code className="font-mono text-app-text-primary bg-content-bg px-1.5 py-0.5 rounded">{user.quick_pin}</code></p>
-                            <p className="text-xs text-app-text-muted">Vence: {new Date(user.pin_expires_at).toLocaleString('es-CO')}</p>
-                        </div>
-                    ) : (
-                        <p className="text-sidebar-text text-[13px] mb-3">Sin PIN generado</p>
-                    )}
-                    {flash?.pin && (
-                        <div className="bg-success-bg border border-success rounded p-3 mb-3">
-                            <p className="text-success font-mono text-lg font-bold">{flash.pin}</p>
-                            <p className="text-[12px] text-success">Copia este PIN y entrégalo al copropietario</p>
-                        </div>
-                    )}
-                    <button
-                        onClick={() => router.post(route('admin.copropietarios.generar-pin', copropietario.id))}
-                        className="px-3 py-1.5 border border-surface-border text-xs font-medium text-app-text-secondary hover:text-brand hover:border-brand rounded-lg transition-colors"
-                    >
-                        Generar nuevo PIN
-                    </button>
-                </div>
+            {/* PINs de acceso por reunión */}
+            <div className="mt-5 bg-surface rounded-xl border border-surface-border p-6">
+                <h3 className="text-sm font-semibold text-app-text-muted uppercase tracking-wide mb-4">
+                    PINs de acceso activos
+                </h3>
+                {accesos.length === 0 ? (
+                    <p className="text-[13px] text-app-text-muted">
+                        Sin PINs asignados. Los PINs se generan al enviar la convocatoria de cada reunión.
+                    </p>
+                ) : (
+                    <table className="w-full text-sm">
+                        <thead>
+                            <tr className="border-b border-surface-border">
+                                <th className="text-left pb-2 text-app-text-muted font-medium text-xs uppercase">Reunión</th>
+                                <th className="text-left pb-2 text-app-text-muted font-medium text-xs uppercase">Fecha</th>
+                                <th className="text-left pb-2 text-app-text-muted font-medium text-xs uppercase">Estado</th>
+                                <th className="text-left pb-2 text-app-text-muted font-medium text-xs uppercase">PIN</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {accesos.map(a => (
+                                <tr key={a.reunion_id} className="border-b border-surface-border last:border-0">
+                                    <td className="py-2 pr-4 text-app-text-primary">{a.titulo}</td>
+                                    <td className="py-2 pr-4 text-app-text-muted">{a.fecha ?? '—'}</td>
+                                    <td className="py-2 pr-4">
+                                        <span className="text-xs font-medium text-app-text-muted">{a.estado}</span>
+                                    </td>
+                                    <td className="py-2">
+                                        <code className="font-mono text-base font-bold tracking-widest text-app-text-primary bg-content-bg px-2 py-0.5 rounded">
+                                            {a.pin}
+                                        </code>
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                )}
             </div>
 
             {/* Poderes activos */}

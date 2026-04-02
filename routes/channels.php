@@ -11,6 +11,21 @@ Broadcast::channel('reunion.{reunionId}', function ($user, $reunionId) {
 });
 
 Broadcast::channel('presence-reunion.{reunionId}', function ($user, $reunionId) {
+    // PIN-authenticated copropietario (no User record)
+    if ($user instanceof \App\Models\Copropietario) {
+        $unidades = $user->unidades;
+        $nombre = $user->user?->name ?? $user->numero_documento;
+        return [
+            'id'         => 'copro_' . $user->id,
+            'nombre'     => $nombre,
+            'unidad'     => $unidades->pluck('numero')->join(', ') ?: null,
+            'coef'       => $unidades->sum('coeficiente'),
+            'rol'        => 'copropietario',
+            'es_externo' => (bool) $user->es_externo,
+        ];
+    }
+
+    // Standard User (admin, super_admin, or legacy copropietario-with-user)
     $copropietario = $user->copropietario()->with('unidades')->first();
     $unidades = $copropietario?->unidades ?? collect();
 

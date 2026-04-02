@@ -17,7 +17,14 @@ use App\Http\Controllers\SuperAdmin\TenantController;
 use App\Http\Controllers\SuperAdmin\ReunionController as SuperAdminReunionController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Broadcast;
 use Inertia\Inertia;
+
+// Broadcasting auth — override default (auth-only) route to accept copropietario guard too.
+// Must be registered before channels.php's Broadcast::routes() to take precedence.
+Route::post('/broadcasting/auth', function (\Illuminate\Http\Request $request) {
+    return Broadcast::auth($request);
+})->middleware(['auth.sala']);
 
 Route::get('/', function () {
     return Inertia::render('Welcome', [

@@ -20,6 +20,10 @@ class AuthSala
 
         // Guard copropietario (PIN-based)
         if (auth('copropietario')->check()) {
+            // Override the request user resolver so $request->user() returns
+            // the Copropietario model — required for Broadcast::auth() to work.
+            $copropietario = auth('copropietario')->user()->loadMissing(['unidades', 'user']);
+            $request->setUserResolver(fn ($guard = null) => $copropietario);
             return $next($request);
         }
 

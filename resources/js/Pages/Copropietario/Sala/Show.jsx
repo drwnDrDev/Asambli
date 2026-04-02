@@ -454,6 +454,7 @@ export default function SalaShow({
                 if (e.estado === 'abierta') {
                     setVotacionActiva(e)
                     setResultados(null)
+                    setYaVotoPor([])
                     setFeed(prev => [{ tipo: 'votacion_abierta', pregunta: e.pregunta, timestamp: now }, ...prev])
                 } else {
                     // Calculate winner from last known resultados before clearing
