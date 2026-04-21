@@ -162,7 +162,7 @@ export default function Conducir({ reunion, quorum: initialQuorum, copropietario
         })
 
         // 3. Presence channel
-        const presenceChannel = echo.join(`presence-reunion.${reunion.id}`)
+        const presenceChannel = echo.join(`reunion.${reunion.id}`)
         presenceChannel
             .here((members) => { hasReceivedHereRef.current = true; setConectados(members) })
             .joining((member) => setConectados(prev => [...prev, member]))
@@ -171,7 +171,7 @@ export default function Conducir({ reunion, quorum: initialQuorum, copropietario
         return () => {
             echo.leave(`reunion.${reunion.id}`)
             echo.leave(`private-reunion.${reunion.id}`)
-            echo.leave(`presence-reunion.${reunion.id}`)
+            echo.leave(`presence-reunion.${reunion.id}`)  // Echo internally prefixes with "presence-"
         }
     }, [reunion.id])
 

@@ -503,11 +503,11 @@ export default function SalaShow({
         echo.connector.pusher?.connection?.bind('disconnected',   () => setConnStatus('disconnected'))
         echo.connector.pusher?.connection?.bind('unavailable',    () => setConnStatus('disconnected'))
 
-        echo.join(`presence-reunion.${reunion.id}`)
+        echo.join(`reunion.${reunion.id}`)
 
         return () => {
             echo.leave(`reunion.${reunion.id}`)
-            echo.leave(`presence-reunion.${reunion.id}`)
+            echo.leave(`presence-reunion.${reunion.id}`)  // Echo internally prefixes with "presence-"
             if (countdownRef.current) clearInterval(countdownRef.current)
         }
     }, [reunion.id])

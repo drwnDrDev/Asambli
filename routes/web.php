@@ -20,11 +20,54 @@ use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Broadcast;
 use Inertia\Inertia;
 
-// Broadcasting auth — override default (auth-only) route to accept copropietario guard too.
-// Must be registered before channels.php's Broadcast::routes() to take precedence.
+// Broadcasting auth — soporta User guard (admin) y Copropietario guard (PIN-based).
+// NO usa auth.sala middleware para evitar redirecciones que rompen la negociación XHR de Pusher.
+// La auth del copropietario se lee directamente de la sesión — sin pasar por CopropietarioGuard,
+// que puede fallar en el contexto del request de broadcasting.
 Route::post('/broadcasting/auth', function (\Illuminate\Http\Request $request) {
-    return Broadcast::auth($request);
-})->middleware(['auth.sala']);
+    // Admin / super_admin (guard web estándar)
+    if (auth()->check()) {
+        return Broadcast::auth($request);
+    }
+
+    // Copropietario (PIN-based): leer token de sesión directamente
+    $sessionToken = $request->session()->get('copropietario_session_token');
+    if ($sessionToken) {
+        $acceso = \App\Models\AccesoReunion::with(['copropietario.unidades', 'copropietario.user'])
+            ->where('session_token', $sessionToken)
+            ->where('activo', true)
+            ->first();
+
+        if ($acceso) {
+            $copropietario = $acceso->copropietario;
+            $unidades      = $copropietario->unidades;
+
+            $userData = [
+                'id'         => 'copro_' . $copropietario->id,
+                'nombre'     => $copropietario->user?->name ?? $copropietario->numero_documento,
+                'unidad'     => $unidades->pluck('numero')->join(', ') ?: null,
+                'coef'       => $unidades->sum('coeficiente'),
+                'rol'        => 'copropietario',
+                'es_externo' => (bool) $copropietario->es_externo,
+            ];
+
+            /** @var \Illuminate\Broadcasting\Broadcasters\PusherBroadcaster $broadcaster */
+            $broadcaster = app(\Illuminate\Contracts\Broadcasting\Factory::class)->driver();
+            $pusher      = $broadcaster->getPusher();
+            $channel     = $request->channel_name;
+            $socketId    = $request->socket_id;
+            $userId      = 'copro_' . $copropietario->id;
+
+            $response = str_starts_with($channel, 'presence-')
+                ? $pusher->authorizePresenceChannel($channel, $socketId, $userId, $userData)
+                : $pusher->authorizeChannel($channel, $socketId);
+
+            return json_decode($response, true);
+        }
+    }
+
+    throw new \Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
+});
 
 Route::get('/', function () {
     return Inertia::render('Welcome', [
