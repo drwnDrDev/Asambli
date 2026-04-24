@@ -124,6 +124,12 @@ Route::middleware(['auth', 'role:administrador,super_admin'])
         Route::post('reuniones/{reunion}/quorum-presencia', [ReunionController::class, 'actualizarQuorumPresencia'])->name('reuniones.quorum-presencia');
         Route::get('reuniones/{reunion}/lista-acceso', [\App\Http\Controllers\Admin\AccesoReunionController::class, 'show'])
             ->name('reuniones.lista-acceso');
+        Route::post('reuniones/{reunion}/lista-acceso/{acceso}/reenviar', [\App\Http\Controllers\Admin\AccesoReunionController::class, 'reenviar'])
+            ->name('reuniones.acceso.reenviar');
+        Route::patch('reuniones/{reunion}/lista-acceso/{acceso}/desactivar', [\App\Http\Controllers\Admin\AccesoReunionController::class, 'desactivar'])
+            ->name('reuniones.acceso.desactivar');
+        Route::patch('reuniones/{reunion}/lista-acceso/{acceso}/activar', [\App\Http\Controllers\Admin\AccesoReunionController::class, 'activar'])
+            ->name('reuniones.acceso.activar');
 
         // Votaciones (within a reunion context)
         Route::post('reuniones/{reunion}/votaciones', [VotacionController::class, 'store'])->name('votaciones.store');

@@ -40,8 +40,13 @@ class PoderService
     {
         $poder->update(['estado' => 'revocado']);
 
+        $this->desactivarAccesosApoderado($poder);
+    }
+
+    public function desactivarAccesosApoderado(Poder $poder): void
+    {
         AccesoReunion::where('copropietario_id', $poder->apoderado_id)
-            ->where('reunion_id', $poder->reunion_id)
-            ->update(['activo' => false]);
+            ->whereHas('reunion', fn($q) => $q->where('tenant_id', $poder->tenant_id))
+            ->update(['activo' => false, 'session_token' => null]);
     }
 }

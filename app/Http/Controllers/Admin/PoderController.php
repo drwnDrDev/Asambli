@@ -130,10 +130,16 @@ class PoderController extends Controller
         abort_if($poder->tenant_id !== app('current_tenant')->id, 404);
         abort_if(!in_array($poder->estado, ['pendiente', 'aprobado']), 422);
 
+        $eraAprobado = $poder->estado === 'aprobado';
+
         $poder->update([
             'estado'           => 'rechazado',
             'rechazado_motivo' => $data['motivo'] ?? null,
         ]);
+
+        if ($eraAprobado) {
+            $this->poderService->desactivarAccesosApoderado($poder);
+        }
 
         return back()->with('success', 'Poder rechazado.');
     }
