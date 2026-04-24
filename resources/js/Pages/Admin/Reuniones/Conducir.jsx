@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { router, usePage, useForm } from '@inertiajs/react'
 import AdminLayout from '@/Layouts/AdminLayout'
 import echo from '@/echo'
@@ -104,29 +104,12 @@ export default function Conducir({ reunion, quorum: initialQuorum, copropietario
     // Closed votacion results toggle
     const [expandedVotacionId, setExpandedVotacionId] = useState(null)
 
-    // Ref to gate the quorum-presencia call until 'here' event is received
-    const hasReceivedHereRef = useRef(false)
-
     // Ticker time updater
     const [, setTickerTick] = useState(0)
     useEffect(() => {
         const interval = setInterval(() => setTickerTick(t => t + 1), 5000)
         return () => clearInterval(interval)
     }, [])
-
-    // ─── Quórum real-time desde canal de presencia ───────────────
-    useEffect(() => {
-        if (!hasReceivedHereRef.current) return
-        const copros = conectados.filter(c => c.rol === 'copropietario')
-        const coefPresente = copros.reduce((s, c) => s + (parseFloat(c.coef) || 0), 0)
-        const count = copros.length
-        const csrfToken = document.head.querySelector('meta[name="csrf-token"]')?.content ?? ''
-        fetch(`/admin/reuniones/${reunion.id}/quorum-presencia`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken, 'X-Requested-With': 'XMLHttpRequest' },
-            body: JSON.stringify({ coef_presente: coefPresente, copropietarios_count: count }),
-        }).then(r => r.json()).then(data => setQuorum(data)).catch(() => {})
-    }, [conectados])
 
     // ─── Echo subscriptions ─────────────────────────────────────
     useEffect(() => {
@@ -164,7 +147,7 @@ export default function Conducir({ reunion, quorum: initialQuorum, copropietario
         // 3. Presence channel
         const presenceChannel = echo.join(`reunion.${reunion.id}`)
         presenceChannel
-            .here((members) => { hasReceivedHereRef.current = true; setConectados(members) })
+            .here((members) => setConectados(members))
             .joining((member) => setConectados(prev => [...prev, member]))
             .leaving((member) => setConectados(prev => prev.filter(m => m.id !== member.id)))
 
