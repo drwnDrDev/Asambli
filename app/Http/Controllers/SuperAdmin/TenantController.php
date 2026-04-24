@@ -48,12 +48,18 @@ class TenantController extends Controller
             ]);
 
             if (!empty($data['admin_email'])) {
-                User::create([
+                $admin = User::create([
                     'tenant_id' => $tenant->id,
                     'name'      => $data['admin_nombre'],
                     'email'     => $data['admin_email'],
                     'password'  => bcrypt($data['admin_password']),
                     'rol'       => 'administrador',
+                    'activo'    => true,
+                ]);
+
+                \App\Models\TenantAdministrador::create([
+                    'tenant_id' => $tenant->id,
+                    'user_id'   => $admin->id,
                     'activo'    => true,
                 ]);
             }
@@ -152,12 +158,18 @@ class TenantController extends Controller
             'password' => 'required|string|min:8',
         ]);
 
-        User::create([
+        $admin = User::create([
             'tenant_id' => $tenant->id,
             'name'      => $data['nombre'],
             'email'     => $data['email'],
             'password'  => bcrypt($data['password']),
             'rol'       => 'administrador',
+            'activo'    => true,
+        ]);
+
+        \App\Models\TenantAdministrador::create([
+            'tenant_id' => $tenant->id,
+            'user_id'   => $admin->id,
             'activo'    => true,
         ]);
 
