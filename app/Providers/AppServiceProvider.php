@@ -4,8 +4,11 @@ namespace App\Providers;
 
 use App\Guards\CopropietarioGuard;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Vite;
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Http\Request;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -26,6 +29,13 @@ class AppServiceProvider extends ServiceProvider
 
         Auth::extend('copropietario', function ($app, $name, array $config) {
             return new CopropietarioGuard($app['request']);
+        });
+
+        // Rate limiter para login de copropietarios: 5 intentos por minuto por IP + reunión
+        RateLimiter::for('sala-login', function (Request $request) {
+            return Limit::perMinute(5)->by(
+                $request->ip() . '|' . $request->route('reunion')
+            );
         });
 
         // Cargar canales de broadcasting sin registrar la ruta default de Broadcast::routes().

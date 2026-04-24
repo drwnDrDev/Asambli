@@ -170,6 +170,7 @@ Route::post('/sala/entrada/{token}', [QuickAccessController::class, 'storeQr'])-
 Route::get('/sala/login/{reunion}', [\App\Http\Controllers\Auth\CopropietarioAccessController::class, 'show'])
     ->name('sala.login');
 Route::post('/sala/login/{reunion}', [\App\Http\Controllers\Auth\CopropietarioAccessController::class, 'store'])
+    ->middleware('throttle:sala-login')
     ->name('sala.login.store');
 
 // Copropietario (sala) routes — User-auth only (index, historial, poderes)
