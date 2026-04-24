@@ -38,6 +38,10 @@ export default function Show({ tenant, stats, reuniones }) {
                     className="text-sm px-3 py-1.5 rounded-lg border border-surface-border bg-surface hover:bg-surface-hover transition text-app-text-secondary">
                     Auditoría
                 </Link>
+                <Link href={`/super-admin/tenants/${tenant.id}/padron`}
+                    className="text-sm px-3 py-1.5 rounded-lg border border-surface-border bg-surface hover:bg-surface-hover transition text-app-text-secondary">
+                    Importar padrón
+                </Link>
                 <button
                     onClick={() => { if (confirm(`¿Desactivar "${tenant.nombre}"?`)) router.delete(`/super-admin/tenants/${tenant.id}`) }}
                     className="ml-auto text-sm px-3 py-1.5 rounded-lg border border-danger/30 bg-danger-bg text-danger hover:bg-danger/20 transition"

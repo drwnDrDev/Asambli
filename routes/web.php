@@ -2,7 +2,6 @@
 
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Admin\CopropietarioController;
-use App\Http\Controllers\Admin\PadronController;
 use App\Http\Controllers\Admin\PoderController as AdminPoderController;
 use App\Http\Controllers\Admin\ReunionController;
 use App\Http\Controllers\Admin\TenantSettingsController;
@@ -15,6 +14,7 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\SuperAdmin\DashboardController as SuperAdminDashboardController;
 use App\Http\Controllers\SuperAdmin\TenantController;
 use App\Http\Controllers\SuperAdmin\ReunionController as SuperAdminReunionController;
+use App\Http\Controllers\SuperAdmin\PadronController as SuperAdminPadronController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Broadcast;
@@ -133,9 +133,6 @@ Route::middleware(['auth', 'role:administrador,super_admin'])
         Route::post('votaciones/{votacion}/cerrar', [VotacionController::class, 'cerrar'])->name('votaciones.cerrar');
         Route::get('votaciones/{votacion}/resultados', [VotacionController::class, 'resultados'])->name('votaciones.resultados');
 
-        // Padrón
-        Route::get('padron', [PadronController::class, 'index'])->name('padron.index');
-        Route::post('padron/import', [PadronController::class, 'import'])->name('padron.import');
 
         // Poderes (standalone, sin reunion)
         Route::get('poderes', [AdminPoderController::class, 'index'])->name('poderes.index');
@@ -211,6 +208,8 @@ Route::middleware(['auth', 'role:super_admin'])
         Route::get('tenants/{tenant}/reuniones/create', [SuperAdminReunionController::class, 'create'])->name('reuniones.create');
         Route::post('tenants/{tenant}/reuniones', [SuperAdminReunionController::class, 'store'])->name('reuniones.store');
         Route::post('reuniones/{reunion}/reset-convocatoria', [SuperAdminReunionController::class, 'resetConvocatoria'])->name('reuniones.reset-convocatoria');
+        Route::get('tenants/{tenant}/padron', [SuperAdminPadronController::class, 'index'])->name('tenants.padron');
+        Route::post('tenants/{tenant}/padron/import', [SuperAdminPadronController::class, 'import'])->name('tenants.padron.import');
     });
 
 require __DIR__.'/auth.php';
