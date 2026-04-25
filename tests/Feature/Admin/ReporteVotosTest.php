@@ -46,10 +46,9 @@ test('generarCsvVotos incluye una fila por voto con datos correctos', function (
     ]);
     $opcion = $votacion->opciones()->create(['texto' => 'Aprobado']);
 
-    $userVotante = User::factory()->create(['tenant_id' => $this->tenant->id, 'name' => 'Juan Pérez']);
     $copropietario = Copropietario::factory()->create([
         'tenant_id' => $this->tenant->id,
-        'user_id'   => $userVotante->id,
+        'nombre'    => 'Juan Pérez',
     ]);
     Unidad::factory()->create([
         'tenant_id'        => $this->tenant->id,
@@ -91,16 +90,13 @@ test('generarCsvVotos incluye en_nombre_de cuando el voto es delegado', function
     ]);
     $opcion = $votacion->opciones()->create(['texto' => 'Sí']);
 
-    $userApoderado = User::factory()->create(['tenant_id' => $this->tenant->id, 'name' => 'Carlos Delegado']);
     $apoderado = Copropietario::factory()->create([
         'tenant_id' => $this->tenant->id,
-        'user_id'   => $userApoderado->id,
+        'nombre'    => 'Carlos Delegado',
     ]);
-
-    $userPoderdante = User::factory()->create(['tenant_id' => $this->tenant->id, 'name' => 'Ana Poderdante']);
     $poderdante = Copropietario::factory()->create([
         'tenant_id' => $this->tenant->id,
-        'user_id'   => $userPoderdante->id,
+        'nombre'    => 'Ana Poderdante',
     ]);
 
     Voto::create([
@@ -127,7 +123,7 @@ test('ruta csv-votos descarga archivo csv', function () {
     ]);
 
     $response = $this->actingAs($this->admin)
-        ->get(route('reuniones.reporte-csv-votos', $reunion));
+        ->get(route('admin.reuniones.reporte-csv-votos', $reunion));
 
     $response->assertStatus(200);
     $response->assertHeader('content-type', 'text/csv; charset=UTF-8');

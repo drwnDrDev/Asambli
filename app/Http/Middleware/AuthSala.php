@@ -22,7 +22,7 @@ class AuthSala
         if (auth('copropietario')->check()) {
             // Override the request user resolver so $request->user() returns
             // the Copropietario model — required for Broadcast::auth() to work.
-            $copropietario = auth('copropietario')->user()->loadMissing(['unidades', 'user']);
+            $copropietario = auth('copropietario')->user()->loadMissing(['unidades']);
             $request->setUserResolver(fn ($guard = null) => $copropietario);
             return $next($request);
         }

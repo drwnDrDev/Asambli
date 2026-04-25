@@ -5,10 +5,8 @@ namespace App\Services;
 use App\Models\Copropietario;
 use App\Models\Tenant;
 use App\Models\Unidad;
-use App\Models\User;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
 use Spatie\SimpleExcel\SimpleExcelReader;
 
 class PadronImportService
@@ -50,16 +48,6 @@ class PadronImportService
                 $torre = isset($row['torre']) && $row['torre'] !== null ? (string) $row['torre'] : '';
 
                 try {
-                    $user = User::withoutGlobalScopes()->firstOrCreate(
-                        ['email' => $row['email']],
-                        [
-                            'tenant_id' => $tenant->id,
-                            'name'      => $row['nombre'] ?: $row['email'],
-                            'password'  => Str::random(16),
-                            'rol'       => 'copropietario',
-                        ]
-                    );
-
                     $copropietario = Copropietario::withoutGlobalScopes()->updateOrCreate(
                         [
                             'tenant_id'        => $tenant->id,
@@ -67,7 +55,8 @@ class PadronImportService
                             'numero_documento' => $row['numero_documento'],
                         ],
                         [
-                            'user_id'      => $user->id,
+                            'nombre'       => $row['nombre'] ?: $row['email'],
+                            'email'        => $row['email'],
                             'es_residente' => isset($row['es_residente'])
                                 ? filter_var($row['es_residente'], FILTER_VALIDATE_BOOLEAN)
                                 : true,

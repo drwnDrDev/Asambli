@@ -248,7 +248,7 @@ function VotacionCard({ votacionActiva, resultados, yaVotoPor, poderes, onVotar,
                     return (
                         <div key={poder.id} className="border-t pt-4 mt-4" style={{ borderColor: 'var(--sala-border)' }}>
                             <p className="text-[10px] uppercase tracking-widest mb-2" style={{ color: 'var(--sala-amber)' }}>
-                                En nombre de: {poder.poderdante?.user?.name}
+                                En nombre de: {poder.poderdante?.nombre}
                             </p>
                             {!yaVotoPoder ? (
                                 <div className="space-y-2">
@@ -393,6 +393,7 @@ export default function SalaShow({
     feedInicial = [],
     estadoReunion: initialEstadoReunion,
     esDelegadoExterno = false,
+    poderdantesRepresentados = [],
 }) {
     const { errors } = usePage().props
 
@@ -579,12 +580,22 @@ export default function SalaShow({
                     </div>
                 )}
 
-                {esDelegadoExterno && (
+                {poderdantesRepresentados.length > 0 && (
                     <div
                         className="rounded-xl px-4 py-3 mb-4 text-xs font-medium"
                         style={{ background: 'rgba(251,191,36,0.12)', border: '1px solid var(--sala-amber-border)', color: 'var(--sala-amber)' }}
                     >
-                        Estás participando como <strong>delegado</strong>. Vota en nombre de los copropietarios que te autorizaron.
+                        <p className="mb-1">Estás participando como <strong>delegado</strong> de:</p>
+                        <ul className="space-y-0.5">
+                            {poderdantesRepresentados.map(p => (
+                                <li key={p.id}>
+                                    {p.nombre}
+                                    {p.unidades?.length > 0 && (
+                                        <span style={{ color: 'var(--sala-text-muted)' }}> · Unid. {p.unidades.join(', ')}</span>
+                                    )}
+                                </li>
+                            ))}
+                        </ul>
                     </div>
                 )}
                 <VotacionCard

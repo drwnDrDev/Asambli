@@ -6,8 +6,6 @@ use App\Http\Controllers\Admin\PoderController as AdminPoderController;
 use App\Http\Controllers\Admin\ReunionController;
 use App\Http\Controllers\Admin\TenantSettingsController;
 use App\Http\Controllers\Admin\VotacionController;
-use App\Http\Controllers\Auth\MagicLinkController;
-use App\Http\Controllers\Copropietario\PoderController as CopropietarioPoderController;
 use App\Http\Controllers\Copropietario\SalaReunionController;
 use App\Http\Controllers\Copropietario\VotoController;
 use App\Http\Controllers\ProfileController;
@@ -33,7 +31,7 @@ Route::post('/broadcasting/auth', function (\Illuminate\Http\Request $request) {
     // Copropietario (PIN-based): leer token de sesión directamente
     $sessionToken = $request->session()->get('copropietario_session_token');
     if ($sessionToken) {
-        $acceso = \App\Models\AccesoReunion::with(['copropietario.unidades', 'copropietario.user'])
+        $acceso = \App\Models\AccesoReunion::with(['copropietario.unidades'])
             ->where('session_token', $sessionToken)
             ->where('activo', true)
             ->first();
@@ -44,7 +42,7 @@ Route::post('/broadcasting/auth', function (\Illuminate\Http\Request $request) {
 
             $userData = [
                 'id'         => 'copro_' . $copropietario->id,
-                'nombre'     => $copropietario->user?->name ?? $copropietario->numero_documento,
+                'nombre'     => $copropietario->nombre ?? $copropietario->numero_documento,
                 'unidad'     => $unidades->pluck('numero')->join(', ') ?: null,
                 'coef'       => $unidades->sum('coeficiente'),
                 'rol'        => 'copropietario',
@@ -82,9 +80,6 @@ Route::get('/', function () {
 Route::get('/dashboard', function () {
     return Inertia::render('Dashboard');
 })->middleware(['auth', 'verified'])->name('dashboard');
-
-// Magic link (unauthenticated)
-Route::get('/acceso/{token}', [MagicLinkController::class, 'acceder'])->name('magic-link.login');
 
 // Standard auth routes
 Route::middleware('auth')->group(function () {
@@ -139,7 +134,6 @@ Route::middleware(['auth', 'role:administrador,super_admin'])
         Route::post('votaciones/{votacion}/cerrar', [VotacionController::class, 'cerrar'])->name('votaciones.cerrar');
         Route::get('votaciones/{votacion}/resultados', [VotacionController::class, 'resultados'])->name('votaciones.resultados');
 
-
         // Poderes (standalone, sin reunion)
         Route::get('poderes', [AdminPoderController::class, 'index'])->name('poderes.index');
         Route::get('poderes/verificar-delegado', [AdminPoderController::class, 'verificarDelegado'])->name('poderes.verificar-delegado');
@@ -156,21 +150,15 @@ Route::middleware(['auth', 'role:administrador,super_admin'])
 
         // Copropietarios
         Route::resource('copropietarios', CopropietarioController::class);
-        Route::post('copropietarios/{copropietario}/generar-pin', [CopropietarioController::class, 'generatePin'])->name('copropietarios.generar-pin');
-        Route::post('copropietarios/{copropietario}/reenviar-bienvenida', [CopropietarioController::class, 'reenviarBienvenida'])->name('copropietarios.reenviar-bienvenida');
     });
 
-// Onboarding (unauthenticated)
-use App\Http\Controllers\Auth\OnboardingController;
-Route::get('/bienvenida/{token}', [OnboardingController::class, 'show'])->name('onboarding.show');
-Route::post('/bienvenida/{token}', [OnboardingController::class, 'store'])->name('onboarding.store');
-
-// Acceso rápido (PIN y QR - unauthenticated) — DEBE ir antes del grupo /sala/{reunion}
-use App\Http\Controllers\Auth\QuickAccessController;
-Route::get('/acceso-rapido', [QuickAccessController::class, 'showPin'])->name('quick-access.pin');
-Route::post('/acceso-rapido', [QuickAccessController::class, 'storePin'])->name('quick-access.pin.store');
-Route::get('/sala/entrada/{token}', [QuickAccessController::class, 'showQr'])->name('quick-access.qr');
-Route::post('/sala/entrada/{token}', [QuickAccessController::class, 'storeQr'])->name('quick-access.qr.store');
+// Sala index e historial (solo User guard con rol copropietario/admin)
+Route::middleware(['auth', 'role:copropietario,administrador,super_admin'])
+    ->name('sala.')
+    ->group(function () {
+        Route::get('/sala', [SalaReunionController::class, 'index'])->name('index');
+        Route::get('/historial', [SalaReunionController::class, 'historial'])->name('historial');
+    });
 
 // Login copropietario con documento + PIN (sin autenticación)
 Route::get('/sala/login/{reunion}', [\App\Http\Controllers\Auth\CopropietarioAccessController::class, 'show'])
@@ -178,20 +166,6 @@ Route::get('/sala/login/{reunion}', [\App\Http\Controllers\Auth\CopropietarioAcc
 Route::post('/sala/login/{reunion}', [\App\Http\Controllers\Auth\CopropietarioAccessController::class, 'store'])
     ->middleware('throttle:sala-login')
     ->name('sala.login.store');
-
-// Copropietario (sala) routes — User-auth only (index, historial, poderes)
-Route::middleware(['auth', 'role:copropietario,administrador,super_admin'])
-    ->name('sala.')
-    ->group(function () {
-        Route::get('/sala', [SalaReunionController::class, 'index'])->name('index');
-        Route::get('/historial', [SalaReunionController::class, 'historial'])->name('historial');
-        // Rutas estáticas de poderes ANTES que /sala/{reunion} para evitar colisión
-        Route::get('/sala/poderes', [CopropietarioPoderController::class, 'index'])->name('poderes.index');
-        Route::get('/sala/poderes/verificar-delegado', [CopropietarioPoderController::class, 'verificarDelegado'])->name('poderes.verificar-delegado');
-        Route::get('/sala/poderes/crear', [CopropietarioPoderController::class, 'create'])->name('poderes.create');
-        Route::post('/sala/poderes', [CopropietarioPoderController::class, 'store'])->name('poderes.store');
-        Route::delete('/sala/poderes/{poder}', [CopropietarioPoderController::class, 'destroy'])->name('poderes.destroy');
-    });
 
 // Sala routes accessible by BOTH User guard AND copropietario (PIN) guard
 Route::middleware(['auth.sala'])

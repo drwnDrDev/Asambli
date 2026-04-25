@@ -12,7 +12,7 @@ class Copropietario extends Model
     use HasFactory, BelongsToTenant, Notifiable;
 
     protected $fillable = [
-        'tenant_id', 'user_id', 'tipo_documento', 'numero_documento',
+        'tenant_id', 'user_id', 'nombre', 'tipo_documento', 'numero_documento',
         'es_residente', 'es_externo', 'empresa', 'telefono', 'activo', 'email',
     ];
 

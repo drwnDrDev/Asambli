@@ -7,8 +7,8 @@ export default function Edit({ copropietario, unidades = [] }) {
     const asignadasIds = (copropietario.unidades ?? []).map(u => u.id)
 
     const { data, setData, patch, processing, errors } = useForm({
-        nombre: copropietario.user?.name ?? '',
-        email: copropietario.user?.email ?? '',
+        nombre: copropietario.nombre ?? '',
+        email: copropietario.email ?? '',
         tipo_documento: copropietario.tipo_documento ?? '',
         numero_documento: copropietario.numero_documento ?? '',
         telefono: copropietario.telefono ?? '',
@@ -33,10 +33,10 @@ export default function Edit({ copropietario, unidades = [] }) {
     const errorClass = "mt-1 text-xs text-danger"
 
     return (
-        <AdminLayout title={`Editar — ${copropietario.user?.name}`}>
+        <AdminLayout title={`Editar — ${copropietario.nombre}`}>
             <div className="mb-5">
                 <Link href={`/admin/copropietarios/${copropietario.id}`} className="text-sm text-app-text-muted hover:text-brand transition-colors">
-                    ← {copropietario.user?.name}
+                    ← {copropietario.nombre}
                 </Link>
             </div>
 

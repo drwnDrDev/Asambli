@@ -5,6 +5,7 @@ use App\Models\Reunion;
 use App\Models\Tenant;
 use App\Models\Unidad;
 use App\Models\User;
+use App\Notifications\AccesoReunionNotification;
 use App\Services\ConvocatoriaService;
 use Illuminate\Support\Facades\Notification;
 
@@ -17,17 +18,14 @@ test('convocatoria envia notificacion a todos los copropietarios activos', funct
     $admin = User::factory()->create(['tenant_id' => $tenant->id, 'rol' => 'administrador']);
     $reunion = Reunion::factory()->create(['tenant_id' => $tenant->id, 'creado_por' => $admin->id]);
 
-    $user1 = User::factory()->create(['tenant_id' => $tenant->id, 'rol' => 'copropietario']);
-    $user2 = User::factory()->create(['tenant_id' => $tenant->id, 'rol' => 'copropietario']);
-
-    $copro1 = Copropietario::factory()->create(['tenant_id' => $tenant->id, 'user_id' => $user1->id, 'activo' => true]);
-    $copro2 = Copropietario::factory()->create(['tenant_id' => $tenant->id, 'user_id' => $user2->id, 'activo' => true]);
+    $copro1 = Copropietario::factory()->create(['tenant_id' => $tenant->id, 'activo' => true, 'email' => 'c1@test.com']);
+    $copro2 = Copropietario::factory()->create(['tenant_id' => $tenant->id, 'activo' => true, 'email' => 'c2@test.com']);
 
     Unidad::factory()->create(['tenant_id' => $tenant->id, 'copropietario_id' => $copro1->id]);
     Unidad::factory()->create(['tenant_id' => $tenant->id, 'copropietario_id' => $copro2->id]);
 
-    app(ConvocatoriaService::class)->enviar($reunion, $admin);
+    app(ConvocatoriaService::class)->enviar($reunion);
 
-    Notification::assertSentTo([$user1, $user2], \App\Notifications\ConvocatoriaReunion::class);
-    expect($reunion->fresh()->convocatoria_enviada_at)->not->toBeNull();
+    Notification::assertSentTo([$copro1, $copro2], AccesoReunionNotification::class);
+    expect($reunion->fresh()->convocatoria_envios)->toBe(1);
 });

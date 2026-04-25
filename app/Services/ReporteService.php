@@ -19,7 +19,7 @@ class ReporteService
 
         $asistentes = Asistencia::where('reunion_id', $reunion->id)
             ->where('confirmada_por_admin', true)
-            ->with('copropietario.user', 'copropietario.unidades')
+            ->with('copropietario.unidades')
             ->get();
 
         $votaciones = Votacion::withoutGlobalScopes()
@@ -35,15 +35,15 @@ class ReporteService
 
                 $v->votos_detalle = Voto::withoutGlobalScopes()
                     ->where('votacion_id', $v->id)
-                    ->with('votante.user', 'votante.unidades', 'opcion', 'poderdante.user')
+                    ->with('votante.unidades', 'opcion', 'poderdante')
                     ->orderBy('created_at')
                     ->get()
                     ->map(fn($voto) => [
-                        'copropietario' => $voto->votante->user->name,
+                        'copropietario' => $voto->votante->nombre,
                         'unidades'      => $voto->votante->unidades->pluck('numero')->join(', '),
                         'opcion'        => $voto->opcion->texto,
                         'peso'          => $voto->peso,
-                        'en_nombre_de'  => $voto->poderdante?->user?->name,
+                        'en_nombre_de'  => $voto->poderdante?->nombre,
                         'hora'          => $voto->created_at->format('H:i:s'),
                         'hash'          => substr($voto->hash_verificacion, 0, 8),
                     ])->toArray();
@@ -68,14 +68,14 @@ class ReporteService
 
         $asistentes = Asistencia::where('reunion_id', $reunion->id)
             ->where('confirmada_por_admin', true)
-            ->with('copropietario.user', 'copropietario.unidades')
+            ->with('copropietario.unidades')
             ->get();
 
         foreach ($asistentes as $a) {
             foreach ($a->copropietario->unidades as $unidad) {
                 $rows[] = implode(',', [
                     $unidad->numero,
-                    '"' . str_replace('"', '""', $a->copropietario->user->name) . '"',
+                    '"' . str_replace('"', '""', $a->copropietario->nombre) . '"',
                     $unidad->coeficiente,
                     $a->hora_confirmacion?->format('d/m/Y H:i:s'),
                 ]) . "\n";
@@ -96,17 +96,17 @@ class ReporteService
         foreach ($votaciones as $votacion) {
             $votos = Voto::withoutGlobalScopes()
                 ->where('votacion_id', $votacion->id)
-                ->with('votante.user', 'votante.unidades', 'opcion', 'poderdante.user')
+                ->with('votante.unidades', 'opcion', 'poderdante')
                 ->orderBy('created_at')
                 ->get();
 
             foreach ($votos as $voto) {
                 $unidades   = $voto->votante->unidades->pluck('numero')->join(' / ');
-                $enNombreDe = $voto->poderdante?->user?->name ?? '';
+                $enNombreDe = $voto->poderdante?->nombre ?? '';
                 $rows[] = implode(',', [
                     $votacion->id,
                     '"' . str_replace('"', '""', $votacion->pregunta) . '"',
-                    '"' . str_replace('"', '""', $voto->votante->user->name) . '"',
+                    '"' . str_replace('"', '""', $voto->votante->nombre) . '"',
                     '"' . $unidades . '"',
                     '"' . str_replace('"', '""', $voto->opcion->texto) . '"',
                     $voto->peso,

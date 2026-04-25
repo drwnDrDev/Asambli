@@ -7,12 +7,8 @@ use App\Models\AccesoReunion;
 use App\Models\Copropietario;
 use App\Models\Poder;
 use App\Models\Unidad;
-use App\Models\User;
-use App\Notifications\OnboardingInvitation;
-use App\Services\MagicLinkService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
 use Inertia\Inertia;
 
 class CopropietarioController extends Controller
@@ -21,12 +17,12 @@ class CopropietarioController extends Controller
     {
         $tab    = in_array($request->get('tab'), ['copropietarios', 'externos'])
             ? $request->get('tab')
-            : 'copropietarios'; // 'copropietarios' | 'externos'
+            : 'copropietarios';
         $search = $request->get('search', '');
 
         $esExterno = $tab === 'externos';
 
-        $query = Copropietario::with(['user', 'unidades'])
+        $query = Copropietario::with(['unidades'])
             ->where('es_externo', $esExterno)
             ->withCount([
                 'poderesOtorgados as poderes_activos_count' => fn ($q) =>
@@ -34,7 +30,6 @@ class CopropietarioController extends Controller
             ]);
 
         if ($esExterno) {
-            // Load only the latest poder per externo via latestOfMany()
             $query->with(['ultimoPoderComoApoderado' => function ($q) {
                 $q->with('reunion:id,titulo,estado');
             }]);
@@ -42,10 +37,9 @@ class CopropietarioController extends Controller
 
         if ($search) {
             $query->where(function ($q) use ($search) {
-                $q->whereHas('user', fn ($sq) =>
-                    $sq->where('name', 'like', "%{$search}%")
-                       ->orWhere('email', 'like', "%{$search}%")
-                )->orWhere('numero_documento', 'like', "%{$search}%");
+                $q->where('nombre', 'like', "%{$search}%")
+                  ->orWhere('email', 'like', "%{$search}%")
+                  ->orWhere('numero_documento', 'like', "%{$search}%");
             });
         }
 
@@ -68,9 +62,11 @@ class CopropietarioController extends Controller
 
     public function store(Request $request)
     {
+        $tenant = app('current_tenant');
+
         $data = $request->validate([
             'nombre'          => 'required|string|max:255',
-            'email'           => 'required|email|unique:users,email',
+            'email'           => 'required|email|unique:copropietarios,email',
             'tipo_documento'  => 'nullable|in:CC,CE,NIT,PP,TI,PEP',
             'numero_documento'=> 'nullable|string|max:30',
             'telefono'        => 'nullable|string|max:20',
@@ -79,22 +75,11 @@ class CopropietarioController extends Controller
             'unidades.*'      => 'exists:unidades,id',
         ]);
 
-        $tenant = app('current_tenant');
-
-        $user = null;
-
-        DB::transaction(function () use ($data, $tenant, &$user) {
-            $user = User::create([
-                'tenant_id' => $tenant->id,
-                'name'      => $data['nombre'],
-                'email'     => $data['email'],
-                'password'  => bcrypt(Str::random(16)),
-                'rol'       => 'copropietario',
-            ]);
-
+        DB::transaction(function () use ($data, $tenant) {
             $copropietario = Copropietario::create([
                 'tenant_id'        => $tenant->id,
-                'user_id'          => $user->id,
+                'nombre'           => $data['nombre'],
+                'email'            => $data['email'],
                 'tipo_documento'   => $data['tipo_documento'] ?? null,
                 'numero_documento' => $data['numero_documento'] ?? null,
                 'telefono'         => $data['telefono'] ?? null,
@@ -107,22 +92,18 @@ class CopropietarioController extends Controller
             }
         });
 
-        // Enviar invitación de onboarding
-        $onboardingUrl = app(MagicLinkService::class)->generate($user, null, 'onboarding');
-        $user->notify(new OnboardingInvitation($onboardingUrl));
-
         return redirect()->route('admin.copropietarios.index')
             ->with('success', 'Copropietario creado exitosamente.');
     }
 
     public function show(Copropietario $copropietario)
     {
-        $copropietario->load(['user', 'unidades']);
+        $copropietario->load(['unidades']);
 
         $poderesActivos = Poder::withoutGlobalScopes()
             ->where('poderdante_id', $copropietario->id)
             ->whereIn('estado', ['pendiente', 'aprobado'])
-            ->with('apoderado.user', 'reunion')
+            ->with('apoderado', 'reunion')
             ->orderByDesc('created_at')
             ->get();
 
@@ -150,8 +131,7 @@ class CopropietarioController extends Controller
 
     public function edit(Copropietario $copropietario)
     {
-        $copropietario->load(['user', 'unidades']);
-        // Unidades libres + las ya asignadas a este copropietario
+        $copropietario->load(['unidades']);
         $unidades = Unidad::where(function ($q) use ($copropietario) {
             $q->whereNull('copropietario_id')
               ->orWhere('copropietario_id', $copropietario->id);
@@ -167,7 +147,7 @@ class CopropietarioController extends Controller
     {
         $data = $request->validate([
             'nombre'          => 'required|string|max:255',
-            'email'           => 'required|email|unique:users,email,' . $copropietario->user_id,
+            'email'           => 'required|email|unique:copropietarios,email,' . $copropietario->id,
             'tipo_documento'  => 'nullable|in:CC,CE,NIT,PP,TI,PEP',
             'numero_documento'=> 'nullable|string|max:30',
             'telefono'        => 'nullable|string|max:20',
@@ -178,12 +158,9 @@ class CopropietarioController extends Controller
         ]);
 
         DB::transaction(function () use ($data, $copropietario) {
-            $copropietario->user->update([
-                'name'  => $data['nombre'],
-                'email' => $data['email'],
-            ]);
-
             $copropietario->update([
+                'nombre'           => $data['nombre'],
+                'email'            => $data['email'],
                 'tipo_documento'   => $data['tipo_documento'] ?? null,
                 'numero_documento' => $data['numero_documento'] ?? null,
                 'telefono'         => $data['telefono'] ?? null,
@@ -191,7 +168,6 @@ class CopropietarioController extends Controller
                 'activo'           => $data['activo'] ?? true,
             ]);
 
-            // Desasignar todas sus unidades, reasignar las enviadas
             Unidad::where('copropietario_id', $copropietario->id)->update(['copropietario_id' => null]);
             if (!empty($data['unidades'])) {
                 Unidad::whereIn('id', $data['unidades'])->update(['copropietario_id' => $copropietario->id]);
@@ -217,29 +193,9 @@ class CopropietarioController extends Controller
             }
         }
 
-        $user = $copropietario->user;
         $copropietario->delete();
-        $user?->delete();
 
         return redirect()->route('admin.copropietarios.index')
             ->with('success', 'Eliminado correctamente.');
-    }
-
-    public function generatePin(Copropietario $copropietario)
-    {
-        $pin = str_pad(random_int(0, 999999), 6, '0', STR_PAD_LEFT);
-        $copropietario->user->update([
-            'quick_pin' => $pin,
-            'pin_expires_at' => now()->addHours(72),
-        ]);
-        return back()->with('pin', $pin)->with('success', 'PIN generado correctamente.');
-    }
-
-    public function reenviarBienvenida(Copropietario $copropietario)
-    {
-        $copropietario->load('user');
-        $onboardingUrl = app(MagicLinkService::class)->generate($copropietario->user, null, 'onboarding');
-        $copropietario->user->notify(new OnboardingInvitation($onboardingUrl));
-        return back()->with('success', 'Invitación de bienvenida reenviada.');
     }
 }

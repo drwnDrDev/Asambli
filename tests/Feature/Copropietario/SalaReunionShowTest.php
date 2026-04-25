@@ -113,8 +113,7 @@ it('show includes resultadosActuales with correct format when copropietario alre
     $tenant = Tenant::factory()->create();
     app()->instance('current_tenant', $tenant);
 
-    $user = User::factory()->create(['tenant_id' => $tenant->id, 'rol' => 'copropietario']);
-    $copro = Copropietario::factory()->create(['user_id' => $user->id, 'tenant_id' => $tenant->id]);
+    $copro = Copropietario::factory()->create(['tenant_id' => $tenant->id]);
 
     $reunion = Reunion::factory()->create(['tenant_id' => $tenant->id, 'estado' => ReunionEstado::EnCurso]);
     $votacion = Votacion::factory()->create(['reunion_id' => $reunion->id, 'tenant_id' => $tenant->id, 'estado' => 'abierta']);
@@ -134,7 +133,17 @@ it('show includes resultadosActuales with correct format when copropietario alre
         'hash_verificacion'   => 'hash123',
     ]);
 
-    $response = $this->actingAs($user)
+    // Autenticar via copropietario guard (PIN-based session)
+    $token = \Illuminate\Support\Str::random(64);
+    \App\Models\AccesoReunion::create([
+        'copropietario_id' => $copro->id,
+        'reunion_id'       => $reunion->id,
+        'pin_hash'         => bcrypt('000000'),
+        'session_token'    => $token,
+        'activo'           => true,
+    ]);
+
+    $response = $this->withSession(['copropietario_session_token' => $token])
         ->withHeaders(['X-Inertia' => 'true', 'X-Inertia-Version' => inertiaVersion()])
         ->get("/sala/{$reunion->id}");
 

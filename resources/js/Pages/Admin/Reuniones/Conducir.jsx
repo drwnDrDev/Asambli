@@ -641,7 +641,7 @@ export default function Conducir({ reunion, quorum: initialQuorum, copropietario
                                 <div key={c.id} className="flex justify-between items-center py-1.5 border-b border-gray-50">
                                     <div>
                                         <div className="flex items-center gap-1.5">
-                                            <p className="text-sm font-medium text-gray-800">{c.user?.name}</p>
+                                            <p className="text-sm font-medium text-gray-800">{c.nombre}</p>
                                             {c.es_externo && <span className="text-[10px] font-bold bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded">D</span>}
                                         </div>
                                         <p className="text-xs text-gray-400">

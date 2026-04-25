@@ -22,7 +22,7 @@ class AccesoDelegadoNotification extends Notification
     {
         $loginUrl = url("/sala/login/{$this->reunion->id}");
         $fecha = $this->reunion->fecha_programada?->format('d/m/Y H:i') ?? 'Por confirmar';
-        $nombre = $notifiable->user?->name ?? $notifiable->email ?? 'Delegado';
+        $nombre = $notifiable->nombre ?? $notifiable->email ?? 'Delegado';
 
         return (new MailMessage)
             ->subject("Acceso como delegado: {$this->reunion->titulo}")

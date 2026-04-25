@@ -3,18 +3,18 @@ import { Link, usePage, router } from '@inertiajs/react'
 
 export default function Show({ copropietario, poderesActivos = [], accesos = [] }) {
     const { flash } = usePage().props
-    const { user, unidades = [] } = copropietario
+    const { unidades = [] } = copropietario
 
     const coefTotal = unidades.reduce((s, u) => s + parseFloat(u.coeficiente ?? 0), 0)
 
     const destroy = () => {
-        if (confirm('¿Eliminar este copropietario y su usuario asociado?')) {
+        if (confirm('¿Eliminar este copropietario?')) {
             router.delete(`/admin/copropietarios/${copropietario.id}`)
         }
     }
 
     return (
-        <AdminLayout title={user?.name ?? 'Copropietario'}>
+        <AdminLayout title={copropietario.nombre ?? 'Copropietario'}>
             {flash?.success && (
                 <div className="mb-4 px-4 py-3 rounded-lg bg-success-bg border border-success text-success text-sm">
                     {flash.success}
@@ -33,11 +33,11 @@ export default function Show({ copropietario, poderesActivos = [], accesos = [] 
                     <div className="flex items-start justify-between mb-5">
                         <div className="flex items-center gap-3">
                             <div className="w-12 h-12 rounded-full bg-brand-light flex items-center justify-center text-brand font-bold text-lg flex-shrink-0">
-                                {user?.name?.charAt(0)?.toUpperCase() ?? '?'}
+                                {copropietario.nombre?.charAt(0)?.toUpperCase() ?? '?'}
                             </div>
                             <div>
-                                <h2 className="text-lg font-bold text-app-text-primary">{user?.name}</h2>
-                                <p className="text-sm text-app-text-muted">{user?.email}</p>
+                                <h2 className="text-lg font-bold text-app-text-primary">{copropietario.nombre}</h2>
+                                <p className="text-sm text-app-text-muted">{copropietario.email}</p>
                             </div>
                         </div>
                         <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${copropietario.activo ? 'bg-success-bg text-success' : 'bg-danger-bg text-danger'}`}>
@@ -143,7 +143,7 @@ export default function Show({ copropietario, poderesActivos = [], accesos = [] 
                         {poderesActivos.map(p => (
                             <div key={p.id} className="flex items-center justify-between text-sm border-b border-surface-border pb-3 last:border-0 last:pb-0">
                                 <div>
-                                    <p className="text-app-text-primary font-medium">{p.apoderado?.user?.name}</p>
+                                    <p className="text-app-text-primary font-medium">{p.apoderado?.nombre}</p>
                                     <p className="text-xs text-app-text-muted mt-0.5">{p.reunion?.titulo}</p>
                                 </div>
                                 <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${p.estado === 'aprobado' ? 'bg-success-bg text-success' : 'bg-warning/20 text-warning'}`}>

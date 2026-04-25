@@ -21,7 +21,7 @@ class UnidadFactory extends Factory
             'numero' => fake()->numerify('###'),
             'tipo' => fake()->randomElement(['apartamento', 'local', 'parqueadero', 'otro']),
             'coeficiente' => fake()->randomFloat(5, 0.5, 5.0),
-            'torre' => fake()->randomElement(['A', 'B', 'C', null]),
+            'torre' => fake()->randomElement(['A', 'B', 'C', '']),
             'piso' => (string) fake()->numberBetween(1, 20),
             'activo' => true,
         ];
