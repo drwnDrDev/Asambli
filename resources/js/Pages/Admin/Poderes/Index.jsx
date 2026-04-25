@@ -17,7 +17,7 @@ function PoderRow({ poder, onAprobar, onRechazar, onRevocar }) {
         <div className="flex items-start justify-between py-3 border-b border-gray-100 gap-3 last:border-0">
             <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-0.5">
-                    <p className="text-sm font-medium text-gray-800 truncate">{apoderado?.user?.name}</p>
+                    <p className="text-sm font-medium text-gray-800 truncate">{apoderado?.nombre}</p>
                     {apoderado?.es_externo && (
                         <span className="text-[10px] font-bold bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded">Externo</span>
                     )}
@@ -26,7 +26,7 @@ function PoderRow({ poder, onAprobar, onRechazar, onRevocar }) {
                     )}
                 </div>
                 <p className="text-xs text-gray-400">
-                    Delegado por: <span className="text-gray-600">{poderdante?.user?.name}</span>
+                    Delegado por: <span className="text-gray-600">{poderdante?.nombre}</span>
                     {' · '}
                     {poderdante?.unidades?.map(u => u.numero).join(', ') || '—'}
                 </p>
@@ -79,7 +79,7 @@ function CrearPoderForm({ copropietarios, onSuccess }) {
     const copropietariosFiltrados = copropietarios.filter(c => {
         const q = busqueda.toLowerCase()
         return (
-            c.user?.name?.toLowerCase().includes(q) ||
+            c.nombre?.toLowerCase().includes(q) ||
             (c.numero_documento ?? '').toLowerCase().includes(q) ||
             (c.unidades ?? []).some(u => u.numero?.toLowerCase().includes(q))
         )
@@ -141,7 +141,7 @@ function CrearPoderForm({ copropietarios, onSuccess }) {
                     <option value="">Seleccionar copropietario…</option>
                     {copropietarios.map(c => (
                         <option key={c.id} value={c.id}>
-                            {c.user?.name} — {c.unidades?.map(u => u.numero).join(', ') || 'sin unidades'}
+                            {c.nombre} — {c.unidades?.map(u => u.numero).join(', ') || 'sin unidades'}
                         </option>
                     ))}
                 </select>
@@ -193,7 +193,7 @@ function CrearPoderForm({ copropietarios, onSuccess }) {
                                             onClick={() => seleccionar(c)}
                                             className="w-full text-left px-3 py-2 text-sm hover:bg-blue-50 transition border-b border-gray-100 last:border-0"
                                         >
-                                            <span className="font-medium">{c.user?.name}</span>
+                                            <span className="font-medium">{c.nombre}</span>
                                             <span className="text-gray-400 text-xs ml-2">
                                                 {c.numero_documento && `Doc: ${c.numero_documento} · `}
                                                 {c.unidades?.map(u => u.numero).join(', ')}
@@ -207,7 +207,7 @@ function CrearPoderForm({ copropietarios, onSuccess }) {
                         <div>
                             <div className="flex items-center justify-between border border-gray-200 rounded-lg px-3 py-2.5 bg-white">
                                 <div>
-                                    <p className="text-sm font-medium text-gray-800">{apoderadoSeleccionado.user?.name}</p>
+                                    <p className="text-sm font-medium text-gray-800">{apoderadoSeleccionado.nombre}</p>
                                     <p className="text-xs text-gray-400 mt-0.5">
                                         {apoderadoSeleccionado.numero_documento && `Doc: ${apoderadoSeleccionado.numero_documento} · `}
                                         Unidades: {apoderadoSeleccionado.unidades?.map(u => u.numero).join(', ') || '—'}

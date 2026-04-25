@@ -19,7 +19,7 @@ class SalaReunionController extends Controller
 
     public function index()
     {
-        $copropietario = Copropietario::where('user_id', auth()->id())->first();
+        $copropietario = auth('copropietario')->user();
         $reuniones = $copropietario
             ? Reunion::withoutGlobalScopes()
                 ->where('tenant_id', $copropietario->tenant_id)
@@ -33,19 +33,19 @@ class SalaReunionController extends Controller
 
     public function show(Reunion $reunion)
     {
-        $copropietario = Copropietario::where('user_id', auth()->id())->first();
+        $copropietario = auth('copropietario')->user();
 
         // Bloquear si el copropietario tiene un poder aprobado activo
         if ($copropietario) {
             $poderActivo = Poder::withoutGlobalScopes()
                 ->where('poderdante_id', $copropietario->id)
                 ->where('estado', 'aprobado')
-                ->with('apoderado.user')
+                ->with('apoderado')
                 ->first();
 
             if ($poderActivo) {
                 return Inertia::render('Copropietario/Sala/DelegadoActivo', [
-                    'delegadoNombre'  => $poderActivo->apoderado?->user?->name ?? 'Delegado',
+                    'delegadoNombre'  => $poderActivo->apoderado?->nombre ?? 'Delegado',
                     'delegadoEmpresa' => $poderActivo->apoderado?->empresa,
                 ]);
             }
@@ -67,7 +67,7 @@ class SalaReunionController extends Controller
             ? Poder::withoutGlobalScopes()
                 ->where('apoderado_id', $copropietario->id)
                 ->where('estado', 'aprobado')
-                ->with('poderdante.user')
+                ->with('poderdante.unidades')
                 ->get()
             : collect();
 
@@ -111,9 +111,16 @@ class SalaReunionController extends Controller
 
         $esDelegadoExterno = $copropietario?->es_externo ?? false;
 
+        $poderdantesRepresentados = $poderes->map(fn($p) => [
+            'id'      => $p->poderdante_id,
+            'nombre'  => $p->poderdante?->nombre,
+            'unidades' => $p->poderdante?->unidades?->pluck('numero') ?? [],
+        ])->values();
+
         return Inertia::render('Copropietario/Sala/Show', compact(
             'reunion', 'quorum', 'poderes', 'yaVotoPor', 'votacionAbierta',
-            'resultadosActuales', 'feedInicial', 'estadoReunion', 'esDelegadoExterno'
+            'resultadosActuales', 'feedInicial', 'estadoReunion', 'esDelegadoExterno',
+            'poderdantesRepresentados'
         ));
     }
 
@@ -191,10 +198,35 @@ class SalaReunionController extends Controller
         return $items->sortBy('timestamp')->values()->toArray();
     }
 
+    public function estadoActual(Reunion $reunion)
+    {
+        $copropietario = auth('copropietario')->user();
+
+        $votacionActiva = $reunion->votaciones()
+            ->where('estado', 'abierta')
+            ->with('opciones')
+            ->first();
+
+        $yaVote = false;
+        if ($votacionActiva && $copropietario) {
+            $yaVote = Voto::withoutGlobalScopes()
+                ->where('votacion_id', $votacionActiva->id)
+                ->where(function ($q) use ($copropietario) {
+                    $q->where('copropietario_id', $copropietario->id)
+                      ->orWhere('en_nombre_de', $copropietario->id);
+                })
+                ->exists();
+        }
+
+        return response()->json([
+            'votacion_activa' => $votacionActiva,
+            'ya_vote'         => $yaVote,
+        ]);
+    }
+
     public function historial()
     {
-        // withoutGlobalScopes() + explicit tenant_id — same pattern as show() and index()
-        $copropietario = Copropietario::where('user_id', auth()->id())->first();
+        $copropietario = auth('copropietario')->user();
         $tenantId = $copropietario?->tenant_id ?? app('current_tenant')->id;
 
         $reuniones = Reunion::withoutGlobalScopes()

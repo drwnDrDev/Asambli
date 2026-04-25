@@ -18,7 +18,7 @@ class Reunion extends Model
         'tenant_id', 'titulo', 'tipo', 'tipo_voto_peso',
         'quorum_requerido', 'estado', 'fecha_programada',
         'fecha_inicio', 'fecha_fin', 'convocatoria_enviada_at', 'creado_por',
-        'qr_token', 'qr_expires_at',
+        'qr_token', 'qr_expires_at', 'modalidad', 'convocatoria_envios',
     ];
 
     protected $casts = [
@@ -29,6 +29,7 @@ class Reunion extends Model
         'qr_expires_at' => 'datetime',
         'quorum_requerido' => 'decimal:2',
         'estado' => ReunionEstado::class,
+        'convocatoria_envios' => 'integer',
     ];
 
     public function logs()
@@ -49,5 +50,20 @@ class Reunion extends Model
     public function estaActiva(): bool
     {
         return !$this->estado->esTerminal();
+    }
+
+    public function tenant(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(\App\Models\Tenant::class)->withoutGlobalScopes();
+    }
+
+    public function accesos(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(\App\Models\AccesoReunion::class);
+    }
+
+    public function puedeConvocar(): bool
+    {
+        return $this->convocatoria_envios < 2;
     }
 }

@@ -13,14 +13,8 @@ export default function Index({ reuniones = [] }) {
 
     return (
         <AdminLayout title="Reuniones">
-            <div className="flex justify-between items-center mb-6">
+            <div className="mb-6">
                 <p className="text-sm text-gray-500">{reuniones.length} reunión(es)</p>
-                <Link
-                    href="/admin/reuniones/create"
-                    className="bg-blue-600 text-white text-sm px-4 py-2 rounded-lg hover:bg-blue-700 transition"
-                >
-                    + Nueva reunión
-                </Link>
             </div>
 
             {flash?.success && (
@@ -33,9 +27,6 @@ export default function Index({ reuniones = [] }) {
                 <div className="bg-white rounded-lg shadow p-12 text-center text-gray-400">
                     <div className="text-4xl mb-3">📋</div>
                     <p>No hay reuniones creadas aún.</p>
-                    <Link href="/admin/reuniones/create" className="mt-4 inline-block text-blue-600 text-sm hover:underline">
-                        Crear la primera reunión
-                    </Link>
                 </div>
             ) : (
                 <div className="bg-white rounded-lg shadow overflow-hidden">

@@ -103,16 +103,6 @@ export default function Login({ status, canResetPassword }) {
                 </div>
             </form>
 
-            {/* Acceso alternativo */}
-            <div className="mt-5 pt-5 border-t border-sidebar-border text-center">
-                <p className="text-[12px] text-sidebar-text mb-2">¿No recuerdas tu contraseña?</p>
-                <Link
-                    href={route('quick-access.pin')}
-                    className="text-[13px] text-brand hover:text-brand-dark transition-colors"
-                >
-                    Acceder con PIN →
-                </Link>
-            </div>
         </GuestLayout>
     )
 }

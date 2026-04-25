@@ -63,7 +63,8 @@
       "Read(//home/dwndz/Projects/Asambli/**)",
       "Bash(done)",
       "Bash(gh --version)",
-      "Bash(gh auth:*)"
+      "Bash(gh auth:*)",
+      "Bash(python3 -c \"import sys,json; routes=json.load\\(sys.stdin\\); [print\\(r['middleware']\\) for r in routes if 'store' in r['name']]\")"
     ]
   }
 }

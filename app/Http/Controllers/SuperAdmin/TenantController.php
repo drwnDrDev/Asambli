@@ -48,12 +48,18 @@ class TenantController extends Controller
             ]);
 
             if (!empty($data['admin_email'])) {
-                User::create([
+                $admin = User::create([
                     'tenant_id' => $tenant->id,
                     'name'      => $data['admin_nombre'],
                     'email'     => $data['admin_email'],
                     'password'  => bcrypt($data['admin_password']),
                     'rol'       => 'administrador',
+                    'activo'    => true,
+                ]);
+
+                \App\Models\TenantAdministrador::create([
+                    'tenant_id' => $tenant->id,
+                    'user_id'   => $admin->id,
                     'activo'    => true,
                 ]);
             }
@@ -69,15 +75,20 @@ class TenantController extends Controller
             'users' => fn ($q) => $q->where('rol', 'administrador')->orderBy('name'),
         ]);
 
+        $reuniones = \App\Models\Reunion::withoutGlobalScopes()
+            ->where('tenant_id', $tenant->id)
+            ->orderByDesc('created_at')
+            ->get(['id', 'titulo', 'estado', 'fecha_programada', 'convocatoria_envios']);
+
         $stats = [
-            'reuniones'      => $tenant->reuniones()->count(),
+            'reuniones'      => $reuniones->count(),
             'copropietarios' => Copropietario::withoutGlobalScopes()
                 ->where('tenant_id', $tenant->id)
                 ->where('es_externo', false)
                 ->count(),
         ];
 
-        return Inertia::render('SuperAdmin/Tenants/Show', compact('tenant', 'stats'));
+        return Inertia::render('SuperAdmin/Tenants/Show', compact('tenant', 'stats', 'reuniones'));
     }
 
     public function edit(Tenant $tenant)
@@ -147,12 +158,18 @@ class TenantController extends Controller
             'password' => 'required|string|min:8',
         ]);
 
-        User::create([
+        $admin = User::create([
             'tenant_id' => $tenant->id,
             'name'      => $data['nombre'],
             'email'     => $data['email'],
             'password'  => bcrypt($data['password']),
             'rol'       => 'administrador',
+            'activo'    => true,
+        ]);
+
+        \App\Models\TenantAdministrador::create([
+            'tenant_id' => $tenant->id,
+            'user_id'   => $admin->id,
             'activo'    => true,
         ]);
 

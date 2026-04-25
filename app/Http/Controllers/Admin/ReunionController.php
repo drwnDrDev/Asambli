@@ -33,26 +33,6 @@ class ReunionController extends Controller
         return Inertia::render('Admin/Reuniones/Index', compact('reuniones'));
     }
 
-    public function create()
-    {
-        return Inertia::render('Admin/Reuniones/Create');
-    }
-
-    public function store(Request $request)
-    {
-        $data = $request->validate([
-            'titulo' => 'required|string|max:255',
-            'tipo' => 'required|in:asamblea,consejo,extraordinaria',
-            'tipo_voto_peso' => 'required|in:coeficiente,unidad',
-            'quorum_requerido' => 'required|numeric|min:1|max:100',
-            'fecha_programada' => 'nullable|date',
-        ]);
-
-        $reunion = Reunion::create([...$data, 'creado_por' => auth()->id()]);
-
-        return redirect()->route('admin.reuniones.show', $reunion)->with('success', 'Reunión creada.');
-    }
-
     public function show(Reunion $reunion)
     {
         $quorum = $this->quorumService->calcular($reunion);
@@ -130,23 +110,6 @@ class ReunionController extends Controller
         return response()->json($quorumData);
     }
 
-    public function edit(Reunion $reunion)
-    {
-        return Inertia::render('Admin/Reuniones/Edit', compact('reunion'));
-    }
-
-    public function update(Request $request, Reunion $reunion)
-    {
-        $data = $request->validate([
-            'titulo' => 'required|string|max:255',
-            'fecha_programada' => 'nullable|date',
-        ]);
-
-        $reunion->update($data);
-
-        return redirect()->route('admin.reuniones.show', $reunion)->with('success', 'Reunión actualizada.');
-    }
-
     public function destroy(Reunion $reunion)
     {
         if ($reunion->estado !== ReunionEstado::Borrador) {
@@ -158,7 +121,7 @@ class ReunionController extends Controller
 
     public function convocar(Reunion $reunion)
     {
-        $this->convocatoriaService->enviar($reunion, auth()->user());
+        $this->convocatoriaService->enviar($reunion);
         return back()->with('success', 'Convocatoria enviada.');
     }
 
@@ -192,6 +155,10 @@ class ReunionController extends Controller
             ->where('tenant_id', $reunion->tenant_id)
             ->whereIn('estado', ['pendiente', 'aprobado'])
             ->update(['estado' => 'expirado', 'reunion_id' => $reunion->id]);
+
+        // Nullificar PINs en claro y desactivar accesos al cerrar la reunión
+        \App\Models\AccesoReunion::where('reunion_id', $reunion->id)
+            ->update(['pin_plain' => null, 'activo' => false]);
 
         return back()->with('success', 'Reunión finalizada.');
     }

@@ -9,22 +9,18 @@ use Illuminate\Database\Eloquent\Factories\Factory;
  */
 class CopropietarioFactory extends Factory
 {
-    /**
-     * Define the model's default state.
-     *
-     * @return array<string, mixed>
-     */
     public function definition(): array
     {
         $tipos = ['CC', 'CE', 'NIT', 'PP', 'TI', 'PEP'];
         return [
-            'tenant_id' => fn() => app()->has('current_tenant') ? app('current_tenant')->id : \App\Models\Tenant::factory(),
-            'user_id' => \App\Models\User::factory(),
-            'tipo_documento' => fake()->randomElement($tipos),
+            'tenant_id'        => fn() => app()->has('current_tenant') ? app('current_tenant')->id : \App\Models\Tenant::factory(),
+            'nombre'           => fake()->name(),
+            'email'            => fake()->unique()->safeEmail(),
+            'tipo_documento'   => fake()->randomElement($tipos),
             'numero_documento' => fake()->unique()->numerify('##########'),
-            'es_residente' => true,
-            'es_externo'   => false,
-            'activo' => true,
+            'es_residente'     => true,
+            'es_externo'       => false,
+            'activo'           => true,
         ];
     }
 }

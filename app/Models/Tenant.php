@@ -12,7 +12,7 @@ class Tenant extends Model
 
     protected $fillable = [
         'nombre', 'nit', 'direccion', 'ciudad',
-        'logo_url', 'max_poderes_por_delegado', 'activo',
+        'logo_url', 'max_poderes_por_delegado', 'activo', 'producto',
     ];
 
     protected $casts = [
@@ -33,5 +33,10 @@ class Tenant extends Model
     public function reuniones()
     {
         return $this->hasMany(Reunion::class);
+    }
+
+    public function administradores(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(\App\Models\TenantAdministrador::class)->where('activo', true);
     }
 }

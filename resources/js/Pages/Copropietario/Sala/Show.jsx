@@ -248,7 +248,7 @@ function VotacionCard({ votacionActiva, resultados, yaVotoPor, poderes, onVotar,
                     return (
                         <div key={poder.id} className="border-t pt-4 mt-4" style={{ borderColor: 'var(--sala-border)' }}>
                             <p className="text-[10px] uppercase tracking-widest mb-2" style={{ color: 'var(--sala-amber)' }}>
-                                En nombre de: {poder.poderdante?.user?.name}
+                                En nombre de: {poder.poderdante?.nombre}
                             </p>
                             {!yaVotoPoder ? (
                                 <div className="space-y-2">
@@ -393,6 +393,7 @@ export default function SalaShow({
     feedInicial = [],
     estadoReunion: initialEstadoReunion,
     esDelegadoExterno = false,
+    poderdantesRepresentados = [],
 }) {
     const { errors } = usePage().props
 
@@ -423,6 +424,27 @@ export default function SalaShow({
     useEffect(() => { setYaVotoPor(initialYaVotoPor) }, [initialYaVotoPor])
     useEffect(() => { setResultados(initialResultados) }, [initialResultados])
 
+    // HTTP fetch: sync state on mount (handles reconnect/stale page)
+    useEffect(() => {
+        fetch(`/sala/${reunion.id}/estado-actual`, {
+            headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+        })
+            .then(r => r.ok ? r.json() : null)
+            .then(data => {
+                if (!data) return
+                if (data.votacion_activa) {
+                    setVotacionActiva({
+                        votacion_id: data.votacion_activa.id,
+                        pregunta:    data.votacion_activa.pregunta,
+                        estado:      data.votacion_activa.estado,
+                        opciones:    data.votacion_activa.opciones ?? [],
+                    })
+                    if (!data.ya_vote) setYaVotoPor([])
+                }
+            })
+            .catch(() => {}) // silently fail — WebSocket handles real-time updates
+    }, [reunion.id])
+
     useEffect(() => {
         const channel = echo.channel(`reunion.${reunion.id}`)
 
@@ -433,6 +455,7 @@ export default function SalaShow({
                 if (e.estado === 'abierta') {
                     setVotacionActiva(e)
                     setResultados(null)
+                    setYaVotoPor([])
                     setFeed(prev => [{ tipo: 'votacion_abierta', pregunta: e.pregunta, timestamp: now }, ...prev])
                 } else {
                     // Calculate winner from last known resultados before clearing
@@ -481,11 +504,11 @@ export default function SalaShow({
         echo.connector.pusher?.connection?.bind('disconnected',   () => setConnStatus('disconnected'))
         echo.connector.pusher?.connection?.bind('unavailable',    () => setConnStatus('disconnected'))
 
-        echo.join(`presence-reunion.${reunion.id}`)
+        echo.join(`reunion.${reunion.id}`)
 
         return () => {
             echo.leave(`reunion.${reunion.id}`)
-            echo.leave(`presence-reunion.${reunion.id}`)
+            echo.leave(`presence-reunion.${reunion.id}`)  // Echo internally prefixes with "presence-"
             if (countdownRef.current) clearInterval(countdownRef.current)
         }
     }, [reunion.id])
@@ -557,12 +580,22 @@ export default function SalaShow({
                     </div>
                 )}
 
-                {esDelegadoExterno && (
+                {poderdantesRepresentados.length > 0 && (
                     <div
                         className="rounded-xl px-4 py-3 mb-4 text-xs font-medium"
                         style={{ background: 'rgba(251,191,36,0.12)', border: '1px solid var(--sala-amber-border)', color: 'var(--sala-amber)' }}
                     >
-                        Estás participando como <strong>delegado</strong>. Vota en nombre de los copropietarios que te autorizaron.
+                        <p className="mb-1">Estás participando como <strong>delegado</strong> de:</p>
+                        <ul className="space-y-0.5">
+                            {poderdantesRepresentados.map(p => (
+                                <li key={p.id}>
+                                    {p.nombre}
+                                    {p.unidades?.length > 0 && (
+                                        <span style={{ color: 'var(--sala-text-muted)' }}> · Unid. {p.unidades.join(', ')}</span>
+                                    )}
+                                </li>
+                            ))}
+                        </ul>
                     </div>
                 )}
                 <VotacionCard

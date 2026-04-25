@@ -2,21 +2,70 @@
 
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Admin\CopropietarioController;
-use App\Http\Controllers\Admin\PadronController;
 use App\Http\Controllers\Admin\PoderController as AdminPoderController;
 use App\Http\Controllers\Admin\ReunionController;
 use App\Http\Controllers\Admin\TenantSettingsController;
 use App\Http\Controllers\Admin\VotacionController;
-use App\Http\Controllers\Auth\MagicLinkController;
-use App\Http\Controllers\Copropietario\PoderController as CopropietarioPoderController;
 use App\Http\Controllers\Copropietario\SalaReunionController;
 use App\Http\Controllers\Copropietario\VotoController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\SuperAdmin\DashboardController as SuperAdminDashboardController;
 use App\Http\Controllers\SuperAdmin\TenantController;
+use App\Http\Controllers\SuperAdmin\ReunionController as SuperAdminReunionController;
+use App\Http\Controllers\SuperAdmin\PadronController as SuperAdminPadronController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Broadcast;
 use Inertia\Inertia;
+
+// Broadcasting auth — soporta User guard (admin) y Copropietario guard (PIN-based).
+// NO usa auth.sala middleware para evitar redirecciones que rompen la negociación XHR de Pusher.
+// La auth del copropietario se lee directamente de la sesión — sin pasar por CopropietarioGuard,
+// que puede fallar en el contexto del request de broadcasting.
+Route::post('/broadcasting/auth', function (\Illuminate\Http\Request $request) {
+    // Admin / super_admin (guard web estándar)
+    if (auth()->check()) {
+        return Broadcast::auth($request);
+    }
+
+    // Copropietario (PIN-based): leer token de sesión directamente
+    $sessionToken = $request->session()->get('copropietario_session_token');
+    if ($sessionToken) {
+        $acceso = \App\Models\AccesoReunion::with(['copropietario.unidades'])
+            ->where('session_token', $sessionToken)
+            ->where('activo', true)
+            ->first();
+
+        if ($acceso) {
+            $copropietario = $acceso->copropietario;
+            $unidades      = $copropietario->unidades;
+
+            $userData = [
+                'id'         => 'copro_' . $copropietario->id,
+                'nombre'     => $copropietario->nombre ?? $copropietario->numero_documento,
+                'unidad'     => $unidades->pluck('numero')->join(', ') ?: null,
+                'coef'       => $unidades->sum('coeficiente'),
+                'rol'        => 'copropietario',
+                'es_externo' => (bool) $copropietario->es_externo,
+            ];
+
+            /** @var \Illuminate\Broadcasting\Broadcasters\PusherBroadcaster $broadcaster */
+            $broadcaster = app(\Illuminate\Contracts\Broadcasting\Factory::class)->driver();
+            $pusher      = $broadcaster->getPusher();
+            $channel     = $request->channel_name;
+            $socketId    = $request->socket_id;
+            $userId      = 'copro_' . $copropietario->id;
+
+            $response = str_starts_with($channel, 'presence-')
+                ? $pusher->authorizePresenceChannel($channel, $socketId, $userId, $userData)
+                : $pusher->authorizeChannel($channel, $socketId);
+
+            return json_decode($response, true);
+        }
+    }
+
+    throw new \Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
+});
 
 Route::get('/', function () {
     return Inertia::render('Welcome', [
@@ -32,9 +81,6 @@ Route::get('/dashboard', function () {
     return Inertia::render('Dashboard');
 })->middleware(['auth', 'verified'])->name('dashboard');
 
-// Magic link (unauthenticated)
-Route::get('/acceso/{token}', [MagicLinkController::class, 'acceder'])->name('magic-link.login');
-
 // Standard auth routes
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
@@ -49,8 +95,10 @@ Route::middleware(['auth', 'role:administrador,super_admin'])
     ->group(function () {
         Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('dashboard');
 
-        // Reuniones
-        Route::resource('reuniones', ReunionController::class)->parameters(['reuniones' => 'reunion']);
+        // Reuniones (admin no puede crear/editar — eso lo hace super_admin)
+        Route::get('reuniones', [ReunionController::class, 'index'])->name('reuniones.index');
+        Route::get('reuniones/{reunion}', [ReunionController::class, 'show'])->name('reuniones.show');
+        Route::delete('reuniones/{reunion}', [ReunionController::class, 'destroy'])->name('reuniones.destroy');
         Route::post('reuniones/{reunion}/convocar', [ReunionController::class, 'convocar'])->name('reuniones.convocar');
         Route::post('reuniones/{reunion}/ante-sala', [ReunionController::class, 'abrirAnteSala'])->name('reuniones.ante-sala');
         Route::post('reuniones/{reunion}/iniciar', [ReunionController::class, 'iniciar'])->name('reuniones.iniciar');
@@ -69,6 +117,14 @@ Route::middleware(['auth', 'role:administrador,super_admin'])
         Route::get('reuniones/{reunion}/proyeccion', [ReunionController::class, 'proyeccion'])->name('reuniones.proyeccion');
         Route::post('reuniones/{reunion}/aviso', [ReunionController::class, 'enviarAviso'])->name('reuniones.aviso');
         Route::post('reuniones/{reunion}/quorum-presencia', [ReunionController::class, 'actualizarQuorumPresencia'])->name('reuniones.quorum-presencia');
+        Route::get('reuniones/{reunion}/lista-acceso', [\App\Http\Controllers\Admin\AccesoReunionController::class, 'show'])
+            ->name('reuniones.lista-acceso');
+        Route::post('reuniones/{reunion}/lista-acceso/{acceso}/reenviar', [\App\Http\Controllers\Admin\AccesoReunionController::class, 'reenviar'])
+            ->name('reuniones.acceso.reenviar');
+        Route::patch('reuniones/{reunion}/lista-acceso/{acceso}/desactivar', [\App\Http\Controllers\Admin\AccesoReunionController::class, 'desactivar'])
+            ->name('reuniones.acceso.desactivar');
+        Route::patch('reuniones/{reunion}/lista-acceso/{acceso}/activar', [\App\Http\Controllers\Admin\AccesoReunionController::class, 'activar'])
+            ->name('reuniones.acceso.activar');
 
         // Votaciones (within a reunion context)
         Route::post('reuniones/{reunion}/votaciones', [VotacionController::class, 'store'])->name('votaciones.store');
@@ -77,10 +133,6 @@ Route::middleware(['auth', 'role:administrador,super_admin'])
         Route::post('votaciones/{votacion}/abrir', [VotacionController::class, 'abrir'])->name('votaciones.abrir');
         Route::post('votaciones/{votacion}/cerrar', [VotacionController::class, 'cerrar'])->name('votaciones.cerrar');
         Route::get('votaciones/{votacion}/resultados', [VotacionController::class, 'resultados'])->name('votaciones.resultados');
-
-        // Padrón
-        Route::get('padron', [PadronController::class, 'index'])->name('padron.index');
-        Route::post('padron/import', [PadronController::class, 'import'])->name('padron.import');
 
         // Poderes (standalone, sin reunion)
         Route::get('poderes', [AdminPoderController::class, 'index'])->name('poderes.index');
@@ -98,35 +150,29 @@ Route::middleware(['auth', 'role:administrador,super_admin'])
 
         // Copropietarios
         Route::resource('copropietarios', CopropietarioController::class);
-        Route::post('copropietarios/{copropietario}/generar-pin', [CopropietarioController::class, 'generatePin'])->name('copropietarios.generar-pin');
-        Route::post('copropietarios/{copropietario}/reenviar-bienvenida', [CopropietarioController::class, 'reenviarBienvenida'])->name('copropietarios.reenviar-bienvenida');
     });
 
-// Onboarding (unauthenticated)
-use App\Http\Controllers\Auth\OnboardingController;
-Route::get('/bienvenida/{token}', [OnboardingController::class, 'show'])->name('onboarding.show');
-Route::post('/bienvenida/{token}', [OnboardingController::class, 'store'])->name('onboarding.store');
-
-// Acceso rápido (PIN y QR - unauthenticated) — DEBE ir antes del grupo /sala/{reunion}
-use App\Http\Controllers\Auth\QuickAccessController;
-Route::get('/acceso-rapido', [QuickAccessController::class, 'showPin'])->name('quick-access.pin');
-Route::post('/acceso-rapido', [QuickAccessController::class, 'storePin'])->name('quick-access.pin.store');
-Route::get('/sala/entrada/{token}', [QuickAccessController::class, 'showQr'])->name('quick-access.qr');
-Route::post('/sala/entrada/{token}', [QuickAccessController::class, 'storeQr'])->name('quick-access.qr.store');
-
-// Copropietario (sala) routes
+// Sala index e historial (solo User guard con rol copropietario/admin)
 Route::middleware(['auth', 'role:copropietario,administrador,super_admin'])
     ->name('sala.')
     ->group(function () {
         Route::get('/sala', [SalaReunionController::class, 'index'])->name('index');
         Route::get('/historial', [SalaReunionController::class, 'historial'])->name('historial');
+    });
+
+// Login copropietario con documento + PIN (sin autenticación)
+Route::get('/sala/login/{reunion}', [\App\Http\Controllers\Auth\CopropietarioAccessController::class, 'show'])
+    ->name('sala.login');
+Route::post('/sala/login/{reunion}', [\App\Http\Controllers\Auth\CopropietarioAccessController::class, 'store'])
+    ->middleware('throttle:sala-login')
+    ->name('sala.login.store');
+
+// Sala routes accessible by BOTH User guard AND copropietario (PIN) guard
+Route::middleware(['auth.sala'])
+    ->name('sala.')
+    ->group(function () {
         Route::post('/votos', [VotoController::class, 'store'])->name('votos.store');
-        // Rutas estáticas de poderes ANTES que /sala/{reunion} para evitar colisión
-        Route::get('/sala/poderes', [CopropietarioPoderController::class, 'index'])->name('poderes.index');
-        Route::get('/sala/poderes/verificar-delegado', [CopropietarioPoderController::class, 'verificarDelegado'])->name('poderes.verificar-delegado');
-        Route::get('/sala/poderes/crear', [CopropietarioPoderController::class, 'create'])->name('poderes.create');
-        Route::post('/sala/poderes', [CopropietarioPoderController::class, 'store'])->name('poderes.store');
-        Route::delete('/sala/poderes/{poder}', [CopropietarioPoderController::class, 'destroy'])->name('poderes.destroy');
+        Route::get('/sala/{reunion}/estado-actual', [SalaReunionController::class, 'estadoActual'])->name('estado-actual');
         Route::get('/sala/{reunion}', [SalaReunionController::class, 'show'])->name('show');
     });
 
@@ -140,6 +186,11 @@ Route::middleware(['auth', 'role:super_admin'])
         Route::post('tenants/{tenant}/admins', [TenantController::class, 'storeAdmin'])->name('tenants.admins.store');
         Route::patch('tenants/{tenant}/users/{user}/toggle', [TenantController::class, 'toggleUser'])->name('tenants.users.toggle');
         Route::get('tenants/{tenant}/auditoria', [TenantController::class, 'auditoria'])->name('tenants.auditoria');
+        Route::get('tenants/{tenant}/reuniones/create', [SuperAdminReunionController::class, 'create'])->name('reuniones.create');
+        Route::post('tenants/{tenant}/reuniones', [SuperAdminReunionController::class, 'store'])->name('reuniones.store');
+        Route::post('reuniones/{reunion}/reset-convocatoria', [SuperAdminReunionController::class, 'resetConvocatoria'])->name('reuniones.reset-convocatoria');
+        Route::get('tenants/{tenant}/padron', [SuperAdminPadronController::class, 'index'])->name('tenants.padron');
+        Route::post('tenants/{tenant}/padron/import', [SuperAdminPadronController::class, 'import'])->name('tenants.padron.import');
     });
 
 require __DIR__.'/auth.php';

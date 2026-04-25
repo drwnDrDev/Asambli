@@ -5,14 +5,15 @@ namespace App\Models;
 use App\Traits\BelongsToTenant;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Notifications\Notifiable;
 
 class Copropietario extends Model
 {
-    use HasFactory, BelongsToTenant;
+    use HasFactory, BelongsToTenant, Notifiable;
 
     protected $fillable = [
-        'tenant_id', 'user_id', 'tipo_documento', 'numero_documento',
-        'es_residente', 'es_externo', 'empresa', 'telefono', 'activo',
+        'tenant_id', 'user_id', 'nombre', 'tipo_documento', 'numero_documento',
+        'es_residente', 'es_externo', 'empresa', 'telefono', 'activo', 'email',
     ];
 
     protected $casts = [
@@ -44,5 +45,23 @@ class Copropietario extends Model
     public function poderesOtorgados()
     {
         return $this->hasMany(Poder::class, 'poderdante_id');
+    }
+
+    public function routeNotificationForMail(): string
+    {
+        return $this->email ?? '';
+    }
+
+    public function accesos(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(AccesoReunion::class);
+    }
+
+    public function accesoParaReunion(int $reunionId): ?\App\Models\AccesoReunion
+    {
+        return $this->accesos()
+            ->where('reunion_id', $reunionId)
+            ->where('activo', true)
+            ->first();
     }
 }

@@ -39,13 +39,19 @@ class DatabaseSeeder extends Seeder
         ]);
 
         // 3. Administrador del conjunto de prueba
-        User::create([
+        $admin = User::create([
             'name'               => 'Admin Conjunto Test',
             'email'              => 'admin@conjuntotest.co',
             'password'           => Hash::make('password'),
             'rol'                => 'administrador',
             'tenant_id'          => $tenant->id,
             'email_verified_at'  => now(),
+        ]);
+
+        \App\Models\TenantAdministrador::create([
+            'tenant_id' => $tenant->id,
+            'user_id'   => $admin->id,
+            'activo'    => true,
         ]);
     }
 }

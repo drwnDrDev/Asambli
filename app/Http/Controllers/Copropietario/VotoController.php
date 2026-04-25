@@ -21,7 +21,10 @@ class VotoController extends Controller
         ]);
 
         $votacion = Votacion::findOrFail($request->votacion_id);
-        $copropietario = Copropietario::where('user_id', auth()->id())->firstOrFail();
+        $copropietario = auth('copropietario')->user()
+            ?? Copropietario::where('user_id', auth()->id())->first();
+
+        abort_if(!$copropietario, 403, 'No autenticado como copropietario.');
 
         $result = $this->votoService->votar(
             $votacion,

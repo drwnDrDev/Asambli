@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { router, usePage, useForm } from '@inertiajs/react'
 import AdminLayout from '@/Layouts/AdminLayout'
 import echo from '@/echo'
@@ -104,29 +104,12 @@ export default function Conducir({ reunion, quorum: initialQuorum, copropietario
     // Closed votacion results toggle
     const [expandedVotacionId, setExpandedVotacionId] = useState(null)
 
-    // Ref to gate the quorum-presencia call until 'here' event is received
-    const hasReceivedHereRef = useRef(false)
-
     // Ticker time updater
     const [, setTickerTick] = useState(0)
     useEffect(() => {
         const interval = setInterval(() => setTickerTick(t => t + 1), 5000)
         return () => clearInterval(interval)
     }, [])
-
-    // ─── Quórum real-time desde canal de presencia ───────────────
-    useEffect(() => {
-        if (!hasReceivedHereRef.current) return
-        const copros = conectados.filter(c => c.rol === 'copropietario')
-        const coefPresente = copros.reduce((s, c) => s + (parseFloat(c.coef) || 0), 0)
-        const count = copros.length
-        const csrfToken = document.head.querySelector('meta[name="csrf-token"]')?.content ?? ''
-        fetch(`/admin/reuniones/${reunion.id}/quorum-presencia`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken, 'X-Requested-With': 'XMLHttpRequest' },
-            body: JSON.stringify({ coef_presente: coefPresente, copropietarios_count: count }),
-        }).then(r => r.json()).then(data => setQuorum(data)).catch(() => {})
-    }, [conectados])
 
     // ─── Echo subscriptions ─────────────────────────────────────
     useEffect(() => {
@@ -162,16 +145,16 @@ export default function Conducir({ reunion, quorum: initialQuorum, copropietario
         })
 
         // 3. Presence channel
-        const presenceChannel = echo.join(`presence-reunion.${reunion.id}`)
+        const presenceChannel = echo.join(`reunion.${reunion.id}`)
         presenceChannel
-            .here((members) => { hasReceivedHereRef.current = true; setConectados(members) })
+            .here((members) => setConectados(members))
             .joining((member) => setConectados(prev => [...prev, member]))
             .leaving((member) => setConectados(prev => prev.filter(m => m.id !== member.id)))
 
         return () => {
             echo.leave(`reunion.${reunion.id}`)
             echo.leave(`private-reunion.${reunion.id}`)
-            echo.leave(`presence-reunion.${reunion.id}`)
+            echo.leave(`presence-reunion.${reunion.id}`)  // Echo internally prefixes with "presence-"
         }
     }, [reunion.id])
 
@@ -197,6 +180,13 @@ export default function Conducir({ reunion, quorum: initialQuorum, copropietario
     }
 
     const votacionActiva = votaciones.find(v => v.estado === 'abierta')
+
+    // Quórum de presencia calculado desde conectados (distinto del quórum oficial DB)
+    const coprosConectados = conectados.filter(c => c.rol === 'copropietario')
+    const coefPresenciaOnline = coprosConectados.reduce((s, c) => s + (parseFloat(c.coef) || 0), 0)
+    const quorumPresenciaPct = quorum?.total > 0
+        ? Math.round((coefPresenciaOnline / quorum.total) * 100 * 10) / 10
+        : 0
 
     const timeAgo = (ts) => {
         const secs = Math.floor((Date.now() - ts) / 1000)
@@ -297,7 +287,7 @@ export default function Conducir({ reunion, quorum: initialQuorum, copropietario
             )}
 
             {/* ── KPI Cards ───────────────────────────────────── */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+            <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
                 {/* Estado */}
                 <div className="bg-white rounded-lg shadow p-4">
                     <p className="text-xs text-gray-500 uppercase tracking-wider mb-1">Estado</p>
@@ -306,15 +296,26 @@ export default function Conducir({ reunion, quorum: initialQuorum, copropietario
                     </span>
                 </div>
 
-                {/* Quorum */}
-                <div className={`rounded-lg shadow p-4 border ${quorum.tiene_quorum ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}>
-                    <p className="text-xs text-gray-500 uppercase tracking-wider mb-1">Quorum</p>
-                    <p className="text-xl font-bold">
+                {/* Quórum Oficial (DB asistencias) */}
+                <div className={`rounded-lg shadow p-4 border ${quorum.tiene_quorum ? 'bg-blue-50 border-blue-200' : 'bg-red-50 border-red-200'}`}>
+                    <p className="text-xs text-blue-600 font-medium uppercase tracking-wider mb-1">Quórum Oficial</p>
+                    <p className="text-xl font-bold text-blue-800">
                         {quorum.porcentaje_presente}%
                         <span className="ml-1 text-sm">{quorum.tiene_quorum ? '✓' : '✗'}</span>
                     </p>
                     <p className="text-xs text-gray-500">
-                        Req: {quorum.quorum_requerido}% · {quorum.presente}/{quorum.total}
+                        Req: {quorum.quorum_requerido}% · Asistencias confirmadas
+                    </p>
+                </div>
+
+                {/* Presencia Online (WebSocket) */}
+                <div className="rounded-lg shadow p-4 border border-dashed border-gray-300 bg-gray-50">
+                    <p className="text-xs text-gray-500 font-medium uppercase tracking-wider mb-1">Presencia Online</p>
+                    <p className="text-xl font-bold text-gray-600">
+                        {quorumPresenciaPct}%
+                    </p>
+                    <p className="text-xs text-gray-400">
+                        {coprosConectados.length} conectados ahora
                     </p>
                 </div>
 
@@ -640,7 +641,7 @@ export default function Conducir({ reunion, quorum: initialQuorum, copropietario
                                 <div key={c.id} className="flex justify-between items-center py-1.5 border-b border-gray-50">
                                     <div>
                                         <div className="flex items-center gap-1.5">
-                                            <p className="text-sm font-medium text-gray-800">{c.user?.name}</p>
+                                            <p className="text-sm font-medium text-gray-800">{c.nombre}</p>
                                             {c.es_externo && <span className="text-[10px] font-bold bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded">D</span>}
                                         </div>
                                         <p className="text-xs text-gray-400">

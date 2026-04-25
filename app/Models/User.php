@@ -66,6 +66,11 @@ class User extends Authenticatable
         return $this->hasOne(Copropietario::class);
     }
 
+    public function tenantAdministradores(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(\App\Models\TenantAdministrador::class);
+    }
+
     public function isOnboarded(): bool
     {
         return !is_null($this->onboarded_at);

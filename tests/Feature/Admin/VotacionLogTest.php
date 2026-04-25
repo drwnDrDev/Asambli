@@ -5,7 +5,6 @@ use App\Models\Copropietario;
 use App\Models\ReunionLog;
 use App\Models\Reunion;
 use App\Models\Tenant;
-use App\Models\Unidad;
 use App\Models\User;
 use App\Models\Votacion;
 
@@ -33,7 +32,7 @@ test('abrir votacion crea reunion_log con snapshot de quorum', function () {
     ]);
 
     $this->actingAs($this->admin)
-        ->post(route('votaciones.abrir', $votacion))
+        ->post(route('admin.votaciones.abrir', $votacion))
         ->assertRedirect();
 
     $log = ReunionLog::where('reunion_id', $reunion->id)
@@ -62,11 +61,7 @@ test('cerrar votacion crea reunion_log con total_votos y resultado_ganador', fun
     ]);
     $opcion = $votacion->opciones()->create(['texto' => 'Sí']);
 
-    $userVotante = User::factory()->create(['tenant_id' => $this->tenant->id]);
-    $copropietario = Copropietario::factory()->create([
-        'tenant_id' => $this->tenant->id,
-        'user_id'   => $userVotante->id,
-    ]);
+    $copropietario = Copropietario::factory()->create(['tenant_id' => $this->tenant->id]);
     \App\Models\Voto::create([
         'tenant_id'         => $this->tenant->id,
         'votacion_id'       => $votacion->id,
@@ -79,7 +74,7 @@ test('cerrar votacion crea reunion_log con total_votos y resultado_ganador', fun
     ]);
 
     $this->actingAs($this->admin)
-        ->post(route('votaciones.cerrar', $votacion))
+        ->post(route('admin.votaciones.cerrar', $votacion))
         ->assertRedirect();
 
     $log = ReunionLog::where('reunion_id', $reunion->id)

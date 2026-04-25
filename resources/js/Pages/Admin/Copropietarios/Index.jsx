@@ -29,7 +29,6 @@ export default function Index({ copropietarios, filters }) {
         if (esExterno) {
             msg += '\n\nNota: si este externo tiene un poder activo en una reunión vigente, la eliminación será bloqueada.'
         }
-        msg += '\nEsta acción también eliminará su usuario.'
         if (confirm(msg)) {
             router.delete(`/admin/copropietarios/${c.id}`, { preserveScroll: true })
         }
@@ -138,8 +137,8 @@ function CopropietariosTable({ data, onDestroy }) {
                     return (
                         <tr key={c.id} className="hover:bg-surface-hover transition-colors">
                             <td className="px-5 py-3.5">
-                                <div className="font-medium text-app-text-primary">{c.user?.name}</div>
-                                <div className="text-xs text-app-text-muted">{c.user?.email}</div>
+                                <div className="font-medium text-app-text-primary">{c.nombre}</div>
+                                <div className="text-xs text-app-text-muted">{c.email}</div>
                             </td>
                             <td className="px-5 py-3.5 text-app-text-secondary">
                                 {c.tipo_documento && c.numero_documento
@@ -159,9 +158,6 @@ function CopropietariosTable({ data, onDestroy }) {
                                     <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium ${c.activo ? 'bg-success-bg text-success' : 'bg-danger-bg text-danger'}`}>
                                         {c.activo ? 'Activo' : 'Inactivo'}
                                     </span>
-                                    {!c.user?.onboarded_at && (
-                                        <span className="text-[11px] bg-warning/20 text-warning px-1.5 py-0.5 rounded">Sin activar</span>
-                                    )}
                                     {c.poderes_activos_count > 0 && (
                                         <span className="text-[11px] bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded">Con poder</span>
                                     )}
@@ -210,10 +206,10 @@ function ExternosTable({ data, onDestroy }) {
                         <tr key={c.id} className="hover:bg-surface-hover transition-colors">
                             <td className="px-5 py-3.5">
                                 <div className="flex items-center gap-2">
-                                    <span className="font-medium text-app-text-primary">{c.user?.name}</span>
+                                    <span className="font-medium text-app-text-primary">{c.nombre}</span>
                                     <span className="text-[11px] bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded font-medium">Externo</span>
                                 </div>
-                                <div className="text-xs text-app-text-muted">{c.user?.email}</div>
+                                <div className="text-xs text-app-text-muted">{c.email}</div>
                             </td>
                             <td className="px-5 py-3.5 text-app-text-secondary">
                                 {c.tipo_documento && c.numero_documento ? `${c.tipo_documento} ${c.numero_documento}` : '—'}
