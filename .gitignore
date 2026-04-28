@@ -26,4 +26,4 @@ Thumbs.db
 node_modules
 /.pnpm-
 CLAUDE.md
-/docs
+/docs.worktrees/
