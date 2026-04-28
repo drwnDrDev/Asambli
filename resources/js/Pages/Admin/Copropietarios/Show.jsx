@@ -1,7 +1,15 @@
 import AdminLayout from '@/Layouts/AdminLayout'
 import { Link, usePage, router } from '@inertiajs/react'
 
-export default function Show({ copropietario, poderesActivos = [], accesos = [] }) {
+const ESTADO_COLOR = {
+    pendiente: 'bg-warning/20 text-warning',
+    aprobado:  'bg-success-bg text-success',
+    rechazado: 'bg-danger-bg text-danger',
+    revocado:  'bg-gray-100 text-gray-500',
+    expirado:  'bg-slate-100 text-slate-500',
+}
+
+export default function Show({ copropietario, poderesOtorgados = [], poderesRecibidos = [], accesos = [] }) {
     const { flash } = usePage().props
     const { unidades = [] } = copropietario
 
@@ -133,20 +141,45 @@ export default function Show({ copropietario, poderesActivos = [], accesos = [] 
                 )}
             </div>
 
-            {/* Poderes activos */}
-            {poderesActivos.length > 0 && (
+            {/* Poder otorgado: esta persona delegó su voto a alguien */}
+            {poderesOtorgados.length > 0 && (
                 <div className="mt-5 bg-surface rounded-xl border border-surface-border p-6">
                     <h3 className="text-sm font-semibold text-app-text-muted uppercase tracking-wide mb-4">
-                        Poderes activos ({poderesActivos.length})
+                        Delegó su voto a ({poderesOtorgados.length})
                     </h3>
                     <div className="space-y-3">
-                        {poderesActivos.map(p => (
+                        {poderesOtorgados.map(p => (
                             <div key={p.id} className="flex items-center justify-between text-sm border-b border-surface-border pb-3 last:border-0 last:pb-0">
                                 <div>
                                     <p className="text-app-text-primary font-medium">{p.apoderado?.nombre}</p>
-                                    <p className="text-xs text-app-text-muted mt-0.5">{p.reunion?.titulo}</p>
+                                    <p className="text-xs text-app-text-muted mt-0.5">{p.reunion?.titulo ?? 'Sin reunión'}</p>
                                 </div>
-                                <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${p.estado === 'aprobado' ? 'bg-success-bg text-success' : 'bg-warning/20 text-warning'}`}>
+                                <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${ESTADO_COLOR[p.estado] ?? 'bg-gray-100 text-gray-500'}`}>
+                                    {p.estado}
+                                </span>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
+
+            {/* Poderes recibidos: esta persona es delegada de alguien */}
+            {poderesRecibidos.length > 0 && (
+                <div className="mt-5 bg-surface rounded-xl border border-surface-border p-6">
+                    <h3 className="text-sm font-semibold text-app-text-muted uppercase tracking-wide mb-4">
+                        Representa a ({poderesRecibidos.length})
+                    </h3>
+                    <div className="space-y-3">
+                        {poderesRecibidos.map(p => (
+                            <div key={p.id} className="flex items-center justify-between text-sm border-b border-surface-border pb-3 last:border-0 last:pb-0">
+                                <div>
+                                    <p className="text-app-text-primary font-medium">{p.poderdante?.nombre}</p>
+                                    <p className="text-xs text-app-text-muted mt-0.5">
+                                        {p.poderdante?.unidades?.map(u => u.numero).join(', ') || '—'}
+                                        {p.reunion?.titulo ? ` · ${p.reunion.titulo}` : ''}
+                                    </p>
+                                </div>
+                                <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${ESTADO_COLOR[p.estado] ?? 'bg-gray-100 text-gray-500'}`}>
                                     {p.estado}
                                 </span>
                             </div>

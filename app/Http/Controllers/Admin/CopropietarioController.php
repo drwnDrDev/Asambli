@@ -9,6 +9,7 @@ use App\Models\Poder;
 use App\Models\Unidad;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 
 class CopropietarioController extends Controller
@@ -66,7 +67,7 @@ class CopropietarioController extends Controller
 
         $data = $request->validate([
             'nombre'          => 'required|string|max:255',
-            'email'           => 'required|email|unique:copropietarios,email',
+            'email'           => ['required', 'email', Rule::unique('copropietarios', 'email')->where('tenant_id', $tenant->id)],
             'tipo_documento'  => 'nullable|in:CC,CE,NIT,PP,TI,PEP',
             'numero_documento'=> 'nullable|string|max:30',
             'telefono'        => 'nullable|string|max:20',
@@ -100,10 +101,17 @@ class CopropietarioController extends Controller
     {
         $copropietario->load(['unidades']);
 
-        $poderesActivos = Poder::withoutGlobalScopes()
+        $poderesOtorgados = Poder::withoutGlobalScopes()
             ->where('poderdante_id', $copropietario->id)
             ->whereIn('estado', ['pendiente', 'aprobado'])
-            ->with('apoderado', 'reunion')
+            ->with('apoderado', 'reunion:id,titulo,estado')
+            ->orderByDesc('created_at')
+            ->get();
+
+        $poderesRecibidos = Poder::withoutGlobalScopes()
+            ->where('apoderado_id', $copropietario->id)
+            ->whereIn('estado', ['pendiente', 'aprobado'])
+            ->with('poderdante.unidades', 'reunion:id,titulo,estado')
             ->orderByDesc('created_at')
             ->get();
 
@@ -123,9 +131,10 @@ class CopropietarioController extends Controller
             ]);
 
         return Inertia::render('Admin/Copropietarios/Show', [
-            'copropietario'  => $copropietario,
-            'poderesActivos' => $poderesActivos,
-            'accesos'        => $accesos,
+            'copropietario'    => $copropietario,
+            'poderesOtorgados' => $poderesOtorgados,
+            'poderesRecibidos' => $poderesRecibidos,
+            'accesos'          => $accesos,
         ]);
     }
 
@@ -147,7 +156,7 @@ class CopropietarioController extends Controller
     {
         $data = $request->validate([
             'nombre'          => 'required|string|max:255',
-            'email'           => 'required|email|unique:copropietarios,email,' . $copropietario->id,
+            'email'           => ['required', 'email', Rule::unique('copropietarios', 'email')->where('tenant_id', $copropietario->tenant_id)->ignore($copropietario->id)],
             'tipo_documento'  => 'nullable|in:CC,CE,NIT,PP,TI,PEP',
             'numero_documento'=> 'nullable|string|max:30',
             'telefono'        => 'nullable|string|max:20',

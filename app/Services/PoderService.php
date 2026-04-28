@@ -30,9 +30,9 @@ class PoderService
             ]
         );
 
-        // Notify only if has email
         if ($apoderado->email) {
             $apoderado->notify(new AccesoDelegadoNotification($poder->reunion, $pin));
+            $poder->update(['invitacion_enviada_at' => now()]);
         }
     }
 

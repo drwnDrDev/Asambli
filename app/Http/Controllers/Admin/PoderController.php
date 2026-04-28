@@ -17,8 +17,10 @@ class PoderController extends Controller
 
     public function index()
     {
+        $tenant = app('current_tenant');
+
         $poderes = Poder::withoutGlobalScopes()
-            ->where('tenant_id', app('current_tenant')->id)
+            ->where('tenant_id', $tenant->id)
             ->with('apoderado.unidades', 'poderdante.unidades', 'registradoPor', 'aprobadoPor')
             ->orderByDesc('created_at')
             ->get()
@@ -29,9 +31,16 @@ class PoderController extends Controller
             ->orderBy('id')
             ->get();
 
+        $reunionesVigentes = Reunion::withoutGlobalScopes()
+            ->where('tenant_id', $tenant->id)
+            ->whereIn('estado', ['convocada', 'ante_sala', 'en_curso'])
+            ->latest()
+            ->get(['id', 'titulo', 'estado', 'fecha_programada']);
+
         return Inertia::render('Admin/Poderes/Index', [
-            'poderes'        => $poderes,
-            'copropietarios' => $copropietarios,
+            'poderes'           => $poderes,
+            'copropietarios'    => $copropietarios,
+            'reunionesVigentes' => $reunionesVigentes,
         ]);
     }
 
@@ -48,11 +57,23 @@ class PoderController extends Controller
     public function store(Request $request)
     {
         $tenant = app('current_tenant');
-        $reunion = $this->getReunionVigente($tenant->id);
+
+        $reunionId = $request->integer('reunion_id');
+        $reunion = $reunionId
+            ? Reunion::withoutGlobalScopes()
+                ->where('tenant_id', $tenant->id)
+                ->whereIn('estado', ['convocada', 'ante_sala', 'en_curso'])
+                ->find($reunionId)
+            : null;
+
+        if (!$reunion) {
+            return back()->withErrors(['reunion_id' => 'Debe seleccionar una reunión vigente para crear el poder.']);
+        }
 
         // Caso A: delegado es copropietario existente
         if ($request->filled('apoderado_copropietario_id')) {
             $data = $request->validate([
+                'reunion_id'                 => 'required|integer|exists:reuniones,id',
                 'poderdante_id'              => 'required|integer|exists:copropietarios,id',
                 'apoderado_copropietario_id' => 'required|integer|exists:copropietarios,id',
                 'documento_url'              => 'nullable|string|max:500',
@@ -67,7 +88,7 @@ class PoderController extends Controller
 
             $poder = Poder::create([
                 'tenant_id'      => $tenant->id,
-                'reunion_id'     => $reunion?->id,
+                'reunion_id'     => $reunion->id,
                 'apoderado_id'   => $apoderado->id,
                 'poderdante_id'  => $data['poderdante_id'],
                 'documento_url'  => $data['documento_url'] ?? null,
@@ -76,22 +97,22 @@ class PoderController extends Controller
                 'aprobado_por'   => auth()->id(),
             ]);
 
-            if ($reunion) {
-                $this->poderService->aprobar($poder->fresh(), $reunion->id);
-            }
+            $this->poderService->aprobar($poder->fresh(), $reunion->id);
 
             return back()->with('success', 'Poder registrado. El copropietario ha sido notificado.');
         }
 
         // Caso B: delegado externo
         $data = $request->validate([
-            'poderdante_id'      => 'required|integer|exists:copropietarios,id',
-            'delegado_nombre'    => 'required|string|max:255',
-            'delegado_email'     => 'required|email',
-            'delegado_documento' => 'required|string|max:50',
-            'delegado_telefono'  => 'nullable|string|max:30',
-            'delegado_empresa'   => 'nullable|string|max:150',
-            'documento_url'      => 'nullable|string|max:500',
+            'reunion_id'              => 'required|integer|exists:reuniones,id',
+            'poderdante_id'           => 'required|integer|exists:copropietarios,id',
+            'delegado_nombre'         => 'required|string|max:255',
+            'delegado_tipo_documento' => 'required|in:CC,CE,NIT,PP,TI,PEP',
+            'delegado_email'          => 'required|email',
+            'delegado_documento'      => 'required|string|max:50',
+            'delegado_telefono'       => 'nullable|string|max:30',
+            'delegado_empresa'        => 'nullable|string|max:150',
+            'documento_url'           => 'nullable|string|max:500',
         ]);
 
         $poder = null;
@@ -101,7 +122,7 @@ class PoderController extends Controller
 
             $poder = Poder::create([
                 'tenant_id'      => $tenant->id,
-                'reunion_id'     => $reunion?->id,
+                'reunion_id'     => $reunion->id,
                 'apoderado_id'   => $apoderado->id,
                 'poderdante_id'  => $data['poderdante_id'],
                 'documento_url'  => $data['documento_url'] ?? null,
@@ -111,9 +132,7 @@ class PoderController extends Controller
             ]);
         });
 
-        if ($reunion) {
-            $this->poderService->aprobar($poder->fresh(), $reunion->id);
-        }
+        $this->poderService->aprobar($poder->fresh(), $reunion->id);
 
         return back()->with('success', 'Poder registrado y delegado notificado con PIN de acceso.');
     }
@@ -159,15 +178,6 @@ class PoderController extends Controller
     }
 
     // ─── Helpers ──────────────────────────────────────────────────────────────
-
-    private function getReunionVigente(int $tenantId): ?Reunion
-    {
-        return Reunion::withoutGlobalScopes()
-            ->where('tenant_id', $tenantId)
-            ->whereIn('estado', ['convocada', 'ante_sala', 'en_curso'])
-            ->latest()
-            ->first();
-    }
 
     private function verificarElegibilidadApoderado(Copropietario $copropietario, int $maxPoderes): array
     {
@@ -223,9 +233,10 @@ class PoderController extends Controller
             ->first();
         if ($copropietario) return $copropietario;
 
-        // Buscar por documento
+        // Buscar por tipo + numero de documento
         $copropietario = Copropietario::withoutGlobalScopes()
             ->where('tenant_id', $tenant->id)
+            ->where('tipo_documento', $data['delegado_tipo_documento'])
             ->where('numero_documento', $data['delegado_documento'])
             ->first();
         if ($copropietario) return $copropietario;
@@ -235,6 +246,7 @@ class PoderController extends Controller
             'tenant_id'        => $tenant->id,
             'nombre'           => $data['delegado_nombre'],
             'email'            => $data['delegado_email'],
+            'tipo_documento'   => $data['delegado_tipo_documento'],
             'numero_documento' => $data['delegado_documento'],
             'telefono'         => $data['delegado_telefono'] ?? null,
             'empresa'          => $data['delegado_empresa'] ?? null,

@@ -10,6 +10,8 @@ const ESTADO_COLOR = {
     expirado:  'bg-slate-100 text-slate-500',
 }
 
+const TIPOS_DOCUMENTO = ['CC', 'CE', 'NIT', 'PP', 'TI', 'PEP']
+
 function PoderRow({ poder, onAprobar, onRechazar, onRevocar }) {
     const apoderado = poder.apoderado
     const poderdante = poder.poderdante
@@ -58,7 +60,7 @@ function PoderRow({ poder, onAprobar, onRechazar, onRevocar }) {
     )
 }
 
-function CrearPoderForm({ copropietarios, onSuccess }) {
+function CrearPoderForm({ copropietarios, reunionesVigentes, onSuccess }) {
     const [modo, setModo] = useState('copropietario') // 'copropietario' | 'externo'
     const [busqueda, setBusqueda] = useState('')
     const [apoderadoSeleccionado, setApoderadoSeleccionado] = useState(null)
@@ -66,14 +68,16 @@ function CrearPoderForm({ copropietarios, onSuccess }) {
     const [verificando, setVerificando] = useState(false)
 
     const { data, setData, post, processing, errors, reset } = useForm({
-        poderdante_id:               '',
-        apoderado_copropietario_id:  '',
-        delegado_nombre:             '',
-        delegado_email:              '',
-        delegado_documento:          '',
-        delegado_telefono:           '',
-        delegado_empresa:            '',
-        documento_url:               '',
+        reunion_id:                reunionesVigentes.length === 1 ? String(reunionesVigentes[0].id) : '',
+        poderdante_id:             '',
+        apoderado_copropietario_id: '',
+        delegado_nombre:           '',
+        delegado_tipo_documento:   '',
+        delegado_email:            '',
+        delegado_documento:        '',
+        delegado_telefono:         '',
+        delegado_empresa:          '',
+        documento_url:             '',
     })
 
     const copropietariosFiltrados = copropietarios.filter(c => {
@@ -110,6 +114,9 @@ function CrearPoderForm({ copropietarios, onSuccess }) {
         setModo(m)
         limpiarSeleccion()
         reset()
+        if (reunionesVigentes.length === 1) {
+            setData('reunion_id', String(reunionesVigentes[0].id))
+        }
     }
 
     const submit = (e) => {
@@ -122,13 +129,47 @@ function CrearPoderForm({ copropietarios, onSuccess }) {
 
     const puedeEnviar = () => {
         if (!data.poderdante_id) return false
+        if (!data.reunion_id) return false
         if (modo === 'copropietario') return !!apoderadoSeleccionado && elegibilidad?.elegible
         return true
+    }
+
+    const estadoLabel = (estado) => {
+        const map = { convocada: 'Convocada', ante_sala: 'Ante sala', en_curso: 'En curso' }
+        return map[estado] ?? estado
     }
 
     return (
         <form onSubmit={submit} className="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-6 space-y-4">
             <h3 className="font-semibold text-gray-800 text-sm">Nuevo poder</h3>
+
+            {/* Reunión */}
+            <div>
+                <label className="text-xs text-gray-500 block mb-1">Reunión *</label>
+                {reunionesVigentes.length === 1 ? (
+                    <>
+                        <input type="hidden" value={data.reunion_id} onChange={() => {}} />
+                        <p className="text-sm text-gray-700 border border-gray-200 rounded px-3 py-1.5 bg-white">
+                            {reunionesVigentes[0].titulo}
+                            <span className="ml-2 text-xs text-gray-400">— {estadoLabel(reunionesVigentes[0].estado)}</span>
+                        </p>
+                    </>
+                ) : (
+                    <select
+                        value={data.reunion_id}
+                        onChange={e => setData('reunion_id', e.target.value)}
+                        className="w-full border border-gray-300 rounded px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                        <option value="">Seleccionar reunión…</option>
+                        {reunionesVigentes.map(r => (
+                            <option key={r.id} value={r.id}>
+                                {r.titulo} ({estadoLabel(r.estado)})
+                            </option>
+                        ))}
+                    </select>
+                )}
+                {errors.reunion_id && <p className="text-red-500 text-xs mt-0.5">{errors.reunion_id}</p>}
+            </div>
 
             {/* Poderdante */}
             <div>
@@ -258,13 +299,24 @@ function CrearPoderForm({ copropietarios, onSuccess }) {
                             {errors.delegado_email && <p className="text-red-500 text-xs mt-0.5">{errors.delegado_email}</p>}
                         </div>
                     </div>
-                    <div className="grid grid-cols-3 gap-3">
+                    <div className="grid grid-cols-2 gap-3">
+                        <div>
+                            <label className="text-xs text-gray-500 block mb-1">Tipo de documento *</label>
+                            <select value={data.delegado_tipo_documento} onChange={e => setData('delegado_tipo_documento', e.target.value)}
+                                className="w-full border border-gray-300 rounded px-2 py-1.5 text-sm">
+                                <option value="">Seleccionar…</option>
+                                {TIPOS_DOCUMENTO.map(t => <option key={t} value={t}>{t}</option>)}
+                            </select>
+                            {errors.delegado_tipo_documento && <p className="text-red-500 text-xs mt-0.5">{errors.delegado_tipo_documento}</p>}
+                        </div>
                         <div>
                             <label className="text-xs text-gray-500 block mb-1">N.º documento *</label>
                             <input type="text" value={data.delegado_documento} onChange={e => setData('delegado_documento', e.target.value)}
                                 className="w-full border border-gray-300 rounded px-2 py-1.5 text-sm" placeholder="Requerido" />
                             {errors.delegado_documento && <p className="text-red-500 text-xs mt-0.5">{errors.delegado_documento}</p>}
                         </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
                         <div>
                             <label className="text-xs text-gray-500 block mb-1">Teléfono</label>
                             <input type="text" value={data.delegado_telefono} onChange={e => setData('delegado_telefono', e.target.value)}
@@ -290,7 +342,7 @@ function CrearPoderForm({ copropietarios, onSuccess }) {
     )
 }
 
-export default function PoderesIndex({ poderes = {}, copropietarios = [] }) {
+export default function PoderesIndex({ poderes = {}, copropietarios = [], reunionesVigentes = [] }) {
     const { flash } = usePage().props
     const [tab, setTab] = useState('pendiente')
     const [showCrear, setShowCrear] = useState(false)
@@ -312,6 +364,8 @@ export default function PoderesIndex({ poderes = {}, copropietarios = [] }) {
         router.delete(`/admin/poderes/${poderId}`, { preserveScroll: true })
     }
 
+    const sinReunionVigente = reunionesVigentes.length === 0
+
     return (
         <AdminLayout title="Poderes">
             {flash?.success && (
@@ -324,6 +378,12 @@ export default function PoderesIndex({ poderes = {}, copropietarios = [] }) {
                 Los poderes activos permiten que un delegado vote en nombre de un copropietario.
                 Se expiran automáticamente al finalizar una reunión.
             </p>
+
+            {sinReunionVigente && (
+                <div className="mb-4 bg-amber-50 border border-amber-200 text-amber-700 px-4 py-3 rounded-lg text-sm">
+                    No hay reuniones vigentes. Para crear un poder debe existir una reunión en estado convocada, ante sala o en curso.
+                </div>
+            )}
 
             {/* Tabs */}
             <div className="flex gap-1 mb-4 border-b border-gray-200 pb-0 flex-wrap">
@@ -342,8 +402,12 @@ export default function PoderesIndex({ poderes = {}, copropietarios = [] }) {
                     </button>
                 ))}
                 <div className="ml-auto">
-                    <button onClick={() => setShowCrear(!showCrear)}
-                        className="text-sm bg-blue-600 text-white px-4 py-1.5 rounded-lg hover:bg-blue-700 transition">
+                    <button
+                        onClick={() => !sinReunionVigente && setShowCrear(!showCrear)}
+                        disabled={sinReunionVigente}
+                        title={sinReunionVigente ? 'No hay reuniones vigentes' : undefined}
+                        className="text-sm bg-blue-600 text-white px-4 py-1.5 rounded-lg hover:bg-blue-700 transition disabled:opacity-40 disabled:cursor-not-allowed"
+                    >
                         + Crear poder
                     </button>
                 </div>
@@ -352,6 +416,7 @@ export default function PoderesIndex({ poderes = {}, copropietarios = [] }) {
             {showCrear && (
                 <CrearPoderForm
                     copropietarios={copropietarios}
+                    reunionesVigentes={reunionesVigentes}
                     onSuccess={() => setShowCrear(false)}
                 />
             )}
