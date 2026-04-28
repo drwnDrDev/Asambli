@@ -33,7 +33,7 @@
             {{-- Delegado externo: no tiene unidades propias --}}
             <tr>
                 <td>—</td>
-                <td>{{ $a->copropietario->user->name }}{{ $a->copropietario->empresa ? ' (' . $a->copropietario->empresa . ')' : '' }}</td>
+                <td>{{ $a->copropietario->nombre }}{{ $a->copropietario->empresa ? ' (' . $a->copropietario->empresa . ')' : '' }}</td>
                 <td>—</td>
                 <td>{{ $a->hora_confirmacion?->format('H:i') }}</td>
                 <td style="color:#d97706;font-weight:bold">DELEGADO</td>
@@ -42,7 +42,7 @@
             @foreach($a->copropietario->unidades as $unidad)
             <tr>
                 <td>{{ $unidad->numero }}</td>
-                <td>{{ $a->copropietario->user->name }}</td>
+                <td>{{ $a->copropietario->nombre }}</td>
                 <td>{{ $unidad->coeficiente }}%</td>
                 <td>{{ $a->hora_confirmacion?->format('H:i') }}</td>
                 <td></td>
@@ -57,7 +57,7 @@
         $poderesAprobados = \App\Models\Poder::withoutGlobalScopes()
             ->where('reunion_id', $reunion->id)
             ->where('estado', 'aprobado')
-            ->with('apoderado.user', 'poderdante.user', 'poderdante.unidades')
+            ->with('apoderado', 'poderdante.unidades')
             ->get();
     @endphp
     @if($poderesAprobados->isNotEmpty())
@@ -66,8 +66,8 @@
         <tr><th>Delegado</th><th>Representa a</th><th>Unidad(es)</th><th>Coeficiente</th></tr>
         @foreach($poderesAprobados as $p)
         <tr>
-            <td>{{ $p->apoderado?->user?->name }}{{ $p->apoderado?->empresa ? ' (' . $p->apoderado->empresa . ')' : '' }}</td>
-            <td>{{ $p->poderdante?->user?->name }}</td>
+            <td>{{ $p->apoderado?->nombre }}{{ $p->apoderado?->empresa ? ' (' . $p->apoderado->empresa . ')' : '' }}</td>
+            <td>{{ $p->poderdante?->nombre }}</td>
             <td>{{ $p->poderdante?->unidades?->pluck('numero')->join(', ') ?? '—' }}</td>
             <td>{{ number_format($p->poderdante?->unidades?->sum('coeficiente') ?? 0, 4) }}%</td>
         </tr>
