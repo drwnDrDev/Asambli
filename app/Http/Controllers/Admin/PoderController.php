@@ -33,7 +33,7 @@ class PoderController extends Controller
 
         $reunionesVigentes = Reunion::withoutGlobalScopes()
             ->where('tenant_id', $tenant->id)
-            ->whereIn('estado', ['convocada', 'ante_sala', 'en_curso'])
+            ->whereIn('estado', ['borrador', 'ante_sala', 'en_curso'])
             ->latest()
             ->get(['id', 'titulo', 'estado', 'fecha_programada']);
 
@@ -62,7 +62,7 @@ class PoderController extends Controller
         $reunion = $reunionId
             ? Reunion::withoutGlobalScopes()
                 ->where('tenant_id', $tenant->id)
-                ->whereIn('estado', ['convocada', 'ante_sala', 'en_curso'])
+                ->whereIn('estado', ['borrador', 'ante_sala', 'en_curso'])
                 ->find($reunionId)
             : null;
 

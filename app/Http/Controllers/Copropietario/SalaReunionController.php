@@ -52,24 +52,41 @@ class SalaReunionController extends Controller
         }
 
         // Auto-register attendance when copropietario enters ante_sala or en_curso
+        $poderes = collect();
         if ($copropietario && in_array($reunion->estado, [ReunionEstado::AnteSala, ReunionEstado::EnCurso])) {
+            // Registrar asistencia del copropietario que entra físicamente
             Asistencia::updateOrCreate(
                 ['reunion_id' => $reunion->id, 'copropietario_id' => $copropietario->id],
                 ['confirmada_por_admin' => true, 'hora_confirmacion' => now()]
             );
-            $quorum = $this->quorumService->calcular($reunion);
-            broadcast(new QuorumActualizado($reunion->id, $quorum));
-        } else {
-            $quorum = $this->quorumService->calcular($reunion);
-        }
 
-        $poderes = $copropietario
-            ? Poder::withoutGlobalScopes()
+            // Obtener poderes aprobados
+            $poderes = Poder::withoutGlobalScopes()
                 ->where('apoderado_id', $copropietario->id)
                 ->where('estado', 'aprobado')
                 ->with('poderdante.unidades')
-                ->get()
-            : collect();
+                ->get();
+
+            // Registrar asistencia para cada poderdante representado
+            foreach ($poderes as $poder) {
+                Asistencia::updateOrCreate(
+                    ['reunion_id' => $reunion->id, 'copropietario_id' => $poder->poderdante_id],
+                    ['confirmada_por_admin' => true, 'hora_confirmacion' => now()]
+                );
+            }
+
+            $quorum = $this->quorumService->calcular($reunion);
+            broadcast(new QuorumActualizado($reunion->id, $quorum));
+        } else {
+            if ($copropietario) {
+                $poderes = Poder::withoutGlobalScopes()
+                    ->where('apoderado_id', $copropietario->id)
+                    ->where('estado', 'aprobado')
+                    ->with('poderdante.unidades')
+                    ->get();
+            }
+            $quorum = $this->quorumService->calcular($reunion);
+        }
 
         $votacionAbierta = $reunion->votaciones()->with('opciones')->where('estado', 'abierta')->first();
 
