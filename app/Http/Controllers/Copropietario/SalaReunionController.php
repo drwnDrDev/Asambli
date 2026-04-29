@@ -23,7 +23,7 @@ class SalaReunionController extends Controller
         $reuniones = $copropietario
             ? Reunion::withoutGlobalScopes()
                 ->where('tenant_id', $copropietario->tenant_id)
-                ->whereIn('estado', ['convocada', 'ante_sala', 'en_curso'])
+                ->whereIn('estado', ['borrador', 'ante_sala', 'en_curso'])
                 ->orderByDesc('created_at')
                 ->get()
             : collect();
