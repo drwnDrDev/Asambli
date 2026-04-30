@@ -30,7 +30,7 @@ export default function Index({ copropietarios, filters }) {
             msg += '\n\nNota: si este externo tiene un poder activo en una reunión vigente, la eliminación será bloqueada.'
         }
         if (confirm(msg)) {
-            router.delete(`/admin/copropietarios/${c.id}`, { preserveScroll: true })
+            router.delete(`/super-admin/copropietarios/${c.id}`, { preserveScroll: true })
         }
     }
 
@@ -107,9 +107,9 @@ export default function Index({ copropietarios, filters }) {
                         </p>
                     </div>
                 ) : activeTab === 'copropietarios' ? (
-                    <CopropietariosTable data={copropietarios.data} onDestroy={destroy} />
+                    <CopropietariosTable data={copropietarios.data} />
                 ) : (
-                    <ExternosTable data={copropietarios.data} onDestroy={destroy} />
+                    <ExternosTable data={copropietarios.data} />
                 )}
 
                 <Pagination meta={copropietarios} />
@@ -118,7 +118,7 @@ export default function Index({ copropietarios, filters }) {
     )
 }
 
-function CopropietariosTable({ data, onDestroy }) {
+function CopropietariosTable({ data}) {
     return (
         <table className="w-full text-sm">
             <thead className="bg-content-bg border-b border-surface-border">
@@ -166,8 +166,7 @@ function CopropietariosTable({ data, onDestroy }) {
                             <td className="px-5 py-3.5">
                                 <div className="flex items-center justify-end gap-3">
                                     <Link href={`/admin/copropietarios/${c.id}`} className="text-xs text-brand hover:underline">Ver</Link>
-                                    <Link href={`/admin/copropietarios/${c.id}/edit`} className="text-xs text-app-text-secondary hover:text-brand">Editar</Link>
-                                    <button onClick={() => onDestroy(c)} className="text-xs text-app-text-muted hover:text-danger transition-colors">Eliminar</button>
+                                    <Link href={`/admin/copropietarios/${c.id}/edit`} className="text-xs text-app-text-secondary hover:text-brand">Editar</Link>  
                                 </div>
                             </td>
                         </tr>
@@ -178,7 +177,7 @@ function CopropietariosTable({ data, onDestroy }) {
     )
 }
 
-function ExternosTable({ data, onDestroy }) {
+function ExternosTable({ data }) {
     const poderEstadoStyles = {
         aprobado:  'bg-success-bg text-success',
         revocado:  'bg-danger-bg text-danger',
@@ -236,7 +235,7 @@ function ExternosTable({ data, onDestroy }) {
                             <td className="px-5 py-3.5">
                                 <div className="flex items-center justify-end gap-3">
                                     <Link href={`/admin/copropietarios/${c.id}`} className="text-xs text-brand hover:underline">Ver</Link>
-                                    <button onClick={() => onDestroy(c)} className="text-xs text-app-text-muted hover:text-danger transition-colors">Eliminar</button>
+                                    
                                 </div>
                             </td>
                         </tr>

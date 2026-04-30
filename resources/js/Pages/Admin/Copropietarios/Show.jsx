@@ -15,12 +15,7 @@ export default function Show({ copropietario, poderesOtorgados = [], poderesReci
 
     const coefTotal = unidades.reduce((s, u) => s + parseFloat(u.coeficiente ?? 0), 0)
 
-    const destroy = () => {
-        if (confirm('¿Eliminar este copropietario?')) {
-            router.delete(`/admin/copropietarios/${copropietario.id}`)
-        }
-    }
-
+    
     return (
         <AdminLayout title={copropietario.nombre ?? 'Copropietario'}>
             {flash?.success && (
@@ -195,12 +190,7 @@ export default function Show({ copropietario, poderesOtorgados = [], poderesReci
                 >
                     Editar
                 </Link>
-                <button
-                    onClick={destroy}
-                    className="px-4 py-2 border border-surface-border text-sm font-medium text-danger hover:bg-danger-bg rounded-lg transition-colors"
-                >
-                    Eliminar
-                </button>
+                
             </div>
         </AdminLayout>
     )

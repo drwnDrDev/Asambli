@@ -81,12 +81,31 @@ Route::get('/dashboard', function () {
     return Inertia::render('Dashboard');
 })->middleware(['auth', 'verified'])->name('dashboard');
 
+
 // Standard auth routes
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
+
+// Super-admin routes
+Route::middleware(['auth', 'role:super_admin'])
+    ->prefix('super-admin')
+    ->name('super-admin.')
+    ->group(function () {
+        Route::get('/dashboard', [SuperAdminDashboardController::class, 'index'])->name('dashboard');
+        Route::resource('tenants', TenantController::class);
+        Route::post('tenants/{tenant}/admins', [TenantController::class, 'storeAdmin'])->name('tenants.admins.store');
+        Route::patch('tenants/{tenant}/users/{user}/toggle', [TenantController::class, 'toggleUser'])->name('tenants.users.toggle');
+        Route::get('tenants/{tenant}/auditoria', [TenantController::class, 'auditoria'])->name('tenants.auditoria');
+        Route::get('tenants/{tenant}/reuniones/create', [SuperAdminReunionController::class, 'create'])->name('reuniones.create');
+        Route::post('tenants/{tenant}/reuniones', [SuperAdminReunionController::class, 'store'])->name('reuniones.store');
+        Route::post('reuniones/{reunion}/reset-convocatoria', [SuperAdminReunionController::class, 'resetConvocatoria'])->name('reuniones.reset-convocatoria');
+        Route::get('tenants/{tenant}/padron', [SuperAdminPadronController::class, 'index'])->name('tenants.padron');
+        Route::post('tenants/{tenant}/padron/import', [SuperAdminPadronController::class, 'import'])->name('tenants.padron.import');
+        Route::delete('copropietarios/{copropietario}', [CopropietarioController::class, 'destroy'])->name('copropietarios.destroy');
+    });
 
 // Admin routes
 Route::middleware(['auth', 'role:administrador,super_admin'])
@@ -149,7 +168,7 @@ Route::middleware(['auth', 'role:administrador,super_admin'])
         });
 
         // Copropietarios
-        Route::resource('copropietarios', CopropietarioController::class);
+        Route::resource('copropietarios', CopropietarioController::class)->except(['destroy']);
     });
 
 // Sala index e historial (solo User guard con rol copropietario/admin)
@@ -176,21 +195,6 @@ Route::middleware(['auth.sala'])
         Route::get('/sala/{reunion}', [SalaReunionController::class, 'show'])->name('show');
     });
 
-// Super-admin routes
-Route::middleware(['auth', 'role:super_admin'])
-    ->prefix('super-admin')
-    ->name('super-admin.')
-    ->group(function () {
-        Route::get('/dashboard', [SuperAdminDashboardController::class, 'index'])->name('dashboard');
-        Route::resource('tenants', TenantController::class);
-        Route::post('tenants/{tenant}/admins', [TenantController::class, 'storeAdmin'])->name('tenants.admins.store');
-        Route::patch('tenants/{tenant}/users/{user}/toggle', [TenantController::class, 'toggleUser'])->name('tenants.users.toggle');
-        Route::get('tenants/{tenant}/auditoria', [TenantController::class, 'auditoria'])->name('tenants.auditoria');
-        Route::get('tenants/{tenant}/reuniones/create', [SuperAdminReunionController::class, 'create'])->name('reuniones.create');
-        Route::post('tenants/{tenant}/reuniones', [SuperAdminReunionController::class, 'store'])->name('reuniones.store');
-        Route::post('reuniones/{reunion}/reset-convocatoria', [SuperAdminReunionController::class, 'resetConvocatoria'])->name('reuniones.reset-convocatoria');
-        Route::get('tenants/{tenant}/padron', [SuperAdminPadronController::class, 'index'])->name('tenants.padron');
-        Route::post('tenants/{tenant}/padron/import', [SuperAdminPadronController::class, 'import'])->name('tenants.padron.import');
-    });
+
 
 require __DIR__.'/auth.php';
