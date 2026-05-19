@@ -14,7 +14,7 @@ Broadcast::channel('presence-reunion.{reunionId}', function ($user, $reunionId) 
     // PIN-authenticated copropietario (no User record)
     if ($user instanceof \App\Models\Copropietario) {
         $unidades = $user->unidades;
-        $nombre = $user->user?->name ?? $user->numero_documento;
+        $nombre = $user->nombre ?? $user->numero_documento;
         return [
             'id'         => 'copro_' . $user->id,
             'nombre'     => $nombre,

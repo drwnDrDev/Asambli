@@ -10,7 +10,7 @@ export default function SalaLayout({ children }) {
                     <Link href="/sala" className="font-bold text-blue-400 tracking-tight">ASAMBLI</Link>
                 </div>
                 <div className="flex items-center gap-3">
-                    <span className="text-sm text-slate-400 hidden sm:block">{auth?.user?.name}</span>
+                    <span className="text-sm text-slate-400 hidden sm:block">{auth?.user?.nombre}</span>
                     <button
                         onClick={() => router.post('/logout')}
                         className="text-xs text-slate-500 hover:text-red-400 transition"

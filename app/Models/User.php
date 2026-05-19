@@ -56,11 +56,6 @@ class User extends Authenticatable
         ];
     }
 
-    public function magicLinks()
-    {
-        return $this->hasMany(MagicLink::class);
-    }
-
     public function copropietario()
     {
         return $this->hasOne(Copropietario::class);
