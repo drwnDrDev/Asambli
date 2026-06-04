@@ -80,6 +80,8 @@ test('resultado está paginado', function () {
 });
 
 test('no se puede eliminar externo con poder activo en reunion vigente', function () {
+    $superAdmin = User::factory()->create(['tenant_id' => null, 'rol' => 'super_admin', 'activo' => true]);
+
     $externo = Copropietario::factory()->create([
         'tenant_id' => $this->tenant->id,
         'es_externo' => true,
@@ -103,8 +105,8 @@ test('no se puede eliminar externo con poder activo en reunion vigente', functio
         'aprobado_por'   => $adminUser->id,
     ]);
 
-    $this->actingAs($this->admin)
-        ->delete("/admin/copropietarios/{$externo->id}")
+    $this->actingAs($superAdmin)
+        ->delete("/super-admin/copropietarios/{$externo->id}")
         ->assertRedirect()
         ->assertSessionHas('error');
 
@@ -112,6 +114,8 @@ test('no se puede eliminar externo con poder activo en reunion vigente', functio
 });
 
 test('se puede eliminar externo cuyo poder corresponde a reunion finalizada', function () {
+    $superAdmin = User::factory()->create(['tenant_id' => null, 'rol' => 'super_admin', 'activo' => true]);
+
     $externo = Copropietario::factory()->create([
         'tenant_id' => $this->tenant->id,
         'es_externo' => true,
@@ -135,8 +139,8 @@ test('se puede eliminar externo cuyo poder corresponde a reunion finalizada', fu
         'aprobado_por'   => $adminUser->id,
     ]);
 
-    $this->actingAs($this->admin)
-        ->delete("/admin/copropietarios/{$externo->id}")
+    $this->actingAs($superAdmin)
+        ->delete("/super-admin/copropietarios/{$externo->id}")
         ->assertRedirect()
         ->assertSessionHas('success')
         ->assertSessionMissing('error');
@@ -145,6 +149,8 @@ test('se puede eliminar externo cuyo poder corresponde a reunion finalizada', fu
 });
 
 test('no se puede eliminar externo con poder pendiente en reunion vigente', function () {
+    $superAdmin = User::factory()->create(['tenant_id' => null, 'rol' => 'super_admin', 'activo' => true]);
+
     $externo = Copropietario::factory()->create([
         'tenant_id'  => $this->tenant->id,
         'es_externo' => true,
@@ -167,8 +173,8 @@ test('no se puede eliminar externo con poder pendiente en reunion vigente', func
         'estado'         => 'pendiente',
     ]);
 
-    $this->actingAs($this->admin)
-        ->delete("/admin/copropietarios/{$externo->id}")
+    $this->actingAs($superAdmin)
+        ->delete("/super-admin/copropietarios/{$externo->id}")
         ->assertRedirect()
         ->assertSessionHas('error');
 
