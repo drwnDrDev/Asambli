@@ -183,9 +183,11 @@ export default function Conducir({ reunion, quorum: initialQuorum, copropietario
 
     // Quórum de presencia calculado desde conectados (distinto del quórum oficial DB)
     const coprosConectados = conectados.filter(c => c.rol === 'copropietario')
-    const coefPresenciaOnline = coprosConectados.reduce((s, c) => s + (parseFloat(c.coef) || 0), 0)
+    const presenciaValor = quorum?.tipo === 'coeficiente'
+        ? coprosConectados.reduce((s, c) => s + (parseFloat(c.coef) || 0), 0)
+        : coprosConectados.length
     const quorumPresenciaPct = quorum?.total > 0
-        ? Math.round((coefPresenciaOnline / quorum.total) * 100 * 10) / 10
+        ? Math.round((presenciaValor / quorum.total) * 100 * 10) / 10
         : 0
 
     const timeAgo = (ts) => {
