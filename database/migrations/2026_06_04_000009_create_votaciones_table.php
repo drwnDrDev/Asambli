@@ -6,16 +6,13 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         Schema::create('votaciones', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('tenant_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('tenant_id')->constrained('tenants')->cascadeOnDelete();
             $table->foreignId('reunion_id')->constrained('reuniones')->cascadeOnDelete();
-            $table->string('titulo');
+            $table->string('pregunta');
             $table->text('descripcion')->nullable();
             $table->enum('tipo', ['si_no', 'si_no_abstencion', 'opcion_multiple'])->default('si_no');
             $table->boolean('es_secreta')->default(true);
@@ -27,9 +24,6 @@ return new class extends Migration
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::dropIfExists('votaciones');

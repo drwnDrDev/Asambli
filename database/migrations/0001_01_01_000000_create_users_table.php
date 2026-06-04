@@ -6,19 +6,22 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         Schema::create('users', function (Blueprint $table) {
             $table->id();
             $table->string('name');
             $table->string('email')->unique();
+            $table->enum('rol', ['super_admin', 'administrador', 'copropietario'])->default('copropietario');
+            $table->boolean('activo')->default(true);
             $table->timestamp('email_verified_at')->nullable();
+            $table->timestamp('onboarded_at')->nullable();
+            $table->char('quick_pin', 6)->nullable();
+            $table->timestamp('pin_expires_at')->nullable();
             $table->string('password');
             $table->rememberToken();
             $table->timestamps();
+            // tenant_id FK se agrega en create_tenants_table
         });
 
         Schema::create('password_reset_tokens', function (Blueprint $table) {
@@ -37,13 +40,10 @@ return new class extends Migration
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
-        Schema::dropIfExists('users');
-        Schema::dropIfExists('password_reset_tokens');
         Schema::dropIfExists('sessions');
+        Schema::dropIfExists('password_reset_tokens');
+        Schema::dropIfExists('users');
     }
 };
