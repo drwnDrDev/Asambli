@@ -68,7 +68,9 @@
       "Bash(echo \"exit:$?\")",
       "Bash(echo \"padron_ctrl:$?\")",
       "Bash(echo \"padron_jsx:$?\")",
-      "Bash(echo \"mls:$?\")"
+      "Bash(echo \"mls:$?\")",
+      "Bash(npm --version)",
+      "Bash(./sail pnpm:*)"
     ]
   }
 }
