@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { router, usePage, useForm } from '@inertiajs/react'
 import AdminLayout from '@/Layouts/AdminLayout'
 import echo from '@/echo'
+import TipoDecisionSelector from '@/Components/TipoDecisionSelector'
 
 // ─── ModalConectados ────────────────────────────────────────────────
 function ModalConectados({ conectados, onClose }) {
@@ -77,7 +78,7 @@ function ModalConectados({ conectados, onClose }) {
 }
 
 // ─── Conducir (Layout C) ───────────────────────────────────────────
-export default function Conducir({ reunion, quorum: initialQuorum, copropietarios = [], votaciones: initialVotaciones = [], resultadosIniciales = {} }) {
+export default function Conducir({ reunion, quorum: initialQuorum, copropietarios = [], votaciones: initialVotaciones = [], resultadosIniciales = {}, tiposDecision = [] }) {
     const { flash, errors: pageErrors } = usePage().props
     const [quorum, setQuorum] = useState(initialQuorum)
     const [votaciones, setVotaciones] = useState(initialVotaciones)
@@ -95,6 +96,7 @@ export default function Conducir({ reunion, quorum: initialQuorum, copropietario
         pregunta: '',
         descripcion: '',
         opciones: [{ texto: 'Si' }, { texto: 'No' }, { texto: 'Abstención' }],
+        tipo_decision_id: null,
     })
 
     // Edit state
@@ -590,6 +592,12 @@ export default function Conducir({ reunion, quorum: initialQuorum, copropietario
                                     className="w-full border border-gray-300 rounded px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                                 />
                                 {errors.pregunta && <p className="text-red-500 text-xs">{errors.pregunta}</p>}
+                                <TipoDecisionSelector
+                                    tiposDecision={tiposDecision}
+                                    value={data.tipo_decision_id}
+                                    onChange={value => setData('tipo_decision_id', value)}
+                                    error={errors.tipo_decision_id}
+                                />
                                 <div className="space-y-1.5">
                                     {data.opciones.map((op, i) => (
                                         <div key={i} className="flex gap-2">

@@ -3,6 +3,7 @@ import AdminLayout from '@/Layouts/AdminLayout'
 import { Link, router, usePage, useForm } from '@inertiajs/react'
 import { QRCodeSVG } from 'qrcode.react'
 import echo from '@/echo'
+import TipoDecisionSelector from '@/Components/TipoDecisionSelector'
 
 const ESTADO_BADGE = {
     borrador:     'bg-gray-100 text-gray-700',
@@ -58,13 +59,13 @@ function ModalObservacion({ titulo, onConfirm, onCancel }) {
     )
 }
 
-const emptyForm = { pregunta: '', descripcion: '', opciones: [{ texto: '' }, { texto: '' }] }
+const emptyForm = { pregunta: '', descripcion: '', opciones: [{ texto: '' }, { texto: '' }], tipo_decision_id: null }
 
-function VotacionForm({ reunionId, votacion, onCancel }) {
+function VotacionForm({ reunionId, votacion, onCancel, tiposDecision = [] }) {
     const isEditing = Boolean(votacion)
     const { data, setData, post, patch, processing, errors, reset } = useForm(
         isEditing
-            ? { pregunta: votacion.pregunta, descripcion: votacion.descripcion ?? '', opciones: votacion.opciones.map(o => ({ texto: o.texto })) }
+            ? { pregunta: votacion.pregunta, descripcion: votacion.descripcion ?? '', opciones: votacion.opciones.map(o => ({ texto: o.texto })), tipo_decision_id: votacion.tipo_decision_id ?? null }
             : emptyForm
     )
 
@@ -116,6 +117,12 @@ function VotacionForm({ reunionId, votacion, onCancel }) {
                     className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
                 />
             </div>
+            <TipoDecisionSelector
+                tiposDecision={tiposDecision}
+                value={data.tipo_decision_id}
+                onChange={value => setData('tipo_decision_id', value)}
+                error={errors.tipo_decision_id}
+            />
             <div className="space-y-2">
                 {data.opciones.map((op, i) => (
                     <div key={i} className="flex gap-2">
@@ -154,7 +161,7 @@ function VotacionForm({ reunionId, votacion, onCancel }) {
     )
 }
 
-export default function Show({ reunion, quorum, copropietarios = [], votaciones: initialVotaciones = [] }) {
+export default function Show({ reunion, quorum, copropietarios = [], votaciones: initialVotaciones = [], tiposDecision = [] }) {
     const { flash } = usePage().props
     const [votaciones, setVotaciones] = useState(initialVotaciones)
     const [showCreateForm, setShowCreateForm] = useState(false)
@@ -417,6 +424,7 @@ export default function Show({ reunion, quorum, copropietarios = [], votaciones:
                             reunionId={reunion.id}
                             votacion={null}
                             onCancel={() => setShowCreateForm(false)}
+                            tiposDecision={tiposDecision}
                         />
                     )}
 
@@ -431,6 +439,7 @@ export default function Show({ reunion, quorum, copropietarios = [], votaciones:
                                     reunionId={reunion.id}
                                     votacion={v}
                                     onCancel={() => setEditingId(null)}
+                                    tiposDecision={tiposDecision}
                                 />
                             ) : (
                                 <div className="flex items-center gap-3 py-2 px-1 border-b border-gray-50 last:border-0">
