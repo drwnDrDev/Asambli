@@ -20,10 +20,11 @@ class TenantSettingsController extends Controller
         $tenant = app('current_tenant');
 
         $data = $request->validate([
-            'nombre'                  => 'required|string|max:255',
-            'direccion'               => 'nullable|string|max:255',
-            'ciudad'                  => 'nullable|string|max:100',
-            'max_poderes_por_delegado' => 'required|integer|min:1|max:10',
+            'nombre'                    => 'required|string|max:255',
+            'direccion'                 => 'nullable|string|max:255',
+            'ciudad'                    => 'nullable|string|max:100',
+            'max_poderes_por_delegado'  => 'required|integer|min:1|max:10',
+            'restringir_voto_morosos'   => 'boolean',
         ]);
 
         $tenant->update($data);

@@ -21,18 +21,20 @@ class VotacionController extends Controller
     public function store(Request $request, Reunion $reunion)
     {
         $data = $request->validate([
-            'pregunta'    => 'required|string|max:500',
-            'descripcion' => 'nullable|string|max:2000',
-            'opciones'    => 'required|array|min:2',
+            'pregunta'         => 'required|string|max:500',
+            'descripcion'      => 'nullable|string|max:2000',
+            'tipo_decision_id' => 'nullable|exists:tipos_decision,id',
+            'opciones'         => 'required|array|min:2',
             'opciones.*.texto' => 'required|string|max:255',
         ]);
 
         $votacion = $reunion->votaciones()->create([
-            'pregunta'    => $data['pregunta'],
-            'descripcion' => $data['descripcion'] ?? null,
-            'estado'      => 'creada',
-            'creada_por'  => auth()->id(),
-            'tenant_id'   => $reunion->tenant_id,
+            'pregunta'         => $data['pregunta'],
+            'descripcion'      => $data['descripcion'] ?? null,
+            'tipo_decision_id' => $data['tipo_decision_id'] ?? null,
+            'estado'           => 'creada',
+            'creada_por'       => auth()->id(),
+            'tenant_id'        => $reunion->tenant_id,
         ]);
 
         foreach ($data['opciones'] as $opcion) {
@@ -52,15 +54,17 @@ class VotacionController extends Controller
         }
 
         $data = $request->validate([
-            'pregunta'    => 'required|string|max:500',
-            'descripcion' => 'nullable|string|max:2000',
-            'opciones'    => 'required|array|min:2',
+            'pregunta'         => 'required|string|max:500',
+            'descripcion'      => 'nullable|string|max:2000',
+            'tipo_decision_id' => 'nullable|exists:tipos_decision,id',
+            'opciones'         => 'required|array|min:2',
             'opciones.*.texto' => 'required|string|max:255',
         ]);
 
         $votacion->update([
-            'pregunta'    => $data['pregunta'],
-            'descripcion' => $data['descripcion'] ?? null,
+            'pregunta'         => $data['pregunta'],
+            'descripcion'      => $data['descripcion'] ?? null,
+            'tipo_decision_id' => $data['tipo_decision_id'] ?? null,
         ]);
 
         $votacion->opciones()->delete();

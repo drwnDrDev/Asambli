@@ -6,6 +6,7 @@ use App\Enums\ReunionEstado;
 use App\Http\Controllers\Controller;
 use App\Models\Copropietario;
 use App\Models\Reunion;
+use App\Models\TipoDecision;
 use App\Services\ConvocatoriaService;
 use App\Services\QuorumService;
 use App\Services\ReporteService;
@@ -44,7 +45,9 @@ class ReunionController extends Controller
             ->map(fn($c) => array_merge($c->toArray(), ['asistencia' => in_array($c->id, $asistencias)]));
         $votaciones = $reunion->votaciones()->with('opciones')->get();
 
-        return Inertia::render('Admin/Reuniones/Show', compact('reunion', 'quorum', 'copropietarios', 'votaciones'));
+        $tiposDecision = TipoDecision::paraAsamblea()->values();
+
+        return Inertia::render('Admin/Reuniones/Show', compact('reunion', 'quorum', 'copropietarios', 'votaciones', 'tiposDecision'));
     }
 
     public function conducir(Reunion $reunion)
@@ -74,7 +77,9 @@ class ReunionController extends Controller
             })->toArray();
         }
 
-        return Inertia::render('Admin/Reuniones/Conducir', compact('reunion', 'quorum', 'copropietarios', 'votaciones', 'resultadosIniciales'));
+        $tiposDecision = TipoDecision::paraAsamblea()->values();
+
+        return Inertia::render('Admin/Reuniones/Conducir', compact('reunion', 'quorum', 'copropietarios', 'votaciones', 'resultadosIniciales', 'tiposDecision'));
     }
 
     public function actualizarQuorumPresencia(Request $request, Reunion $reunion)

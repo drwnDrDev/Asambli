@@ -72,6 +72,7 @@ class CopropietarioController extends Controller
             'numero_documento'=> 'nullable|string|max:30',
             'telefono'        => 'nullable|string|max:20',
             'es_residente'    => 'boolean',
+            'en_mora'         => 'boolean',
             'unidades'        => 'array',
             'unidades.*'      => 'exists:unidades,id',
         ]);
@@ -85,6 +86,7 @@ class CopropietarioController extends Controller
                 'numero_documento' => $data['numero_documento'] ?? null,
                 'telefono'         => $data['telefono'] ?? null,
                 'es_residente'     => $data['es_residente'] ?? false,
+                'en_mora'          => $data['en_mora'] ?? false,
                 'activo'           => true,
             ]);
 
@@ -161,6 +163,7 @@ class CopropietarioController extends Controller
             'numero_documento'=> 'nullable|string|max:30',
             'telefono'        => 'nullable|string|max:20',
             'es_residente'    => 'boolean',
+            'en_mora'         => 'boolean',
             'activo'          => 'boolean',
             'unidades'        => 'array',
             'unidades.*'      => 'exists:unidades,id',
@@ -174,6 +177,7 @@ class CopropietarioController extends Controller
                 'numero_documento' => $data['numero_documento'] ?? null,
                 'telefono'         => $data['telefono'] ?? null,
                 'es_residente'     => $data['es_residente'] ?? false,
+                'en_mora'          => $data['en_mora'] ?? false,
                 'activo'           => $data['activo'] ?? true,
             ]);
 
