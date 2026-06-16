@@ -14,8 +14,8 @@ class Votacion extends Model
     protected $table = 'votaciones';
 
     protected $fillable = [
-        'tenant_id', 'reunion_id', 'pregunta', 'descripcion',
-        'tipo', 'es_secreta', 'estado', 'abierta_at', 'cerrada_at', 'creada_por',
+        'tenant_id', 'reunion_id', 'tipo_decision_id', 'pregunta', 'descripcion',
+        'tipo', 'es_secreta', 'estado', 'resultado', 'abierta_at', 'cerrada_at', 'creada_por',
     ];
 
     protected $casts = [
@@ -37,5 +37,10 @@ class Votacion extends Model
     public function votos()
     {
         return $this->hasMany(Voto::class);
+    }
+
+    public function tipoDecision(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(\App\Models\TipoDecision::class);
     }
 }
