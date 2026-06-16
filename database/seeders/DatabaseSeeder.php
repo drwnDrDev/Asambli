@@ -21,6 +21,9 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
+        // 0. Catálogo de tipos de decisión (Ley 675/2001)
+        $this->call(TiposDecisionSeeder::class);
+
         // 1. Tenant de prueba
         $tenant = Tenant::create([
             'nombre'  => 'Conjunto Test',
