@@ -37,8 +37,11 @@ class VotacionController extends Controller
             'tenant_id'        => $reunion->tenant_id,
         ]);
 
-        foreach ($data['opciones'] as $opcion) {
-            $votacion->opciones()->create(['texto' => $opcion['texto']]);
+        foreach ($data['opciones'] as $index => $opcion) {
+            $votacion->opciones()->create([
+                'texto' => $opcion['texto'],
+                'orden' => $index + 1,
+            ]);
         }
 
         $votacion->load('opciones');
@@ -69,8 +72,11 @@ class VotacionController extends Controller
 
         $votacion->opciones()->delete();
 
-        foreach ($data['opciones'] as $opcion) {
-            $votacion->opciones()->create(['texto' => $opcion['texto']]);
+        foreach ($data['opciones'] as $index => $opcion) {
+            $votacion->opciones()->create([
+                'texto' => $opcion['texto'],
+                'orden' => $index + 1,
+            ]);
         }
 
         $votacion->load('opciones');
