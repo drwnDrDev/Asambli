@@ -151,7 +151,7 @@ function ResultBar({ opcion, resultados, esVotada }) {
     )
 }
 
-function VotacionCard({ votacionActiva, resultados, yaVotoPor, poderes, onVotar, loading, esDelegadoExterno }) {
+function VotacionCard({ votacionActiva, resultados, yaVotoPor, poderes, onVotar, loading, esDelegadoExterno, enMora = false }) {
     const [pendingOpcion, setPendingOpcion] = useState(null)
     const yaVotoPropio = yaVotoPor.includes('propio')
 
@@ -205,19 +205,24 @@ function VotacionCard({ votacionActiva, resultados, yaVotoPor, poderes, onVotar,
                 {!yaVotoPropio && !esDelegadoExterno && (
                     <div className="mb-5">
                         <p className="text-[10px] uppercase tracking-widest mb-2" style={{ color: 'var(--sala-text-muted)' }}>Tu voto</p>
+                        {enMora && (
+                            <div className="mt-2 mb-3 p-2 bg-amber-50 border border-amber-200 rounded text-sm text-amber-800">
+                                No puede votar: su cuenta tiene cuotas en mora pendientes (Art. 38 Ley 675 de 2001).
+                            </div>
+                        )}
                         <div className="space-y-2">
                             {votacionActiva.opciones.map(opcion => (
                                 <button
                                     key={opcion.id}
-                                    onClick={() => setPendingOpcion(opcion)}
-                                    disabled={loading}
-                                    className="w-full py-3.5 text-sm font-semibold rounded-xl transition active:scale-95 disabled:opacity-50"
+                                    onClick={() => !enMora && setPendingOpcion(opcion)}
+                                    disabled={loading || enMora}
+                                    className={`w-full py-3.5 text-sm font-semibold rounded-xl transition active:scale-95 disabled:opacity-50 ${enMora ? 'opacity-50 cursor-not-allowed' : ''}`}
                                     style={{
                                         background: 'var(--sala-surface-raised)',
                                         border: '1px solid var(--sala-border)',
                                         color: 'var(--sala-text)',
                                     }}
-                                    onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--sala-amber)'}
+                                    onMouseEnter={e => { if (!enMora) e.currentTarget.style.borderColor = 'var(--sala-amber)' }}
                                     onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--sala-border)'}
                                 >
                                     {opcion.texto}
@@ -394,6 +399,7 @@ export default function SalaShow({
     estadoReunion: initialEstadoReunion,
     esDelegadoExterno = false,
     poderdantesRepresentados = [],
+    enMora = false,
 }) {
     const { errors } = usePage().props
 
@@ -606,6 +612,7 @@ export default function SalaShow({
                     onVotar={emitirVoto}
                     loading={votando}
                     esDelegadoExterno={esDelegadoExterno}
+                    enMora={enMora}
                 />
 
                 {feed.length > 0 && (

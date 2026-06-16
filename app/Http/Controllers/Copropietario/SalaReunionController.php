@@ -134,10 +134,13 @@ class SalaReunionController extends Controller
             'unidades' => $p->poderdante?->unidades?->pluck('numero') ?? [],
         ])->values();
 
+        $tenant = app('current_tenant');
+        $enMora = ($copropietario?->en_mora ?? false) && ($tenant?->restringir_voto_morosos ?? false);
+
         return Inertia::render('Copropietario/Sala/Show', compact(
             'reunion', 'quorum', 'poderes', 'yaVotoPor', 'votacionAbierta',
             'resultadosActuales', 'feedInicial', 'estadoReunion', 'esDelegadoExterno',
-            'poderdantesRepresentados'
+            'poderdantesRepresentados', 'enMora'
         ));
     }
 
