@@ -19,11 +19,12 @@ class ReunionController extends Controller
     public function store(Request $request, Tenant $tenant)
     {
         $validated = $request->validate([
-            'titulo'           => 'required|string|max:200',
-            'tipo'             => 'required|in:asamblea',
-            'tipo_voto_peso'   => 'required|in:coeficiente,unidad',
-            'quorum_requerido' => 'required|numeric|min:0|max:100',
-            'fecha_programada' => 'nullable|date',
+            'titulo'             => 'required|string|max:200',
+            'tipo_cuerpo'        => 'required|in:asamblea',
+            'tipo_convocatoria'  => 'required|in:ordinaria,extraordinaria',
+            'tipo_voto_peso'     => 'required|in:coeficiente,unidad',
+            'quorum_requerido'   => 'required|numeric|min:0|max:100',
+            'fecha_programada'   => 'nullable|date',
         ]);
 
         Reunion::create([
