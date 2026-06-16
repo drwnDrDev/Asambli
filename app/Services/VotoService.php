@@ -96,7 +96,7 @@ class VotoService
 
             // 8. Recalcular y broadcast sincrónicamente (sin depender de queue worker)
             try {
-                RecalcularResultadosVotacion::dispatchSync($votacion->id, $copropietario->id);
+                RecalcularResultadosVotacion::dispatchSync($votacion, $copropietario->id);
             } catch (\Exception $broadcastEx) {
                 \Illuminate\Support\Facades\Log::error('broadcast_resultados_failed', [
                     'votacion_id' => $votacion->id,

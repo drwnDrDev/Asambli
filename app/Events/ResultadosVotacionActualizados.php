@@ -17,7 +17,8 @@ class ResultadosVotacionActualizados implements ShouldBroadcastNow
     public function __construct(
         public readonly \App\Models\Votacion $votacion,
         public readonly array $resultados,
-        public readonly ?string $ultimoVotoUnidad = null
+        public readonly ?string $ultimoVotoUnidad = null,
+        public readonly array $mayoriaData = []
     ) {}
 
     public function broadcastOn(): array
@@ -30,9 +31,10 @@ class ResultadosVotacionActualizados implements ShouldBroadcastNow
     public function broadcastWith(): array
     {
         return [
-            'votacion_id' => $this->votacion->id,
-            'resultados' => $this->resultados,
+            'votacion_id'        => $this->votacion->id,
+            'resultados'         => $this->resultados,
             'ultimo_voto_unidad' => $this->ultimoVotoUnidad,
+            'mayoria_data'       => $this->mayoriaData,
         ];
     }
 }
