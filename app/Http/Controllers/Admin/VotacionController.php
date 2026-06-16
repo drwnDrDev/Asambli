@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Models\OpcionVotacion;
 use App\Models\Reunion;
 use App\Models\ReunionLog;
+use App\Models\Unidad;
 use App\Models\Votacion;
 use App\Models\Voto;
 use App\Services\QuorumService;
@@ -137,7 +138,11 @@ class VotacionController extends Controller
             ];
         })->sortByDesc('peso_total')->first();
 
-        $votacion->update(['estado' => 'cerrada', 'cerrada_at' => now()]);
+        $votacion->update([
+            'estado'     => 'cerrada',
+            'cerrada_at' => now(),
+            'resultado'  => $this->calcularResultado($votacion),
+        ]);
         broadcast(new \App\Events\EstadoVotacionCambiado($votacion));
 
         ReunionLog::create([
@@ -160,5 +165,53 @@ class VotacionController extends Controller
     {
         $votacion->load('opciones.votos', 'reunion');
         return Inertia::render('Admin/Votaciones/Resultados', compact('votacion'));
+    }
+
+    private function calcularResultado(Votacion $votacion): string
+    {
+        $votacion->loadMissing('tipoDecision', 'opciones');
+
+        $tipoMayoria = $votacion->tipoDecision?->tipo_mayoria ?? 'simple';
+
+        // Opción de favor: orden = 1 (primera opción)
+        $opcionFavor = $votacion->opciones->firstWhere('orden', 1);
+
+        if (! $opcionFavor) {
+            return 'rechazada';
+        }
+
+        $votosFavor = (float) Voto::withoutGlobalScopes()
+            ->where('votacion_id', $votacion->id)
+            ->where('opcion_id', $opcionFavor->id)
+            ->sum('peso');
+
+        $totalEmitido = (float) Voto::withoutGlobalScopes()
+            ->where('votacion_id', $votacion->id)
+            ->sum('peso');
+
+        $votosContra = $totalEmitido - $votosFavor;
+
+        switch ($tipoMayoria) {
+            case 'calificada_70':
+                $totalEdificio = (float) Unidad::withoutGlobalScopes()
+                    ->where('tenant_id', $votacion->tenant_id)
+                    ->sum('coeficiente');
+
+                $porcentaje = $totalEdificio > 0
+                    ? round($votosFavor / $totalEdificio * 100, 10)
+                    : 0.0;
+
+                return $porcentaje >= 70.0 ? 'aprobada' : 'rechazada';
+
+            case 'unanimidad':
+                return ($totalEmitido > 0 && $votosContra == 0.0) ? 'aprobada' : 'rechazada';
+
+            default: // 'simple'
+                $porcentajeFavor = $totalEmitido > 0
+                    ? round($votosFavor / $totalEmitido * 100, 10)
+                    : 0.0;
+
+                return $porcentajeFavor > 50.0 ? 'aprobada' : 'rechazada';
+        }
     }
 }
