@@ -3,6 +3,7 @@ import { router, usePage, useForm } from '@inertiajs/react'
 import AdminLayout from '@/Layouts/AdminLayout'
 import echo from '@/echo'
 import TipoDecisionSelector from '@/Components/TipoDecisionSelector'
+import ResultadosMayoria from '@/Components/ResultadosMayoria'
 
 // ─── ModalConectados ────────────────────────────────────────────────
 function ModalConectados({ conectados, onClose }) {
@@ -82,7 +83,11 @@ export default function Conducir({ reunion, quorum: initialQuorum, copropietario
     const { flash, errors: pageErrors } = usePage().props
     const [quorum, setQuorum] = useState(initialQuorum)
     const [votaciones, setVotaciones] = useState(initialVotaciones)
-    const [resultados, setResultados] = useState(resultadosIniciales)
+    // Transform initial resultados into { [id]: { resultados: [...], mayoriaData: null } }
+    const initialResultadosMap = Object.fromEntries(
+        Object.entries(resultadosIniciales).map(([id, res]) => [id, { resultados: res, mayoriaData: null }])
+    )
+    const [resultadosMap, setResultadosMap] = useState(initialResultadosMap)
     const [conectados, setConectados] = useState([])
     const [showConectados, setShowConectados] = useState(false)
     const [ticker, setTicker] = useState([])
@@ -140,7 +145,13 @@ export default function Conducir({ reunion, quorum: initialQuorum, copropietario
         // 2. Private channel
         const privateChannel = echo.private(`reunion.${reunion.id}`)
         privateChannel.listen('ResultadosVotacionActualizados', (e) => {
-            setResultados(prev => ({ ...prev, [e.votacion_id]: e.resultados }))
+            setResultadosMap(prev => ({
+                ...prev,
+                [e.votacion_id]: {
+                    resultados: e.resultados,
+                    mayoriaData: e.mayoria_data ?? null,
+                },
+            }))
             if (e.ultimo_voto_unidad) {
                 setTicker(prev => [{ unidad: e.ultimo_voto_unidad, ts: Date.now() }, ...prev].slice(0, 20))
             }
@@ -275,7 +286,8 @@ export default function Conducir({ reunion, quorum: initialQuorum, copropietario
     const asistenciaConfirmada = copropietarios.filter(c => c.asistencia).length
 
     // ─── Votacion result helpers ────────────────────────────────
-    const getResultados = (votacionId) => resultados[votacionId] || []
+    const getResultados = (votacionId) => resultadosMap[votacionId]?.resultados || []
+    const getMayoriaData = (votacionId) => resultadosMap[votacionId]?.mayoriaData ?? null
     const getTotalVotos = (votacionId) => {
         const res = getResultados(votacionId)
         return res.reduce((sum, r) => sum + (r.count || 0), 0)
@@ -408,6 +420,8 @@ export default function Conducir({ reunion, quorum: initialQuorum, copropietario
                             </div>
                         )}
                     </div>
+
+                    <ResultadosMayoria mayoriaData={getMayoriaData(votacionActiva.id)} />
                 </div>
             )}
 
