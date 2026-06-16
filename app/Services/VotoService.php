@@ -19,6 +19,12 @@ class VotoService
         Request $request,
         ?int $enNombreDeId = null
     ): array {
+        // Art. 38 Ley 675: copropietarios en mora no pueden votar
+        $tenant = app('current_tenant');
+        if ($tenant->restringir_voto_morosos && $copropietario->en_mora) {
+            return ['success' => false, 'error' => 'No puede votar: copropietario en mora (Art. 38 Ley 675).'];
+        }
+
         try {
             DB::transaction(function () use ($votacion, $copropietario, $opcionId, $request, $enNombreDeId) {
                 // 1. Verificar reunión en curso
