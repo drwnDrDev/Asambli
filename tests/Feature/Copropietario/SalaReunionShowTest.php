@@ -156,3 +156,34 @@ it('show includes resultadosActuales with correct format when copropietario alre
         expect($resultado)->toHaveKeys(['opcion_id', 'texto', 'count', 'peso_total']);
     }
 });
+
+it('show funciona para copropietario PIN sin binding de current_tenant y expone enMora', function () {
+    $tenant = Tenant::factory()->create(['restringir_voto_morosos' => true]);
+    app()->instance('current_tenant', $tenant);
+
+    $copro = Copropietario::factory()->create(['tenant_id' => $tenant->id, 'en_mora' => true]);
+    $reunion = Reunion::factory()->create([
+        'tenant_id' => $tenant->id,
+        'estado'    => ReunionEstado::AnteSala,
+    ]);
+
+    $token = \Illuminate\Support\Str::random(64);
+    \App\Models\AccesoReunion::create([
+        'copropietario_id' => $copro->id,
+        'reunion_id'       => $reunion->id,
+        'pin_hash'         => bcrypt('000000'),
+        'session_token'    => $token,
+        'activo'           => true,
+    ]);
+
+    // En el flujo real por PIN no hay User autenticado, así que
+    // SetTenantContext nunca registra current_tenant en el contenedor.
+    app()->forgetInstance('current_tenant');
+
+    $response = $this->withSession(['copropietario_session_token' => $token])
+        ->withHeaders(['X-Inertia' => 'true', 'X-Inertia-Version' => inertiaVersion()])
+        ->get("/sala/{$reunion->id}");
+
+    $response->assertStatus(200);
+    expect($response->json('props.enMora'))->toBeTrue();
+});

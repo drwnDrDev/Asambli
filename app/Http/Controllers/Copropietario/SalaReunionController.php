@@ -134,8 +134,10 @@ class SalaReunionController extends Controller
             'unidades' => $p->poderdante?->unidades?->pluck('numero') ?? [],
         ])->values();
 
-        $tenant = app('current_tenant');
-        $enMora = ($copropietario?->en_mora ?? false) && ($tenant?->restringir_voto_morosos ?? false);
+        // El flujo PIN no tiene User → SetTenantContext no registra current_tenant.
+        // El tenant correcto siempre es el de la reunión.
+        $enMora = ($copropietario?->en_mora ?? false)
+            && (bool) $reunion->tenant?->restringir_voto_morosos;
 
         return Inertia::render('Copropietario/Sala/Show', compact(
             'reunion', 'quorum', 'poderes', 'yaVotoPor', 'votacionAbierta',

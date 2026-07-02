@@ -146,4 +146,49 @@ class VotoServiceMoraTest extends TestCase
         expect($result['success'])->toBeFalse()
             ->and($result['error'])->toContain('mora');
     }
+
+    /**
+     * El flujo PIN no tiene User autenticado → SetTenantContext nunca
+     * registra current_tenant en el contenedor. El servicio debe resolver
+     * el tenant desde la reunión, no desde el contenedor.
+     *
+     * @test
+     */
+    public function no_moroso_puede_votar_sin_current_tenant_en_contenedor(): void
+    {
+        $opcion = $this->votacion->opciones()->create(['texto' => 'Sí', 'orden' => 1]);
+
+        app()->forgetInstance('current_tenant');
+
+        $service = app(VotoService::class);
+        $result  = $service->votar(
+            $this->votacion,
+            $this->copropietario,
+            $opcion->id,
+            request()
+        );
+
+        expect($result['success'])->toBeTrue();
+    }
+
+    /** @test */
+    public function moroso_es_bloqueado_sin_current_tenant_en_contenedor(): void
+    {
+        $this->copropietario->update(['en_mora' => true]);
+
+        $opcion = $this->votacion->opciones()->create(['texto' => 'Sí', 'orden' => 1]);
+
+        app()->forgetInstance('current_tenant');
+
+        $service = app(VotoService::class);
+        $result  = $service->votar(
+            $this->votacion,
+            $this->copropietario,
+            $opcion->id,
+            request()
+        );
+
+        expect($result['success'])->toBeFalse()
+            ->and($result['error'])->toContain('mora');
+    }
 }
