@@ -29,6 +29,11 @@ function PoderRow({ poder, onAprobar, onRechazar, onRevocar }) {
                 </div>
                 <p className="text-xs text-gray-400">
                     Delegado por: <span className="text-gray-600">{poderdante?.nombre}</span>
+                    {poderdante?.en_mora && (
+                        <span className="ml-2 inline-flex px-1.5 py-0.5 rounded text-[10px] font-semibold bg-red-50 text-red-600 border border-red-200">
+                            Poderdante en mora
+                        </span>
+                    )}
                     {' · '}
                     {poderdante?.unidades?.map(u => u.numero).join(', ') || '—'}
                 </p>
