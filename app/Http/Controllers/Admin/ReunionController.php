@@ -206,15 +206,25 @@ class ReunionController extends Controller
 
     public function confirmarAsistencia(Reunion $reunion, Copropietario $copropietario)
     {
-        \App\Models\Asistencia::updateOrCreate(
+        $asistencia = \App\Models\Asistencia::updateOrCreate(
             ['reunion_id' => $reunion->id, 'copropietario_id' => $copropietario->id],
             ['confirmada_por_admin' => true, 'hora_confirmacion' => now()]
         );
 
-        broadcast(new \App\Events\QuorumActualizado(
-            $reunion->id,
-            app(QuorumService::class)->calcular($reunion)
-        ));
+        $quorum = app(QuorumService::class)->calcular($reunion);
+
+        if ($asistencia->wasRecentlyCreated) {
+            \App\Models\AsistenciaEvento::create([
+                'tenant_id'         => $reunion->tenant_id,
+                'reunion_id'        => $reunion->id,
+                'copropietario_id'  => $copropietario->id,
+                'tipo'              => 'entrada',
+                'origen'            => 'admin',
+                'quorum_resultante' => $quorum['porcentaje_presente'],
+            ]);
+        }
+
+        broadcast(new \App\Events\QuorumActualizado($reunion->id, $quorum));
 
         return back()->with('success', 'Asistencia confirmada.');
     }
