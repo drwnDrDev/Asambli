@@ -352,7 +352,7 @@ function FeedItem({ item }) {
                             {item.pregunta}
                         </p>
                         <p className="text-xs mt-0.5" style={{ color: 'var(--sala-green)' }}>
-                            Ganó: {item.ganadora} ({item.ganadora_pct}%)
+                            Mayor votación: {item.ganadora} ({item.ganadora_pct}%)
                         </p>
                     </div>
                     <span className="text-xs tabular-nums flex-shrink-0" style={{ color: 'var(--sala-text-faint)' }}>

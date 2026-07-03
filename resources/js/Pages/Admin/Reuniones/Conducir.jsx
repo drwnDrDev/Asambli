@@ -590,8 +590,11 @@ export default function Conducir({ reunion, quorum: initialQuorum, copropietario
                                         {v.estado === 'cerrada' && isExpanded && (
                                             <div className="mt-2 ml-14 space-y-1.5 pb-1">
                                                 {vGanadora && (
-                                                    <p className="text-xs text-green-700 font-medium mb-1.5">
-                                                        Ganó: {vGanadora.texto} ({vTotalPeso > 0 ? ((parseFloat(vGanadora.peso_total) / vTotalPeso) * 100).toFixed(1) : 0}%)
+                                                    <p className={`text-xs font-medium mb-1.5 ${v.resultado === 'rechazada' ? 'text-red-700' : 'text-green-700'}`}>
+                                                        {v.tipo_decision && v.resultado !== 'pendiente'
+                                                            ? `Resultado: ${v.resultado === 'aprobada' ? 'Aprobada' : 'Rechazada'}`
+                                                            : `Mayor votación: ${vGanadora.texto}`}
+                                                        {' '}({vTotalPeso > 0 ? ((parseFloat(vGanadora.peso_total) / vTotalPeso) * 100).toFixed(1) : 0}%)
                                                     </p>
                                                 )}
                                                 {vResultados.map(r => {
