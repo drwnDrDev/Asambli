@@ -105,8 +105,27 @@ class VotacionController extends Controller
 
     public function abrir(Votacion $votacion)
     {
-        $votacion->load('reunion');
+        $votacion->load('reunion', 'tipoDecision');
         $quorum = $this->quorumService->calcular($votacion->reunion);
+
+        // Arts. 45/46 Ley 675: sin la presencia mínima por coeficiente, la
+        // aprobación es matemáticamente imposible — no se permite abrir.
+        // Este bloqueo NO se exime con BYPASS_QUORUM (flag de dev para
+        // quórum de instalación, no para umbrales de mayoría).
+        $tipoMayoria = $votacion->tipoDecision?->tipo_mayoria;
+        if (in_array($tipoMayoria, ['calificada_70', 'unanimidad'], true)) {
+            $umbral    = $tipoMayoria === 'calificada_70' ? 70.0 : 100.0;
+            $presencia = $this->quorumService->presenciaCoeficiente($votacion->reunion);
+
+            if ($presencia['porcentaje'] < $umbral) {
+                return back()->with('error', sprintf(
+                    'No se puede abrir la votación: la decisión requiere %s%% de coeficiente presente y actualmente hay %s%% (Art. %s, Ley 675 de 2001).',
+                    rtrim(rtrim(number_format($umbral, 1), '0'), '.'),
+                    $presencia['porcentaje'],
+                    $tipoMayoria === 'calificada_70' ? '46' : '9'
+                ));
+            }
+        }
 
         $votacion->update(['estado' => 'abierta', 'abierta_at' => now()]);
         $votacion->load('opciones');
