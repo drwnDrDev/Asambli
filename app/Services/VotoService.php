@@ -19,12 +19,25 @@ class VotoService
         Request $request,
         ?int $enNombreDeId = null
     ): array {
-        // Art. 38 Ley 675: copropietarios en mora no pueden votar.
+        // Art. 38 Ley 675: la mora suspende el derecho de voto PROPIO.
         // El flujo PIN no tiene User → current_tenant no está en el contenedor;
         // el tenant se resuelve desde la reunión de la votación.
         $votacion->loadMissing('reunion.tenant');
-        if ($votacion->reunion->tenant->restringir_voto_morosos && $copropietario->en_mora) {
+        $restringirMorosos = (bool) $votacion->reunion->tenant->restringir_voto_morosos;
+
+        if ($enNombreDeId === null && $restringirMorosos && $copropietario->en_mora) {
             return ['success' => false, 'error' => 'No puede votar: copropietario en mora (Art. 38 Ley 675).'];
+        }
+
+        // La mora del poderdante tampoco se elude delegando el voto.
+        if ($enNombreDeId !== null && $restringirMorosos) {
+            $poderdante = Copropietario::withoutGlobalScopes()->find($enNombreDeId);
+            if ($poderdante?->en_mora) {
+                return [
+                    'success' => false,
+                    'error'   => "El poderdante {$poderdante->nombre} está en mora y no puede votar, ni directamente ni mediante apoderado (Art. 38, Ley 675 de 2001).",
+                ];
+            }
         }
 
         try {
