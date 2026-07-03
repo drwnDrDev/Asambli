@@ -203,6 +203,16 @@ export default function Conducir({ reunion, quorum: initialQuorum, copropietario
         ? Math.round((presenciaValor / quorum.total) * 100 * 10) / 10
         : 0
 
+    // Umbral de presencia para mayorías especiales (solo UX — el backend valida siempre).
+    // El % oficial del widget es por coeficiente solo cuando la reunión pesa por coeficiente.
+    const presenciaParaUmbral = quorum?.tipo === 'coeficiente' ? quorum.porcentaje_presente : null
+    const umbralApertura = (v) => {
+        const m = v.tipo_decision?.tipo_mayoria
+        if (m === 'calificada_70') return 70
+        if (m === 'unanimidad') return 100
+        return null
+    }
+
     const timeAgo = (ts) => {
         const secs = Math.floor((Date.now() - ts) / 1000)
         if (secs < 60) return `hace ${secs}s`
@@ -299,6 +309,11 @@ export default function Conducir({ reunion, quorum: initialQuorum, copropietario
             {flash?.success && (
                 <div className="mb-4 bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg text-sm">
                     {flash.success}
+                </div>
+            )}
+            {flash?.error && (
+                <div className="mb-4 px-4 py-3 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm">
+                    {flash.error}
                 </div>
             )}
 
@@ -532,8 +547,23 @@ export default function Conducir({ reunion, quorum: initialQuorum, copropietario
                                             <div className="flex gap-1 flex-shrink-0 items-center">
                                                 {v.estado === 'creada' && (
                                                     <>
-                                                        <button onClick={() => abrirVotacion(v.id)}
-                                                            className="text-xs bg-green-600 text-white px-2 py-0.5 rounded hover:bg-green-700 transition">Abrir</button>
+                                                        {(() => {
+                                                            const umbral = umbralApertura(v)
+                                                            const bloqueada = umbral !== null && presenciaParaUmbral !== null && presenciaParaUmbral < umbral
+                                                            return (
+                                                                <>
+                                                        <button onClick={() => !bloqueada && abrirVotacion(v.id)}
+                                                            disabled={bloqueada}
+                                                            title={bloqueada ? `Requiere ${umbral}% de coeficiente presente (hay ${presenciaParaUmbral}%)` : undefined}
+                                                            className="text-xs bg-green-600 text-white px-2 py-0.5 rounded hover:bg-green-700 transition disabled:opacity-50 disabled:cursor-not-allowed">Abrir</button>
+                                                                {bloqueada && (
+                                                                    <p className="text-[10px] text-red-500 mt-0.5">
+                                                                        Requiere {umbral}% presente · hay {presenciaParaUmbral}%
+                                                                    </p>
+                                                                )}
+                                                                </>
+                                                            )
+                                                        })()}
                                                         <button onClick={() => startEdit(v)}
                                                             className="text-xs text-blue-600 hover:text-blue-800 px-1">Editar</button>
                                                         <button onClick={() => deleteVotacion(v.id)}
