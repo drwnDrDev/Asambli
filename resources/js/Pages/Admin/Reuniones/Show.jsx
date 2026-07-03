@@ -222,7 +222,7 @@ export default function Show({ reunion, quorum, copropietarios = [], votaciones:
                     <span className={`px-3 py-1 rounded-full text-sm font-medium ${ESTADO_BADGE[reunion.estado]}`}>
                         {reunion.estado}
                     </span>
-                    <span className="text-sm text-gray-500">Tipo: {reunion.tipo} · Quórum requerido: {reunion.quorum_requerido}%</span>
+                    <span className="text-sm text-gray-500">Tipo: {reunion.tipo_cuerpo === 'asamblea' ? `Asamblea ${reunion.tipo_convocatoria === 'extraordinaria' ? 'Extraordinaria' : 'Ordinaria'}` : 'Consejo'} · Quórum requerido: {reunion.quorum_requerido}%</span>
                 </div>
                 <div className="flex gap-2 flex-wrap">
                     {reunion.estado === 'borrador' && (

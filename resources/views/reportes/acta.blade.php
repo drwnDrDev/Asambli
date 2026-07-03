@@ -18,7 +18,7 @@
 
     <h2>1. Información General</h2>
     <table>
-        <tr><th>Tipo</th><td>{{ ucfirst($reunion->tipo) }}</td></tr>
+        <tr><th>Tipo</th><td>{{ $reunion->tipo_cuerpo === 'asamblea' ? 'Asamblea ' . ($reunion->tipo_convocatoria === 'extraordinaria' ? 'Extraordinaria' : 'Ordinaria') : 'Consejo' }}</td></tr>
         <tr><th>Fecha</th><td>{{ $reunion->fecha_inicio?->timezone('America/Bogota')->format('d/m/Y h:i A') }}</td></tr>
         <tr><th>Quórum requerido</th><td>{{ $reunion->quorum_requerido }}%</td></tr>
         <tr><th>Quórum alcanzado</th><td>{{ $quorum['porcentaje_presente'] }}%</td></tr>

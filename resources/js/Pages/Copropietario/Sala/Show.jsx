@@ -580,7 +580,7 @@ export default function SalaShow({
             <div className="px-4 py-5 max-w-lg mx-auto">
                 <div className="mb-5">
                     <p className="text-xs uppercase tracking-wide mb-0.5" style={{ color: 'var(--sala-text-muted)' }}>
-                        {reunion.tipo}
+                        {reunion.tipo_cuerpo === 'asamblea' ? `Asamblea ${reunion.tipo_convocatoria === 'extraordinaria' ? 'Extraordinaria' : 'Ordinaria'}` : 'Consejo'}
                     </p>
                     <h1 className="text-lg font-semibold" style={{ color: 'var(--sala-text)' }}>
                         {reunion.titulo}
