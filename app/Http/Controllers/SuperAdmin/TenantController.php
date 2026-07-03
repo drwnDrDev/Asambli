@@ -88,7 +88,24 @@ class TenantController extends Controller
                 ->count(),
         ];
 
-        return Inertia::render('SuperAdmin/Tenants/Show', compact('tenant', 'stats', 'reuniones'));
+        $copropietarios = Copropietario::withoutGlobalScopes()
+            ->where('tenant_id', $tenant->id)
+            ->where('es_externo', false)
+            ->with('unidades')
+            ->orderBy('nombre')
+            ->paginate(15)
+            ->withQueryString()
+            ->through(fn ($c) => [
+                'id'          => $c->id,
+                'nombre'      => $c->nombre,
+                'documento'   => $c->numero_documento,
+                'unidades'    => $c->unidades->pluck('numero')->join(', '),
+                'coeficiente' => (float) $c->unidades->sum('coeficiente'),
+                'activo'      => (bool) $c->activo,
+                'en_mora'     => (bool) $c->en_mora,
+            ]);
+
+        return Inertia::render('SuperAdmin/Tenants/Show', compact('tenant', 'stats', 'reuniones', 'copropietarios'));
     }
 
     public function edit(Tenant $tenant)
