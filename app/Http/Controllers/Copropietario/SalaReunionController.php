@@ -35,10 +35,11 @@ class SalaReunionController extends Controller
     {
         $copropietario = auth('copropietario')->user();
 
-        // Bloquear si el copropietario tiene un poder aprobado activo
+        // Bloquear si el copropietario tiene un poder aprobado activo para ESTA reunión
         if ($copropietario) {
             $poderActivo = Poder::withoutGlobalScopes()
                 ->where('poderdante_id', $copropietario->id)
+                ->where('reunion_id', $reunion->id)
                 ->where('estado', 'aprobado')
                 ->with('apoderado')
                 ->first();
@@ -63,9 +64,10 @@ class SalaReunionController extends Controller
                 ? [[$copropietario->id, 'auto_sala']]
                 : [];
 
-            // Obtener poderes aprobados
+            // Obtener poderes aprobados para ESTA reunión
             $poderes = Poder::withoutGlobalScopes()
                 ->where('apoderado_id', $copropietario->id)
+                ->where('reunion_id', $reunion->id)
                 ->where('estado', 'aprobado')
                 ->with('poderdante.unidades')
                 ->get();
@@ -100,6 +102,7 @@ class SalaReunionController extends Controller
             if ($copropietario) {
                 $poderes = Poder::withoutGlobalScopes()
                     ->where('apoderado_id', $copropietario->id)
+                    ->where('reunion_id', $reunion->id)
                     ->where('estado', 'aprobado')
                     ->with('poderdante.unidades')
                     ->get();

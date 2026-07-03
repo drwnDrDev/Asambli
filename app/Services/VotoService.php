@@ -59,11 +59,12 @@ class VotoService
                     throw new \Exception('La votación no está abierta.');
                 }
 
-                // 4a. Validar poder si vota en nombre de otro
+                // 4a. Validar poder si vota en nombre de otro (filtrar por reunión para evitar contaminación entre reuniones)
                 if ($enNombreDeId !== null) {
                     $tienePoder = Poder::withoutGlobalScopes()
                         ->where('apoderado_id', $copropietario->id)
                         ->where('poderdante_id', $enNombreDeId)
+                        ->where('reunion_id', $votacion->reunion_id)
                         ->where('estado', 'aprobado')
                         ->exists();
                     if (!$tienePoder) {

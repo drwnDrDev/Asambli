@@ -122,6 +122,51 @@ test('entrar como apoderado registra evento representado para cada poderdante', 
         ->and($eventoRepresentado->origen)->toBe('representado');
 });
 
+test('poder de otra reunion no registra asistencia del poderdante en sala actual', function () {
+    $admin      = User::factory()->create(['tenant_id' => $this->tenant->id, 'rol' => 'administrador', 'activo' => true]);
+    $apoderado  = Copropietario::factory()->create(['tenant_id' => $this->tenant->id]);
+    $poderdante = Copropietario::factory()->create(['tenant_id' => $this->tenant->id]);
+    Unidad::factory()->create(['tenant_id' => $this->tenant->id, 'copropietario_id' => $apoderado->id, 'coeficiente' => 50.0]);
+    Unidad::factory()->create(['tenant_id' => $this->tenant->id, 'copropietario_id' => $poderdante->id, 'coeficiente' => 50.0]);
+
+    // Crear reunión B (diferente) y vincular el poder solo a ella
+    $reunionB = Reunion::factory()->create([
+        'tenant_id' => $this->tenant->id,
+        'estado'    => ReunionEstado::AnteSala,
+    ]);
+    Poder::withoutEvents(fn () => Poder::create([
+        'tenant_id'      => $this->tenant->id,
+        'reunion_id'     => $reunionB->id,     // poder es de reunión B, no de $this->reunion (A)
+        'apoderado_id'   => $apoderado->id,
+        'poderdante_id'  => $poderdante->id,
+        'estado'         => 'aprobado',
+        'registrado_por' => $admin->id,
+    ]));
+
+    $token = \Illuminate\Support\Str::random(64);
+    \App\Models\AccesoReunion::create([
+        'copropietario_id' => $apoderado->id,
+        'reunion_id'       => $this->reunion->id,
+        'pin_hash'         => bcrypt('000000'),
+        'session_token'    => $token,
+        'activo'           => true,
+    ]);
+
+    app()->forgetInstance('current_tenant');
+
+    $this->withSession(['copropietario_session_token' => $token])
+        ->withHeaders(['X-Inertia' => 'true', 'X-Inertia-Version' => inertiaVersionEventos()])
+        ->get("/sala/{$this->reunion->id}");
+
+    // El poderdante NO debe tener asistencia en la reunión A
+    $asistenciaPoderdante = \App\Models\Asistencia::withoutGlobalScopes()
+        ->where('reunion_id', $this->reunion->id)
+        ->where('copropietario_id', $poderdante->id)
+        ->first();
+
+    expect($asistenciaPoderdante)->toBeNull();
+});
+
 test('confirmacion manual del admin registra evento entrada admin', function () {
     $admin = User::factory()->create([
         'tenant_id' => $this->tenant->id,
