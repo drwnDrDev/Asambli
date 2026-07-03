@@ -3,6 +3,7 @@ import { useState, useEffect, useRef } from 'react'
 import { router, usePage } from '@inertiajs/react'
 import SalaLayout from '@/Layouts/SalaLayout'
 import echo from '@/echo'
+import { hora } from '@/utils/fecha'
 
 // ─── helpers ─────────────────────────────────────────────────────────────────
 
@@ -16,7 +17,7 @@ function calcPct(pesoTotal, allResultados) {
 
 function formatTime(isoString) {
     if (!isoString) return ''
-    return new Date(isoString).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' })
+    return hora(isoString)
 }
 
 // ─── sub-components ───────────────────────────────────────────────────────────

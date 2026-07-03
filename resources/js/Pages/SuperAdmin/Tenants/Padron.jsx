@@ -2,6 +2,7 @@ import AdminLayout from '@/Layouts/AdminLayout'
 import { useForm, usePage } from '@inertiajs/react'
 import { Link } from '@inertiajs/react'
 import { useState } from 'react'
+import { fechaHora } from '@/utils/fecha'
 
 export default function Padron({ tenant, resumen }) {
     const { flash, errors: pageErrors } = usePage().props
@@ -17,7 +18,7 @@ export default function Padron({ tenant, resumen }) {
 
     const formatFecha = (iso) => {
         if (!iso) return '—'
-        return new Date(iso).toLocaleString('es-CO', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+        return fechaHora(iso)
     }
 
     return (

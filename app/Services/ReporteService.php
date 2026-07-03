@@ -44,7 +44,7 @@ class ReporteService
                         'opcion'        => $voto->opcion->texto,
                         'peso'          => $voto->peso,
                         'en_nombre_de'  => $voto->poderdante?->nombre,
-                        'hora'          => $voto->created_at->format('H:i:s'),
+                        'hora'          => $voto->created_at->timezone('America/Bogota')->format('H:i:s'),
                         'hash'          => substr($voto->hash_verificacion, 0, 8),
                     ])->toArray();
 

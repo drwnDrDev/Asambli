@@ -1,6 +1,7 @@
 import AdminLayout from '@/Layouts/AdminLayout'
 import { Link, router, useForm, usePage } from '@inertiajs/react'
 import { useState } from 'react'
+import { fechaCorta } from '@/utils/fecha'
 
 export default function Show({ tenant, stats, reuniones, copropietarios = { data: [], links: [] } }) {
     const { flash } = usePage().props
@@ -107,7 +108,7 @@ export default function Show({ tenant, stats, reuniones, copropietarios = { data
                                     <tr key={r.id}>
                                         <td className="px-4 py-3 font-medium text-app-text-primary">{r.titulo}</td>
                                         <td className="px-4 py-3 text-app-text-muted capitalize">{r.estado}</td>
-                                        <td className="px-4 py-3 text-app-text-muted">{r.fecha_programada ? new Date(r.fecha_programada).toLocaleDateString('es-CO') : '—'}</td>
+                                        <td className="px-4 py-3 text-app-text-muted">{fechaCorta(r.fecha_programada)}</td>
                                         <td className="px-4 py-3 text-app-text-muted">{r.convocatoria_envios}/2</td>
                                         <td className="px-4 py-3 text-right">
                                             {r.convocatoria_envios >= 2 && (

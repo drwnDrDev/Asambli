@@ -4,6 +4,7 @@ import { Link, router, usePage, useForm } from '@inertiajs/react'
 import { QRCodeSVG } from 'qrcode.react'
 import echo from '@/echo'
 import TipoDecisionSelector from '@/Components/TipoDecisionSelector'
+import { fechaHora } from '@/utils/fecha'
 
 const ESTADO_BADGE = {
     borrador:     'bg-gray-100 text-gray-700',
@@ -348,7 +349,7 @@ export default function Show({ reunion, quorum, copropietarios = [], votaciones:
                             </p>
                         </div>
                         <p className="text-xs text-gray-500">
-                            Vence: {new Date(reunion.qr_expires_at).toLocaleString('es-CO')}
+                            Vence: {fechaHora(reunion.qr_expires_at)}
                         </p>
                         <button
                             onClick={() => router.post(route('admin.reuniones.generar-qr', reunion.id))}
