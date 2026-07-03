@@ -56,6 +56,8 @@ Laravel no pluraliza correctamente en español. Estas tablas requieren:
 | `Votacion` | `votaciones` |
 | `Poder` | `poderes` |
 | `OpcionVotacion` | `opciones_votacion` |
+| `TipoDecision` | `tipos_decision` |
+| `AsistenciaEvento` | `asistencia_eventos` |
 
 ## Relación Copropietario ↔ Unidad (CRÍTICO)
 
@@ -117,6 +119,23 @@ expect($response->status())->not->toBe(403);
 > Implementado en `config/app.php` (`bypass_quorum`) y `app/Services/VotoService.php`.
 > En producción esta variable no debe existir (el default es `false`).
 
+## Cumplimiento legal Ley 675 (núcleo implementado 2026-07)
+
+Checklist maestro: `docs/legal/compliance-ley675.md` — mantenerlo actualizado al implementar features legales.
+
+- **Tipos de decisión:** catálogo global `tipos_decision` (12 tipos seeded, `TiposDecisionSeeder`). Cada votación lleva `tipo_decision_id` que fija la mayoría: `simple` (sobre votos emitidos), `calificada_70` y `unanimidad` (sobre el **coeficiente total del conjunto**, no los presentes).
+- **Bloqueo de apertura:** `VotacionController::abrir()` rechaza abrir votaciones `calificada_70`/`unanimidad` si la presencia por coeficiente (`QuorumService::presenciaCoeficiente()`) es < 70% / < 100%. **`BYPASS_QUORUM` NO exime esta regla.**
+- **Mora (Art. 38):** `copropietarios.en_mora` (booleano manual) + `tenants.restringir_voto_morosos`. `VotoService` bloquea el voto propio del moroso Y el voto delegado de un poderdante moroso; un apoderado moroso SÍ puede votar por poderdantes al día.
+- **Quórum:** `QuorumService` deduplica poderdantes con asistencia propia y filtra poderes por `reunion_id`. Los poderes también se filtran por reunión en la sala y en la validación de voto delegado.
+- **Snapshots:** `votaciones.quorum_apertura`/`quorum_cierre` (JSON) se persisten al abrir/cerrar y salen en el acta PDF. `asistencia_eventos` registra cada entrada (auto_sala/admin/representado) con `quorum_resultante` — el quórum es reconstruible en cualquier instante (reuniones virtuales, L2190).
+- **Reuniones:** `tipo_cuerpo` (asamblea/consejo) + `tipo_convocatoria` (ordinaria/extraordinaria) reemplazaron la columna `tipo` (eliminada).
+
+## Fechas y zona horaria
+
+- `config/app.php` timezone: `America/Bogota` (no cambiar sin migrar datos — los timestamps almacenados se interpretarían distinto).
+- Frontend: usar SIEMPRE el helper `resources/js/utils/fecha.js` (`fechaCorta`, `fechaHora`, `hora` — Intl es-CO, America/Bogota). No usar `toLocaleDateString`/`toLocaleString` directo.
+- Acta PDF: atributos Carbon con `?->timezone('America/Bogota')->format(...)`.
+
 ## Broadcast de resultados (CRÍTICO)
 
 El job `RecalcularResultadosVotacion` usa **`dispatchSync()`** — NO `dispatch()`.
@@ -132,6 +151,8 @@ El job `RecalcularResultadosVotacion` usa **`dispatchSync()`** — NO `dispatch(
 **Estado:** Tasks 1–24 completadas ✅ — Tasks 25–26 (deploy) pendientes hasta decisión del usuario.
 
 **Ciclo 1 completo (2026-03-19):** Flujo end-to-end funcional — conducción, votación en tiempo real, sala copropietario, exportación PDF/CSV, auditoría.
+
+**Fase compliance legal completa (2026-07-03):** Ley 675 núcleo implementado (mayorías, mora, quórum, snapshots, eventos de asistencia) — specs y planes en `docs/superpowers/`; estado legal detallado en `docs/legal/compliance-ley675.md`. Diferido a fases futuras: jerarquía de nomenclatura (etapas/torres), representante legal del tenant, exclusión de morosos del quórum (3.4/8.3), orden del día, segunda citación.
 
 ## Comandos frecuentes
 ```bash

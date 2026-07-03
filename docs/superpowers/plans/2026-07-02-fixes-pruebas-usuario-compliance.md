@@ -32,7 +32,7 @@
 - Produces: `QuorumService::presenciaCoeficiente(Reunion $reunion): array` con claves `total` (float), `presente` (float), `porcentaje` (float, 2 decimales). Tasks 5 y 8 dependen de este método.
 - `calcular(Reunion): array` conserva su contrato actual (claves `tipo`, `total`, `presente`, `porcentaje_presente`, `quorum_requerido`, `tiene_quorum`).
 
-- [ ] **Step 1: Escribir tests que fallan**
+- [x] **Step 1: Escribir tests que fallan**
 
 Crear `tests/Feature/Services/QuorumServiceDedupTest.php`:
 
@@ -193,12 +193,12 @@ class QuorumServiceDedupTest extends TestCase
 }
 ```
 
-- [ ] **Step 2: Correr para confirmar que fallan**
+- [x] **Step 2: Correr para confirmar que fallan**
 
 Run: `./sail artisan test tests/Feature/Services/QuorumServiceDedupTest.php --no-coverage`
 Expected: FAIL — `poderdante_con_asistencia_propia...` espera 70.0 pero recibe 100.0 (doble conteo); `presencia_coeficiente...` falla con método inexistente. Nota: si `Poder::create` falla por un hook `booted()` del modelo, envolver en `Poder::withoutEvents(fn () => Poder::create([...]))` dentro del helper `crearPoder`.
 
-- [ ] **Step 3: Implementar en QuorumService**
+- [x] **Step 3: Implementar en QuorumService**
 
 Reemplazar `calcularPorCoeficiente()` completo y agregar el método público, en `app/Services/QuorumService.php`:
 
@@ -295,17 +295,17 @@ por:
         }
 ```
 
-- [ ] **Step 4: Correr los tests**
+- [x] **Step 4: Correr los tests**
 
 Run: `./sail artisan test tests/Feature/Services/QuorumServiceDedupTest.php --no-coverage`
 Expected: 5 passed.
 
-- [ ] **Step 5: Suite completa**
+- [x] **Step 5: Suite completa**
 
 Run: `./sail artisan test --no-coverage`
 Expected: sin regresiones. Si algún test existente dependía del doble conteo, es un test incorrecto: ajustar sus expectativas al valor deduplicado y anotarlo en el commit.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add app/Services/QuorumService.php tests/Feature/Services/QuorumServiceDedupTest.php
@@ -324,7 +324,7 @@ git commit -m "fix: quorum no cuenta doble a poderdantes con asistencia propia y
 - Consumes: `VotoService::votar(Votacion, Copropietario, int $opcionId, Request, ?int $enNombreDeId)` (firma sin cambios).
 - Reglas resultantes: voto propio de moroso → bloqueado; voto en nombre de poderdante moroso → bloqueado; apoderado moroso votando por poderdante al día → permitido.
 
-- [ ] **Step 1: Escribir tests que fallan**
+- [x] **Step 1: Escribir tests que fallan**
 
 Crear `tests/Feature/Services/VotoServiceMoraDelegadoTest.php`:
 
@@ -462,12 +462,12 @@ class VotoServiceMoraDelegadoTest extends TestCase
 }
 ```
 
-- [ ] **Step 2: Correr para confirmar el estado inicial**
+- [x] **Step 2: Correr para confirmar el estado inicial**
 
 Run: `./sail artisan test tests/Feature/Services/VotoServiceMoraDelegadoTest.php --no-coverage`
 Expected: FALLAN `voto_delegado_de_poderdante_moroso_es_bloqueado` (hoy se permite) y `apoderado_moroso_si_puede_votar_por_poderdante_al_dia` (hoy el check global bloquea al apoderado moroso incluso para votos ajenos). Los otros dos pasan. Nota `BYPASS_QUORUM`: si el entorno de test no lo tiene, la asistencia confirmada de los propios actores da quórum según `quorum_requerido` del factory; si un test falla por quórum, agregar `'quorum_requerido' => 1.0` al `Reunion::factory()`.
 
-- [ ] **Step 3: Implementar en VotoService**
+- [x] **Step 3: Implementar en VotoService**
 
 En `app/Services/VotoService.php`, reemplazar:
 
@@ -506,17 +506,17 @@ por:
         }
 ```
 
-- [ ] **Step 4: Correr los tests**
+- [x] **Step 4: Correr los tests**
 
 Run: `./sail artisan test tests/Feature/Services/VotoServiceMoraDelegadoTest.php --no-coverage`
 Expected: 4 passed.
 
-- [ ] **Step 5: Suite completa**
+- [x] **Step 5: Suite completa**
 
 Run: `./sail artisan test --no-coverage`
 Expected: sin regresiones (los tests de `VotoServiceMoraTest` existentes cubren voto propio y siguen pasando).
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add app/Services/VotoService.php tests/Feature/Services/VotoServiceMoraDelegadoTest.php
@@ -535,7 +535,7 @@ git commit -m "fix: mora del poderdante bloquea voto delegado; apoderado moroso 
 **Interfaces:**
 - Produces: prop Inertia `restringirMorosos` (bool) y clave `en_mora` (bool) en cada elemento de `poderdantesRepresentados`. Los modelos `Poder` en la prop `poderes` ya serializan `poderdante.en_mora`.
 
-- [ ] **Step 1: Test del nuevo prop (falla)**
+- [x] **Step 1: Test del nuevo prop (falla)**
 
 Agregar al final de `tests/Feature/Copropietario/SalaReunionShowTest.php` (usa los helpers ya presentes en ese archivo):
 
@@ -578,12 +578,12 @@ it('show expone restringirMorosos y en_mora de poderdantes representados', funct
 });
 ```
 
-- [ ] **Step 2: Correr para confirmar que falla**
+- [x] **Step 2: Correr para confirmar que falla**
 
 Run: `./sail artisan test tests/Feature/Copropietario/SalaReunionShowTest.php --no-coverage`
 Expected: FAIL — `restringirMorosos` es null.
 
-- [ ] **Step 3: Backend — SalaReunionController**
+- [x] **Step 3: Backend — SalaReunionController**
 
 En `show()`, reemplazar:
 
@@ -636,12 +636,12 @@ por:
         ));
 ```
 
-- [ ] **Step 4: Correr el test (pasa)**
+- [x] **Step 4: Correr el test (pasa)**
 
 Run: `./sail artisan test tests/Feature/Copropietario/SalaReunionShowTest.php --no-coverage`
 Expected: PASS.
 
-- [ ] **Step 5: Frontend — Show.jsx**
+- [x] **Step 5: Frontend — Show.jsx**
 
 En `resources/js/Pages/Copropietario/Sala/Show.jsx`:
 
@@ -724,12 +724,12 @@ por:
                                 </li>
 ```
 
-- [ ] **Step 6: Compilar y suite completa**
+- [x] **Step 6: Compilar y suite completa**
 
 Run: `./sail npm run build && ./sail artisan test --no-coverage`
 Expected: build OK, tests verdes.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add app/Http/Controllers/Copropietario/SalaReunionController.php \
@@ -747,7 +747,7 @@ git commit -m "feat: sala deshabilita voto delegado de poderdante en mora con av
 
 (La advertencia en el formulario de creación se implementa en el Task 10 junto con el buscador de poderdante, para no tocar el mismo bloque dos veces.)
 
-- [ ] **Step 1: Agregar badge en la tarjeta del poder**
+- [x] **Step 1: Agregar badge en la tarjeta del poder**
 
 En `resources/js/Pages/Admin/Poderes/Index.jsx`, en el componente de tarjeta (línea ~31), reemplazar:
 
@@ -766,12 +766,12 @@ por:
                     )}
 ```
 
-- [ ] **Step 2: Compilar y verificar manualmente**
+- [x] **Step 2: Compilar y verificar manualmente**
 
 Run: `./sail npm run build`
 Expected: build OK. Verificación manual: en `/admin/poderes`, un poder cuyo poderdante tenga `en_mora=true` muestra el badge rojo.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add resources/js/Pages/Admin/Poderes/Index.jsx
@@ -790,7 +790,7 @@ git commit -m "feat: badge de poderdante en mora en lista de poderes"
 - Consumes: `QuorumService::presenciaCoeficiente(Reunion): array{total, presente, porcentaje}` (Task 1).
 - Produces: `abrir()` redirige con `session('error')` y NO abre la votación cuando la presencia por coeficiente es menor al umbral (70% calificada_70, 100% unanimidad). `BYPASS_QUORUM` no exime.
 
-- [ ] **Step 1: Escribir tests que fallan**
+- [x] **Step 1: Escribir tests que fallan**
 
 Crear `tests/Feature/Admin/VotacionAbrirMayoriaTest.php` (patrón de `tests/Feature/Admin/VotacionLogTest.php`):
 
@@ -930,12 +930,12 @@ test('bypass_quorum no exime el bloqueo de apertura', function () {
 });
 ```
 
-- [ ] **Step 2: Correr para confirmar que fallan**
+- [x] **Step 2: Correr para confirmar que fallan**
 
 Run: `./sail artisan test tests/Feature/Admin/VotacionAbrirMayoriaTest.php --no-coverage`
 Expected: fallan los 3 tests de bloqueo (hoy siempre abre); pasan los de apertura permitida.
 
-- [ ] **Step 3: Implementar en `abrir()`**
+- [x] **Step 3: Implementar en `abrir()`**
 
 En `app/Http/Controllers/Admin/VotacionController.php`, reemplazar el inicio del método:
 
@@ -978,17 +978,17 @@ por:
         $votacion->update(['estado' => 'abierta', 'abierta_at' => now()]);
 ```
 
-- [ ] **Step 4: Correr los tests**
+- [x] **Step 4: Correr los tests**
 
 Run: `./sail artisan test tests/Feature/Admin/VotacionAbrirMayoriaTest.php --no-coverage`
 Expected: 6 passed.
 
-- [ ] **Step 5: Suite completa**
+- [x] **Step 5: Suite completa**
 
 Run: `./sail artisan test --no-coverage`
 Expected: sin regresiones.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add app/Http/Controllers/Admin/VotacionController.php tests/Feature/Admin/VotacionAbrirMayoriaTest.php
@@ -1005,7 +1005,7 @@ git commit -m "feat: bloqueo de apertura de votacion sin presencia minima para m
 **Interfaces:**
 - Consumes: `session('error')` compartido como `flash.error` por `HandleInertiaRequests` (ya existe); `quorum` state (widget oficial); `v.tipo_decision.tipo_mayoria` (las votaciones se cargan `with('tipoDecision')`).
 
-- [ ] **Step 1: Mostrar flash.error**
+- [x] **Step 1: Mostrar flash.error**
 
 Junto al bloque de `flash?.success` (línea ~299), agregar:
 
@@ -1017,7 +1017,7 @@ Junto al bloque de `flash?.success` (línea ~299), agregar:
             )}
 ```
 
-- [ ] **Step 2: Deshabilitar el botón Abrir cuando no alcanza el umbral**
+- [x] **Step 2: Deshabilitar el botón Abrir cuando no alcanza el umbral**
 
 Antes del `return` del componente (junto a los cálculos existentes de la línea ~197), agregar:
 
@@ -1068,12 +1068,12 @@ Si el botón bloqueado queda deshabilitado, agregar debajo del botón (dentro de
                                                         )}
 ```
 
-- [ ] **Step 3: Compilar y verificar manualmente**
+- [x] **Step 3: Compilar y verificar manualmente**
 
 Run: `./sail npm run build`
 Expected: build OK. Manual: crear votación `calificada_70` con presencia < 70% → botón deshabilitado con motivo; forzar el POST (o quitar disabled desde devtools) → flash de error del backend.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add resources/js/Pages/Admin/Reuniones/Conducir.jsx
@@ -1094,7 +1094,7 @@ git commit -m "feat: Conducir deshabilita apertura de votaciones con mayoria esp
 **Interfaces:**
 - Produces: modelo `App\Models\AsistenciaEvento` con `$fillable = ['tenant_id','reunion_id','copropietario_id','tipo','origen','quorum_resultante']`; tabla `asistencia_eventos`. `tipo` ∈ {`entrada`,`salida`}; `origen` ∈ {`auto_sala`,`admin`,`representado`}.
 
-- [ ] **Step 1: Migración**
+- [x] **Step 1: Migración**
 
 Crear `database/migrations/2026_07_02_000001_create_asistencia_eventos_table.php`:
 
@@ -1130,7 +1130,7 @@ return new class extends Migration
 };
 ```
 
-- [ ] **Step 2: Modelo**
+- [x] **Step 2: Modelo**
 
 Crear `app/Models/AsistenciaEvento.php`:
 
@@ -1169,7 +1169,7 @@ class AsistenciaEvento extends Model
 Correr la migración: `./sail artisan migrate`
 Expected: sin errores.
 
-- [ ] **Step 3: Tests que fallan**
+- [x] **Step 3: Tests que fallan**
 
 Crear `tests/Feature/AsistenciaEventosTest.php`:
 
@@ -1318,12 +1318,12 @@ test('confirmacion manual del admin registra evento entrada admin', function () 
 });
 ```
 
-- [ ] **Step 4: Correr para confirmar que fallan**
+- [x] **Step 4: Correr para confirmar que fallan**
 
 Run: `./sail artisan test tests/Feature/AsistenciaEventosTest.php --no-coverage`
 Expected: 4 fallos (no se crean eventos aún).
 
-- [ ] **Step 5: Registrar eventos en SalaReunionController**
+- [x] **Step 5: Registrar eventos en SalaReunionController**
 
 En `show()`, reemplazar el bloque de auto-registro:
 
@@ -1394,7 +1394,7 @@ por:
             broadcast(new QuorumActualizado($reunion->id, $quorum));
 ```
 
-- [ ] **Step 6: Registrar evento en confirmarAsistencia (admin)**
+- [x] **Step 6: Registrar evento en confirmarAsistencia (admin)**
 
 En `app/Http/Controllers/Admin/ReunionController.php`, reemplazar el método completo:
 
@@ -1444,12 +1444,12 @@ por:
     }
 ```
 
-- [ ] **Step 7: Correr los tests**
+- [x] **Step 7: Correr los tests**
 
 Run: `./sail artisan test tests/Feature/AsistenciaEventosTest.php --no-coverage`
 Expected: 4 passed.
 
-- [ ] **Step 8: Suite completa y commit**
+- [x] **Step 8: Suite completa y commit**
 
 Run: `./sail artisan test --no-coverage`
 Expected: verde.
@@ -1477,7 +1477,7 @@ git commit -m "feat: log de eventos de asistencia con quorum resultante (complia
 **Interfaces:**
 - Produces: `votaciones.quorum_apertura` y `votaciones.quorum_cierre` (json nullable, cast `array`), con la estructura de `QuorumService::calcular()`.
 
-- [ ] **Step 1: Migración**
+- [x] **Step 1: Migración**
 
 Crear `database/migrations/2026_07_02_000002_add_quorum_snapshots_to_votaciones.php`:
 
@@ -1509,7 +1509,7 @@ return new class extends Migration
 
 Run: `./sail artisan migrate`
 
-- [ ] **Step 2: Casts y fillable en Votacion**
+- [x] **Step 2: Casts y fillable en Votacion**
 
 En `app/Models/Votacion.php`, agregar a `$fillable`: `'quorum_apertura', 'quorum_cierre',` y en `$casts`:
 
@@ -1518,7 +1518,7 @@ En `app/Models/Votacion.php`, agregar a `$fillable`: `'quorum_apertura', 'quorum
         'quorum_cierre'   => 'array',
 ```
 
-- [ ] **Step 3: Tests que fallan**
+- [x] **Step 3: Tests que fallan**
 
 Crear `tests/Feature/Admin/VotacionQuorumSnapshotTest.php`:
 
@@ -1592,12 +1592,12 @@ test('cerrar votacion persiste quorum_cierre', function () {
 
 Nota: si `route('admin.votaciones.cerrar', ...)` no existe con ese nombre, buscar el nombre real con `./sail artisan route:list | grep cerrar` y ajustar.
 
-- [ ] **Step 4: Correr para confirmar que fallan**
+- [x] **Step 4: Correr para confirmar que fallan**
 
 Run: `./sail artisan test tests/Feature/Admin/VotacionQuorumSnapshotTest.php --no-coverage`
 Expected: 2 fallos (`quorum_apertura` null).
 
-- [ ] **Step 5: Persistir en abrir() y cerrar()**
+- [x] **Step 5: Persistir en abrir() y cerrar()**
 
 En `abrir()` (tras el bloqueo de mayorías del Task 5), reemplazar:
 
@@ -1623,7 +1623,7 @@ En `cerrar()`, localizar el `$votacion->update([...])` que fija `'estado' => 'ce
 
 (Si `cerrar()` no tiene `$votacion->load('reunion')` previo, agregarlo. `$this->quorumService` ya está inyectado en el constructor del controller.)
 
-- [ ] **Step 6: Acta PDF**
+- [x] **Step 6: Acta PDF**
 
 En `resources/views/reportes/acta.blade.php`, dentro del `@foreach($votaciones as $v)` (línea ~79), agregar después de la línea del título/pregunta de la votación (identificarla visualmente en el loop):
 
@@ -1638,12 +1638,12 @@ En `resources/views/reportes/acta.blade.php`, dentro del `@foreach($votaciones a
         @endif
 ```
 
-- [ ] **Step 7: Correr tests y suite**
+- [x] **Step 7: Correr tests y suite**
 
 Run: `./sail artisan test tests/Feature/Admin/VotacionQuorumSnapshotTest.php --no-coverage && ./sail artisan test --no-coverage`
 Expected: todo verde.
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 git add database/migrations/2026_07_02_000002_add_quorum_snapshots_to_votaciones.php \
@@ -1661,7 +1661,7 @@ git commit -m "feat: snapshots de quorum al abrir/cerrar votacion y quorum por d
 - Modify: `resources/js/Pages/Admin/Copropietarios/Index.jsx:138,158-160`
 - Modify: `resources/js/Pages/Admin/Copropietarios/Show.jsx:47-49`
 
-- [ ] **Step 1: Index — fila con acento y badge**
+- [x] **Step 1: Index — fila con acento y badge**
 
 En la tabla de copropietarios internos (línea ~138), reemplazar:
 
@@ -1685,7 +1685,7 @@ Junto al badge Activo/Inactivo (línea ~158), agregar después del `</span>` de 
                                     )}
 ```
 
-- [ ] **Step 2: Show — badge de estado de mora**
+- [x] **Step 2: Show — badge de estado de mora**
 
 En `Show.jsx`, reemplazar el badge de estado (línea ~47):
 
@@ -1708,7 +1708,7 @@ por:
                         </div>
 ```
 
-- [ ] **Step 3: Compilar, verificar y commit**
+- [x] **Step 3: Compilar, verificar y commit**
 
 Run: `./sail npm run build`
 Expected: build OK. Manual: `/admin/copropietarios` muestra filas acentuadas para morosos; el detalle muestra "En mora"/"Al día".
@@ -1729,7 +1729,7 @@ git commit -m "feat: estado de mora visible en index y show de copropietarios"
 **Interfaces:**
 - Produces: `<BuscadorCopropietario copropietarios={[]} seleccionado={obj|null} onSeleccionar={fn} onLimpiar={fn} label="" placeholder="" />`. Cada copropietario debe traer `id, nombre, numero_documento, unidades[], en_mora`.
 
-- [ ] **Step 1: Crear el componente**
+- [x] **Step 1: Crear el componente**
 
 Crear `resources/js/Components/BuscadorCopropietario.jsx`:
 
@@ -1824,7 +1824,7 @@ export default function BuscadorCopropietario({
 }
 ```
 
-- [ ] **Step 2: Usarlo para el poderdante**
+- [x] **Step 2: Usarlo para el poderdante**
 
 En `resources/js/Pages/Admin/Poderes/Index.jsx`:
 
@@ -1914,7 +1914,7 @@ por:
 
 Con esto los estados `busqueda` y `copropietariosFiltrados` locales del form quedan sin uso: eliminarlos (`const [busqueda, setBusqueda]` y el filtro de líneas 83-90). Si `seleccionar()` referenciaba `setBusqueda`, quitar esa línea.
 
-- [ ] **Step 3: Compilar, verificar y commit**
+- [x] **Step 3: Compilar, verificar y commit**
 
 Run: `./sail npm run build`
 Expected: build OK. Manual: crear poder buscando poderdante por nombre/documento/unidad; poderdante moroso muestra advertencia amarilla.
@@ -1933,7 +1933,7 @@ git commit -m "feat: buscador compartido de copropietarios en form de poderes co
 - Modify: `resources/js/Pages/SuperAdmin/Tenants/Show.jsx`
 - Test: `tests/Feature/SuperAdmin/TenantShowCopropietariosTest.php`
 
-- [ ] **Step 1: Test que falla**
+- [x] **Step 1: Test que falla**
 
 Crear `tests/Feature/SuperAdmin/TenantShowCopropietariosTest.php`:
 
@@ -1968,12 +1968,12 @@ test('tenant show incluye copropietarios paginados', function () {
 
 Nota: verificar la URL real del show con `./sail artisan route:list | grep "super-admin/tenants"` y ajustar si difiere.
 
-- [ ] **Step 2: Correr para confirmar que falla**
+- [x] **Step 2: Correr para confirmar que falla**
 
 Run: `./sail artisan test tests/Feature/SuperAdmin/TenantShowCopropietariosTest.php --no-coverage`
 Expected: FAIL — prop `copropietarios` inexistente.
 
-- [ ] **Step 3: Backend**
+- [x] **Step 3: Backend**
 
 En `TenantController::show()`, después del cálculo de `$stats`, agregar:
 
@@ -2000,7 +2000,7 @@ En `TenantController::show()`, después del cálculo de `$stats`, agregar:
 
 (reemplazando el `return` existente).
 
-- [ ] **Step 4: Frontend**
+- [x] **Step 4: Frontend**
 
 En `resources/js/Pages/SuperAdmin/Tenants/Show.jsx`:
 
@@ -2059,7 +2059,7 @@ En `resources/js/Pages/SuperAdmin/Tenants/Show.jsx`:
             </div>
 ```
 
-- [ ] **Step 5: Correr test, compilar, suite y commit**
+- [x] **Step 5: Correr test, compilar, suite y commit**
 
 Run: `./sail artisan test tests/Feature/SuperAdmin/TenantShowCopropietariosTest.php --no-coverage && ./sail npm run build && ./sail artisan test --no-coverage`
 Expected: verde.
@@ -2081,7 +2081,7 @@ git commit -m "feat: indice paginado de copropietarios en tenant show del super-
 - Modify: `resources/js/Pages/Admin/Reuniones/Show.jsx:289` (agregar link)
 - Test: `tests/Feature/Admin/AccesoReunionTest.php` (agregar casos)
 
-- [ ] **Step 1: Tests de búsqueda y paginación (fallan)**
+- [x] **Step 1: Tests de búsqueda y paginación (fallan)**
 
 Agregar al final de `tests/Feature/Admin/AccesoReunionTest.php` (respetando el estilo/beforeEach existente del archivo — si no hay helper de admin, replicar el `beforeEach` de `VotacionLogTest.php`):
 
@@ -2125,12 +2125,12 @@ test('lista de acceso pagina y filtra por busqueda', function () {
 
 (Agregar los `use` que falten al inicio del archivo: `App\Models\AccesoReunion`, `App\Models\Copropietario`, `App\Models\Reunion`, `App\Models\Tenant`, `App\Models\User`.)
 
-- [ ] **Step 2: Correr para confirmar que falla**
+- [x] **Step 2: Correr para confirmar que falla**
 
 Run: `./sail artisan test tests/Feature/Admin/AccesoReunionTest.php --no-coverage`
 Expected: el test nuevo falla (`accesos` es array plano, sin `data`/`total`).
 
-- [ ] **Step 3: Backend — paginación + búsqueda**
+- [x] **Step 3: Backend — paginación + búsqueda**
 
 En `AccesoReunionController::show()`, reemplazar la firma y la consulta:
 
@@ -2183,7 +2183,7 @@ y en el render agregar el filtro actual:
         ]);
 ```
 
-- [ ] **Step 4: Frontend — reescribir ListaAcceso.jsx**
+- [x] **Step 4: Frontend — reescribir ListaAcceso.jsx**
 
 Reescribir `resources/js/Pages/Admin/Reuniones/ListaAcceso.jsx`. Conservar del archivo actual: imports, layout, y los handlers de `reenviar`/`desactivar`/`activar` (rutas `POST .../lista-acceso/{acceso}/reenviar`, `PATCH .../desactivar`, `PATCH .../activar`). Cambios estructurales:
 
@@ -2261,7 +2261,7 @@ const togglePin = (id) => setPinesVisibles(prev => ({ ...prev, [id]: !prev[id] }
 
 (importar `Link` de `@inertiajs/react` si no está).
 
-- [ ] **Step 5: Link desde Reuniones/Show**
+- [x] **Step 5: Link desde Reuniones/Show**
 
 En `resources/js/Pages/Admin/Reuniones/Show.jsx`, junto a los botones de reportes (línea ~289), agregar antes del primer `<a href=.../reporte/pdf`:
 
@@ -2272,7 +2272,7 @@ En `resources/js/Pages/Admin/Reuniones/Show.jsx`, junto a los botones de reporte
                             </Link>
 ```
 
-- [ ] **Step 6: Correr tests, compilar, suite y commit**
+- [x] **Step 6: Correr tests, compilar, suite y commit**
 
 Run: `./sail artisan test tests/Feature/Admin/AccesoReunionTest.php --no-coverage && ./sail npm run build && ./sail artisan test --no-coverage`
 Expected: verde (si otros tests del archivo asumían `accesos` plano, actualizarlos a `accesos.data`).
@@ -2293,7 +2293,7 @@ git commit -m "feat: lista de acceso con busqueda, paginacion y PIN oculto; link
 - Modify: `resources/js/Pages/Admin/Reuniones/Conducir.jsx:562-566`
 - Modify: `resources/js/Pages/Copropietario/Sala/Show.jsx:346-348`
 
-- [ ] **Step 1: Conducir — resultado legal o mayor votación**
+- [x] **Step 1: Conducir — resultado legal o mayor votación**
 
 Reemplazar (línea ~562):
 
@@ -2318,7 +2318,7 @@ por:
                                                 )}
 ```
 
-- [ ] **Step 2: Sala — feed neutral**
+- [x] **Step 2: Sala — feed neutral**
 
 En `resources/js/Pages/Copropietario/Sala/Show.jsx` (línea ~347), reemplazar:
 
@@ -2332,12 +2332,12 @@ por:
                             Mayor votación: {item.ganadora} ({item.ganadora_pct}%)
 ```
 
-- [ ] **Step 3: Verificar que no queden "Ganó"**
+- [x] **Step 3: Verificar que no queden "Ganó"**
 
 Run: `grep -rn "Ganó" resources/js app/ resources/views/`
 Expected: sin resultados.
 
-- [ ] **Step 4: Compilar y commit**
+- [x] **Step 4: Compilar y commit**
 
 Run: `./sail npm run build`
 
@@ -2356,7 +2356,7 @@ git commit -m "feat: lenguaje neutral en resultados de votacion (Resultado/Mayor
 - Modify: `resources/js/Pages/SuperAdmin/Tenants/Edit.jsx:9` y campo correspondiente
 - Test: `tests/Feature/SuperAdmin/TenantRestriccionMorososTest.php`
 
-- [ ] **Step 1: Test que falla**
+- [x] **Step 1: Test que falla**
 
 Crear `tests/Feature/SuperAdmin/TenantRestriccionMorososTest.php`:
 
@@ -2397,12 +2397,12 @@ test('super admin puede actualizar la restriccion de morosos', function () {
 
 Nota: si el `store` del controller exige más campos requeridos (revisar la validación en `TenantController::store`), agregarlos al payload del test con valores válidos.
 
-- [ ] **Step 2: Correr para confirmar que falla**
+- [x] **Step 2: Correr para confirmar que falla**
 
 Run: `./sail artisan test tests/Feature/SuperAdmin/TenantRestriccionMorososTest.php --no-coverage`
 Expected: FAIL — el campo se ignora (queda default `true`).
 
-- [ ] **Step 3: Backend**
+- [x] **Step 3: Backend**
 
 En `TenantController`, en las validaciones de `store` (línea ~33) y `update` (línea ~105), agregar:
 
@@ -2418,7 +2418,7 @@ En el array de creación de `store` (línea ~47), agregar:
 
 En `update`, verificar que el `update($data)` incluya el campo (si el update es con lista explícita de claves, agregarla).
 
-- [ ] **Step 4: Frontend**
+- [x] **Step 4: Frontend**
 
 En `Create.jsx`: agregar al `useForm` inicial (línea ~7): `restringir_voto_morosos: true,` y después del campo de `max_poderes_por_delegado` (línea ~42):
 
@@ -2439,7 +2439,7 @@ En `Create.jsx`: agregar al `useForm` inicial (línea ~7): `restringir_voto_moro
 
 En `Edit.jsx`: agregar al `useForm` (línea ~9): `restringir_voto_morosos: tenant.restringir_voto_morosos,` y el mismo checkbox junto al campo de max poderes.
 
-- [ ] **Step 5: Correr tests, compilar, suite y commit**
+- [x] **Step 5: Correr tests, compilar, suite y commit**
 
 Run: `./sail artisan test tests/Feature/SuperAdmin/ --no-coverage && ./sail npm run build && ./sail artisan test --no-coverage`
 Expected: verde.
@@ -2464,7 +2464,7 @@ git commit -m "feat: toggle restringir_voto_morosos en create/edit de tenants (s
 **Interfaces:**
 - Produces: `fechaCorta(iso)`, `fechaHora(iso)`, `hora(iso)` exportadas desde `resources/js/utils/fecha.js`. Todas devuelven `'—'` con entrada falsy.
 
-- [ ] **Step 1: Crear el helper**
+- [x] **Step 1: Crear el helper**
 
 Crear `resources/js/utils/fecha.js`:
 
@@ -2487,7 +2487,7 @@ export const fechaHora  = (iso) => safe(iso, fmtFechaHora)    // 2 jul 2026, 3:4
 export const hora       = (iso) => safe(iso, fmtHora)         // 3:45 p. m.
 ```
 
-- [ ] **Step 2: Barrido frontend**
+- [x] **Step 2: Barrido frontend**
 
 Run: `grep -rn "toLocaleDateString\|toLocaleString\|toLocaleTimeString" resources/js/Pages resources/js/Components`
 
@@ -2501,7 +2501,7 @@ agregando el import en cada archivo: `import { fechaCorta, fechaHora, hora } fro
 
 Al terminar, repetir el grep: `toLocale*` no debe aparecer en `resources/js` (salvo usos no relacionados con fechas, si los hubiera — documentarlos en el commit).
 
-- [ ] **Step 3: Backend — acta PDF**
+- [x] **Step 3: Backend — acta PDF**
 
 Run: `grep -n "fecha\|created_at\|hora" resources/views/reportes/acta.blade.php`
 
@@ -2513,12 +2513,12 @@ Para cada salida de un atributo Carbon (ej. `{{ $reunion->fecha_inicio }}`, `{{ 
 
 (para campos solo-fecha usar `->format('d/m/Y')`). Verificar `config/app.php`: `timezone` debe seguir en `'UTC'` — la DB guarda UTC y la conversión es solo al mostrar. No cambiar `app.timezone`.
 
-- [ ] **Step 4: Compilar, verificar y suite**
+- [x] **Step 4: Compilar, verificar y suite**
 
 Run: `./sail npm run build && ./sail artisan test --no-coverage`
 Expected: verde. Manual: una reunión con `fecha_programada` conocida muestra la hora Bogotá (UTC-5) en Show del admin, sala y acta PDF.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add resources/js/utils/fecha.js resources/js/Pages resources/views/reportes/acta.blade.php
@@ -2529,6 +2529,6 @@ git commit -m "feat: fechas en zona America/Bogota con helper central es-CO en f
 
 ## Verificación final del plan
 
-- [ ] Suite completa: `./sail artisan test --no-coverage` → verde.
-- [ ] Build: `./sail npm run build` → OK.
-- [ ] Prueba E2E manual del flujo crítico: ante-sala → entrada de copropietarios (quórum correcto sin doble conteo) → votación calificada_70 bloqueada con <70% → moroso bloqueado directo y vía poder → cierre con snapshots → acta con quórum por votación y fechas Bogotá.
+- [x] Suite completa: `./sail artisan test --no-coverage` → verde.
+- [x] Build: `./sail npm run build` → OK.
+- [x] Prueba E2E manual del flujo crítico: ante-sala → entrada de copropietarios (quórum correcto sin doble conteo) → votación calificada_70 bloqueada con <70% → moroso bloqueado directo y vía poder → cierre con snapshots → acta con quórum por votación y fechas Bogotá.
