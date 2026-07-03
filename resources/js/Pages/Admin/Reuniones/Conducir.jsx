@@ -132,10 +132,10 @@ export default function Conducir({ reunion, quorum: initialQuorum, copropietario
         })
         publicChannel.listen('VotacionModificada', (e) => {
             if (e.accion === 'created') {
-                setVotaciones(prev => [...prev, { id: e.votacion_id, pregunta: e.pregunta, descripcion: e.descripcion, estado: e.estado, opciones: e.opciones }])
+                setVotaciones(prev => [...prev, { id: e.votacion_id, pregunta: e.pregunta, descripcion: e.descripcion, estado: e.estado, opciones: e.opciones, tipo_decision: e.tipo_decision ?? null }])
             } else if (e.accion === 'updated') {
                 setVotaciones(prev => prev.map(v =>
-                    v.id === e.votacion_id ? { ...v, pregunta: e.pregunta, descripcion: e.descripcion, opciones: e.opciones, estado: e.estado } : v
+                    v.id === e.votacion_id ? { ...v, pregunta: e.pregunta, descripcion: e.descripcion, opciones: e.opciones, estado: e.estado, tipo_decision: e.tipo_decision ?? null } : v
                 ))
             } else if (e.accion === 'deleted') {
                 setVotaciones(prev => prev.filter(v => v.id !== e.votacion_id))

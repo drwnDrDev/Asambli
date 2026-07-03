@@ -43,7 +43,7 @@ class ReunionController extends Controller
             ->with('user', 'unidades')
             ->get()
             ->map(fn($c) => array_merge($c->toArray(), ['asistencia' => in_array($c->id, $asistencias)]));
-        $votaciones = $reunion->votaciones()->with('opciones')->get();
+        $votaciones = $reunion->votaciones()->with('opciones', 'tipoDecision')->get();
 
         $tiposDecision = TipoDecision::paraAsamblea()->values();
 
@@ -59,7 +59,7 @@ class ReunionController extends Controller
             ->with('user', 'unidades')
             ->get()
             ->map(fn($c) => array_merge($c->toArray(), ['asistencia' => in_array($c->id, $asistencias)]));
-        $votaciones = $reunion->votaciones()->with('opciones')->get();
+        $votaciones = $reunion->votaciones()->with('opciones', 'tipoDecision')->get();
 
         // Resultados para votaciones abiertas Y cerradas
         $resultadosIniciales = [];

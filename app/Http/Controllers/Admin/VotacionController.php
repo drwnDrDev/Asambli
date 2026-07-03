@@ -44,7 +44,7 @@ class VotacionController extends Controller
             ]);
         }
 
-        $votacion->load('opciones');
+        $votacion->load('opciones', 'tipoDecision');
         broadcast(new VotacionModificada($votacion, 'created'));
 
         return back()->with('success', 'Votación creada.');
@@ -79,7 +79,7 @@ class VotacionController extends Controller
             ]);
         }
 
-        $votacion->load('opciones');
+        $votacion->load('opciones', 'tipoDecision');
         broadcast(new VotacionModificada($votacion, 'updated'));
 
         return back()->with('success', 'Votación actualizada.');
