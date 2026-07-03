@@ -16,12 +16,15 @@ class Votacion extends Model
     protected $fillable = [
         'tenant_id', 'reunion_id', 'tipo_decision_id', 'pregunta', 'descripcion',
         'tipo', 'es_secreta', 'estado', 'resultado', 'abierta_at', 'cerrada_at', 'creada_por',
+        'quorum_apertura', 'quorum_cierre',
     ];
 
     protected $casts = [
-        'es_secreta' => 'boolean',
-        'abierta_at' => 'datetime',
-        'cerrada_at' => 'datetime',
+        'es_secreta'      => 'boolean',
+        'abierta_at'      => 'datetime',
+        'cerrada_at'      => 'datetime',
+        'quorum_apertura' => 'array',
+        'quorum_cierre'   => 'array',
     ];
 
     public function reunion()

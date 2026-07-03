@@ -78,6 +78,14 @@
     <h2>3. Votaciones</h2>
     @foreach($votaciones as $v)
     <p><strong>{{ $v->pregunta }}</strong> ({{ $v->estado }})</p>
+        @if($v->quorum_apertura)
+            <p style="font-size: 10px; color: #555; margin: 2px 0;">
+                Quórum al abrir: {{ $v->quorum_apertura['porcentaje_presente'] }}%
+                @if($v->quorum_cierre)
+                    · Quórum al cerrar: {{ $v->quorum_cierre['porcentaje_presente'] }}%
+                @endif
+            </p>
+        @endif
     <table>
         <tr><th>Opción</th><th>Votos</th><th>Peso</th><th>%</th></tr>
         @php $pesoTotal = collect($v->resultados)->sum('peso_total'); @endphp

@@ -127,7 +127,11 @@ class VotacionController extends Controller
             }
         }
 
-        $votacion->update(['estado' => 'abierta', 'abierta_at' => now()]);
+        $votacion->update([
+            'estado'          => 'abierta',
+            'abierta_at'      => now(),
+            'quorum_apertura' => $quorum,
+        ]);
         $votacion->load('opciones');
         broadcast(new \App\Events\EstadoVotacionCambiado($votacion));
 
@@ -168,9 +172,10 @@ class VotacionController extends Controller
         })->sortByDesc('peso_total')->first();
 
         $votacion->update([
-            'estado'     => 'cerrada',
-            'cerrada_at' => now(),
-            'resultado'  => $this->calcularResultado($votacion),
+            'estado'        => 'cerrada',
+            'cerrada_at'    => now(),
+            'resultado'     => $this->calcularResultado($votacion),
+            'quorum_cierre' => $this->quorumService->calcular($votacion->reunion),
         ]);
         broadcast(new \App\Events\EstadoVotacionCambiado($votacion));
 
