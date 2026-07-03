@@ -10,24 +10,35 @@ use Inertia\Inertia;
 
 class AccesoReunionController extends Controller
 {
-    public function show(Reunion $reunion)
+    public function show(\Illuminate\Http\Request $request, Reunion $reunion)
     {
+        $q = trim((string) $request->query('q', ''));
+
         // Excluir delegados externos cuyo poder fue revocado/rechazado y no tienen uno activo
         $accesos = AccesoReunion::with(['copropietario.unidades'])
             ->where('reunion_id', $reunion->id)
-            ->where(fn($q) =>
-                $q->whereHas('copropietario', fn($c) => $c->where('es_externo', false))
-                  ->orWhereHas('copropietario', fn($c) =>
-                      $c->where('es_externo', true)
-                        ->whereHas('poderesComoApoderado', fn($p) =>
-                            $p->where('tenant_id', $reunion->tenant_id)
-                              ->where('estado', 'aprobado')
-                        )
-                  )
+            ->where(fn($query) =>
+                $query->whereHas('copropietario', fn($c) => $c->where('es_externo', false))
+                      ->orWhereHas('copropietario', fn($c) =>
+                          $c->where('es_externo', true)
+                            ->whereHas('poderesComoApoderado', fn($p) =>
+                                $p->where('tenant_id', $reunion->tenant_id)
+                                  ->where('estado', 'aprobado')
+                            )
+                      )
             )
+            ->when($q !== '', fn ($query) => $query->whereHas('copropietario', fn ($c) =>
+                $c->where(fn ($w) =>
+                    $w->where('nombre', 'like', "%{$q}%")
+                      ->orWhere('numero_documento', 'like', "%{$q}%")
+                      ->orWhere('email', 'like', "%{$q}%")
+                      ->orWhereHas('unidades', fn ($u) => $u->where('numero', 'like', "%{$q}%"))
+                )
+            ))
             ->orderBy('activo', 'desc')
-            ->get()
-            ->map(fn($a) => [
+            ->paginate(25)
+            ->withQueryString()
+            ->through(fn($a) => [
                 'id'               => $a->id,
                 'nombre'           => $a->copropietario->email
                                         ? ($a->copropietario->email)
@@ -43,6 +54,7 @@ class AccesoReunionController extends Controller
         return Inertia::render('Admin/Reuniones/ListaAcceso', [
             'reunion' => $reunion->only('id', 'titulo', 'estado', 'fecha_programada', 'convocatoria_envios'),
             'accesos' => $accesos,
+            'filtro'  => $q,
         ]);
     }
 

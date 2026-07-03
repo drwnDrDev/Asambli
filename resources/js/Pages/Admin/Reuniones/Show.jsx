@@ -286,6 +286,10 @@ export default function Show({ reunion, quorum, copropietarios = [], votaciones:
                     )}
                     {reunion.estado === 'finalizada' && (
                         <>
+                            <Link href={`/admin/reuniones/${reunion.id}/lista-acceso`}
+                                className="px-3 py-1.5 rounded-lg text-sm border border-surface-border text-app-text-primary hover:bg-surface-hover transition-colors">
+                                Lista de acceso
+                            </Link>
                             <a href={`/admin/reuniones/${reunion.id}/reporte/pdf`}
                                 className="text-sm bg-gray-700 text-white px-4 py-2 rounded-lg hover:bg-gray-800 transition">
                                 Descargar Acta PDF

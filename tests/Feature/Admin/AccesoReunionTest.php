@@ -56,3 +56,39 @@ it('copropietario no puede acceder a la lista de acceso', function () {
         ->get("/admin/reuniones/{$reunion->id}/lista-acceso")
         ->assertStatus(403);
 });
+
+test('lista de acceso pagina y filtra por busqueda', function () {
+    $tenant = Tenant::factory()->create();
+    app()->instance('current_tenant', $tenant);
+    $admin = User::factory()->create(['tenant_id' => $tenant->id, 'rol' => 'administrador', 'activo' => true]);
+    $reunion = Reunion::factory()->create(['tenant_id' => $tenant->id, 'estado' => \App\Enums\ReunionEstado::AnteSala]);
+
+    foreach (range(1, 30) as $i) {
+        $c = Copropietario::factory()->create(['tenant_id' => $tenant->id, 'nombre' => "Copropietario {$i}"]);
+        AccesoReunion::create([
+            'copropietario_id' => $c->id,
+            'reunion_id'       => $reunion->id,
+            'pin_hash'         => bcrypt('000000'),
+            'pin_plain'        => '000000',
+            'activo'           => true,
+        ]);
+    }
+
+    $manifest = public_path('build/manifest.json');
+    $version = file_exists($manifest) ? hash_file('xxh128', $manifest) : '';
+
+    // Paginación: 25 por página
+    $props = $this->actingAs($admin)
+        ->withHeaders(['X-Inertia' => 'true', 'X-Inertia-Version' => $version])
+        ->get("/admin/reuniones/{$reunion->id}/lista-acceso")
+        ->json('props');
+    expect(count($props['accesos']['data']))->toBe(25)
+        ->and($props['accesos']['total'])->toBe(30);
+
+    // Búsqueda
+    $props = $this->actingAs($admin)
+        ->withHeaders(['X-Inertia' => 'true', 'X-Inertia-Version' => $version])
+        ->get("/admin/reuniones/{$reunion->id}/lista-acceso?q=Copropietario 3")
+        ->json('props');
+    expect($props['accesos']['total'])->toBe(2); // "Copropietario 3" y "Copropietario 30"
+});
