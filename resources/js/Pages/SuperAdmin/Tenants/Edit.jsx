@@ -7,6 +7,7 @@ export default function Edit({ tenant }) {
         direccion: tenant.direccion ?? '',
         ciudad: tenant.ciudad ?? '',
         max_poderes_por_delegado: tenant.max_poderes_por_delegado,
+        restringir_voto_morosos: tenant.restringir_voto_morosos,
         activo: tenant.activo,
     })
 
@@ -35,6 +36,29 @@ export default function Edit({ tenant }) {
                             {errors[f.key] && <p className="text-red-500 text-xs mt-1">{errors[f.key]}</p>}
                         </div>
                     ))}
+
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Máx. poderes por delegado</label>
+                        <input
+                            type="number" min={1} max={10}
+                            value={data.max_poderes_por_delegado}
+                            onChange={e => setData('max_poderes_por_delegado', parseInt(e.target.value))}
+                            className="w-24 px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                    </div>
+
+                    <label className="flex items-center gap-2.5 cursor-pointer">
+                        <input
+                            type="checkbox"
+                            checked={data.restringir_voto_morosos}
+                            onChange={e => setData('restringir_voto_morosos', e.target.checked)}
+                            className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        />
+                        <span className="text-sm text-gray-700">
+                            Restringir voto de copropietarios en mora
+                            <span className="block text-xs text-gray-400">Art. 38, Ley 675 de 2001 — el admin del conjunto puede cambiarlo luego</span>
+                        </span>
+                    </label>
 
                     <div className="flex items-center gap-2">
                         <input

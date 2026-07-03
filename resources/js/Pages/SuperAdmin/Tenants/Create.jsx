@@ -5,6 +5,7 @@ export default function Create() {
     const { data, setData, post, processing, errors } = useForm({
         nombre: '', nit: '', direccion: '', ciudad: '',
         max_poderes_por_delegado: 2,
+        restringir_voto_morosos: true,
         admin_nombre: '', admin_email: '', admin_password: '',
     })
 
@@ -44,6 +45,18 @@ export default function Create() {
                             className="w-24 px-3 py-2 text-sm border border-surface-border rounded-lg bg-content-bg text-app-text-primary focus:outline-none focus:ring-2 focus:ring-brand/30"
                         />
                     </div>
+                    <label className="flex items-center gap-2.5 mt-3 cursor-pointer">
+                        <input
+                            type="checkbox"
+                            checked={data.restringir_voto_morosos}
+                            onChange={e => setData('restringir_voto_morosos', e.target.checked)}
+                            className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        />
+                        <span className="text-sm text-gray-700">
+                            Restringir voto de copropietarios en mora
+                            <span className="block text-xs text-gray-400">Art. 38, Ley 675 de 2001 — el admin del conjunto puede cambiarlo luego</span>
+                        </span>
+                    </label>
                 </div>
 
                 <div className="bg-surface rounded-xl border border-surface-border p-6 space-y-4">

@@ -31,6 +31,7 @@ class TenantController extends Controller
             'direccion'               => 'nullable|string|max:255',
             'ciudad'                  => 'nullable|string|max:100',
             'max_poderes_por_delegado' => 'integer|min:1|max:10',
+            'restringir_voto_morosos' => 'boolean',
             'admin_nombre'            => 'nullable|required_with:admin_email|string|max:255',
             'admin_email'             => 'nullable|email|unique:users,email',
             'admin_password'          => 'nullable|required_with:admin_email|string|min:8',
@@ -45,6 +46,7 @@ class TenantController extends Controller
                 'direccion'               => $data['direccion'] ?? null,
                 'ciudad'                  => $data['ciudad'] ?? null,
                 'max_poderes_por_delegado' => $data['max_poderes_por_delegado'] ?? 2,
+                'restringir_voto_morosos' => $data['restringir_voto_morosos'] ?? true,
             ]);
 
             if (!empty($data['admin_email'])) {
@@ -120,6 +122,7 @@ class TenantController extends Controller
             'direccion'               => 'nullable|string|max:255',
             'ciudad'                  => 'nullable|string|max:100',
             'max_poderes_por_delegado' => 'integer|min:1|max:10',
+            'restringir_voto_morosos' => 'boolean',
             'activo'                  => 'boolean',
         ]);
 
