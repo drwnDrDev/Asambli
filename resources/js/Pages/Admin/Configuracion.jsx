@@ -8,6 +8,7 @@ export default function Configuracion({ tenant }) {
         direccion:                tenant.direccion ?? '',
         ciudad:                   tenant.ciudad ?? '',
         max_poderes_por_delegado: tenant.max_poderes_por_delegado ?? 2,
+        restringir_voto_morosos:  tenant.restringir_voto_morosos ?? true,
     })
 
     const submit = (e) => {
@@ -43,6 +44,24 @@ export default function Configuracion({ tenant }) {
                     <Field label="Dirección" name="direccion" />
                     <Field label="Ciudad" name="ciudad" />
                     <Field label="Máx. poderes por delegado" name="max_poderes_por_delegado" type="number" min={1} max={10} />
+
+                    <div className="flex items-center justify-between py-3 border-b border-surface-border">
+                        <div>
+                            <p className="text-sm font-medium text-gray-900">Restringir voto de morosos</p>
+                            <p className="text-xs text-gray-500">
+                                Impide votar a copropietarios marcados como "en mora" (Art. 38 Ley 675 de 2001)
+                            </p>
+                        </div>
+                        <label className="relative inline-flex items-center cursor-pointer">
+                            <input
+                                type="checkbox"
+                                checked={data.restringir_voto_morosos}
+                                onChange={e => setData('restringir_voto_morosos', e.target.checked)}
+                                className="sr-only peer"
+                            />
+                            <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-300 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600" />
+                        </label>
+                    </div>
 
                     <div className="pt-2">
                         <p className="text-xs text-app-text-muted">NIT: <span className="font-mono font-medium text-app-text-secondary">{tenant.nit}</span> (no editable)</p>

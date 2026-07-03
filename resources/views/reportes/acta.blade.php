@@ -18,8 +18,8 @@
 
     <h2>1. Información General</h2>
     <table>
-        <tr><th>Tipo</th><td>{{ ucfirst($reunion->tipo) }}</td></tr>
-        <tr><th>Fecha</th><td>{{ $reunion->fecha_inicio?->format('d/m/Y H:i') }}</td></tr>
+        <tr><th>Tipo</th><td>{{ $reunion->tipo_cuerpo === 'asamblea' ? 'Asamblea ' . ($reunion->tipo_convocatoria === 'extraordinaria' ? 'Extraordinaria' : 'Ordinaria') : 'Consejo' }}</td></tr>
+        <tr><th>Fecha</th><td>{{ $reunion->fecha_inicio?->timezone('America/Bogota')->format('d/m/Y h:i A') }}</td></tr>
         <tr><th>Quórum requerido</th><td>{{ $reunion->quorum_requerido }}%</td></tr>
         <tr><th>Quórum alcanzado</th><td>{{ $quorum['porcentaje_presente'] }}%</td></tr>
         <tr><th>Estado</th><td>{{ ucfirst($reunion->estado->value) }}</td></tr>
@@ -35,7 +35,7 @@
                 <td>—</td>
                 <td>{{ $a->copropietario->nombre }}{{ $a->copropietario->empresa ? ' (' . $a->copropietario->empresa . ')' : '' }}</td>
                 <td>—</td>
-                <td>{{ $a->hora_confirmacion?->format('H:i') }}</td>
+                <td>{{ $a->hora_confirmacion?->timezone('America/Bogota')->format('h:i A') }}</td>
                 <td style="color:#d97706;font-weight:bold">DELEGADO</td>
             </tr>
             @else
@@ -44,7 +44,7 @@
                 <td>{{ $unidad->numero }}</td>
                 <td>{{ $a->copropietario->nombre }}</td>
                 <td>{{ $unidad->coeficiente }}%</td>
-                <td>{{ $a->hora_confirmacion?->format('H:i') }}</td>
+                <td>{{ $a->hora_confirmacion?->timezone('America/Bogota')->format('h:i A') }}</td>
                 <td></td>
             </tr>
             @endforeach
@@ -78,6 +78,14 @@
     <h2>3. Votaciones</h2>
     @foreach($votaciones as $v)
     <p><strong>{{ $v->pregunta }}</strong> ({{ $v->estado }})</p>
+        @if($v->quorum_apertura)
+            <p style="font-size: 10px; color: #555; margin: 2px 0;">
+                Quórum al abrir: {{ $v->quorum_apertura['porcentaje_presente'] }}%
+                @if($v->quorum_cierre)
+                    · Quórum al cerrar: {{ $v->quorum_cierre['porcentaje_presente'] }}%
+                @endif
+            </p>
+        @endif
     <table>
         <tr><th>Opción</th><th>Votos</th><th>Peso</th><th>%</th></tr>
         @php $pesoTotal = collect($v->resultados)->sum('peso_total'); @endphp
@@ -123,7 +131,7 @@
         <tr><th>Fecha/Hora</th><th>Acción</th></tr>
         @foreach($logs as $log)
         <tr>
-            <td>{{ $log->created_at->format('d/m/Y H:i:s') }}</td>
+            <td>{{ $log->created_at->timezone('America/Bogota')->format('d/m/Y h:i:s A') }}</td>
             <td>{{ $log->accion }}</td>
         </tr>
         @endforeach

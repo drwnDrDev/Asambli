@@ -4,7 +4,8 @@ import { useForm } from '@inertiajs/react'
 export default function Create({ tenant }) {
     const { data, setData, post, processing, errors } = useForm({
         titulo: '',
-        tipo: 'asamblea',
+        tipo_cuerpo: 'asamblea',
+        tipo_convocatoria: 'ordinaria',
         tipo_voto_peso: 'coeficiente',
         quorum_requerido: 51,
         fecha_programada: '',
@@ -28,13 +29,24 @@ export default function Create({ tenant }) {
                             placeholder="Ej: Asamblea Ordinaria 2026" />
                         {errors.titulo && <p className="text-danger text-xs mt-1">{errors.titulo}</p>}
                     </div>
-                    {/* tipo (solo asamblea) */}
+                    {/* tipo_cuerpo (solo asamblea por ahora) */}
                     <div>
-                        <label className="block text-sm font-medium text-app-text-primary mb-1">Tipo *</label>
-                        <select value={data.tipo} onChange={e => setData('tipo', e.target.value)}
+                        <label className="block text-sm font-medium text-app-text-primary mb-1">Tipo de cuerpo *</label>
+                        <select value={data.tipo_cuerpo} onChange={e => setData('tipo_cuerpo', e.target.value)}
                             className="w-full border border-surface-border rounded-lg px-3 py-2 text-sm">
-                            <option value="asamblea">Asamblea</option>
+                            <option value="asamblea">Asamblea de propietarios</option>
                         </select>
+                        {errors.tipo_cuerpo && <p className="text-danger text-xs mt-1">{errors.tipo_cuerpo}</p>}
+                    </div>
+                    {/* tipo_convocatoria */}
+                    <div>
+                        <label className="block text-sm font-medium text-app-text-primary mb-1">Tipo de convocatoria *</label>
+                        <select value={data.tipo_convocatoria} onChange={e => setData('tipo_convocatoria', e.target.value)}
+                            className="w-full border border-surface-border rounded-lg px-3 py-2 text-sm">
+                            <option value="ordinaria">Ordinaria</option>
+                            <option value="extraordinaria">Extraordinaria</option>
+                        </select>
+                        {errors.tipo_convocatoria && <p className="text-danger text-xs mt-1">{errors.tipo_convocatoria}</p>}
                     </div>
                     {/* tipo_voto_peso */}
                     <div>

@@ -19,6 +19,27 @@ class VotoService
         Request $request,
         ?int $enNombreDeId = null
     ): array {
+        // Art. 38 Ley 675: la mora suspende el derecho de voto PROPIO.
+        // El flujo PIN no tiene User → current_tenant no está en el contenedor;
+        // el tenant se resuelve desde la reunión de la votación.
+        $votacion->loadMissing('reunion.tenant');
+        $restringirMorosos = (bool) $votacion->reunion->tenant->restringir_voto_morosos;
+
+        if ($enNombreDeId === null && $restringirMorosos && $copropietario->en_mora) {
+            return ['success' => false, 'error' => 'No puede votar: copropietario en mora (Art. 38 Ley 675).'];
+        }
+
+        // La mora del poderdante tampoco se elude delegando el voto.
+        if ($enNombreDeId !== null && $restringirMorosos) {
+            $poderdante = Copropietario::withoutGlobalScopes()->find($enNombreDeId);
+            if ($poderdante?->en_mora) {
+                return [
+                    'success' => false,
+                    'error'   => "El poderdante {$poderdante->nombre} está en mora y no puede votar, ni directamente ni mediante apoderado (Art. 38, Ley 675 de 2001).",
+                ];
+            }
+        }
+
         try {
             DB::transaction(function () use ($votacion, $copropietario, $opcionId, $request, $enNombreDeId) {
                 // 1. Verificar reunión en curso
@@ -38,11 +59,12 @@ class VotoService
                     throw new \Exception('La votación no está abierta.');
                 }
 
-                // 4a. Validar poder si vota en nombre de otro
+                // 4a. Validar poder si vota en nombre de otro (filtrar por reunión para evitar contaminación entre reuniones)
                 if ($enNombreDeId !== null) {
                     $tienePoder = Poder::withoutGlobalScopes()
                         ->where('apoderado_id', $copropietario->id)
                         ->where('poderdante_id', $enNombreDeId)
+                        ->where('reunion_id', $votacion->reunion_id)
                         ->where('estado', 'aprobado')
                         ->exists();
                     if (!$tienePoder) {
@@ -90,7 +112,7 @@ class VotoService
 
             // 8. Recalcular y broadcast sincrónicamente (sin depender de queue worker)
             try {
-                RecalcularResultadosVotacion::dispatchSync($votacion->id, $copropietario->id);
+                RecalcularResultadosVotacion::dispatchSync($votacion, $copropietario->id);
             } catch (\Exception $broadcastEx) {
                 \Illuminate\Support\Facades\Log::error('broadcast_resultados_failed', [
                     'votacion_id' => $votacion->id,

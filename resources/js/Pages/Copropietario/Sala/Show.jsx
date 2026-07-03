@@ -3,6 +3,7 @@ import { useState, useEffect, useRef } from 'react'
 import { router, usePage } from '@inertiajs/react'
 import SalaLayout from '@/Layouts/SalaLayout'
 import echo from '@/echo'
+import { hora } from '@/utils/fecha'
 
 // ─── helpers ─────────────────────────────────────────────────────────────────
 
@@ -16,7 +17,7 @@ function calcPct(pesoTotal, allResultados) {
 
 function formatTime(isoString) {
     if (!isoString) return ''
-    return new Date(isoString).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' })
+    return hora(isoString)
 }
 
 // ─── sub-components ───────────────────────────────────────────────────────────
@@ -151,7 +152,7 @@ function ResultBar({ opcion, resultados, esVotada }) {
     )
 }
 
-function VotacionCard({ votacionActiva, resultados, yaVotoPor, poderes, onVotar, loading, esDelegadoExterno }) {
+function VotacionCard({ votacionActiva, resultados, yaVotoPor, poderes, onVotar, loading, esDelegadoExterno, enMora = false, restringirMorosos = false }) {
     const [pendingOpcion, setPendingOpcion] = useState(null)
     const yaVotoPropio = yaVotoPor.includes('propio')
 
@@ -205,19 +206,24 @@ function VotacionCard({ votacionActiva, resultados, yaVotoPor, poderes, onVotar,
                 {!yaVotoPropio && !esDelegadoExterno && (
                     <div className="mb-5">
                         <p className="text-[10px] uppercase tracking-widest mb-2" style={{ color: 'var(--sala-text-muted)' }}>Tu voto</p>
+                        {enMora && (
+                            <div className="mt-2 mb-3 p-2 bg-amber-50 border border-amber-200 rounded text-sm text-amber-800">
+                                No puede votar: su cuenta tiene cuotas en mora pendientes (Art. 38 Ley 675 de 2001).
+                            </div>
+                        )}
                         <div className="space-y-2">
                             {votacionActiva.opciones.map(opcion => (
                                 <button
                                     key={opcion.id}
-                                    onClick={() => setPendingOpcion(opcion)}
-                                    disabled={loading}
-                                    className="w-full py-3.5 text-sm font-semibold rounded-xl transition active:scale-95 disabled:opacity-50"
+                                    onClick={() => !enMora && setPendingOpcion(opcion)}
+                                    disabled={loading || enMora}
+                                    className={`w-full py-3.5 text-sm font-semibold rounded-xl transition active:scale-95 disabled:opacity-50 ${enMora ? 'opacity-50 cursor-not-allowed' : ''}`}
                                     style={{
                                         background: 'var(--sala-surface-raised)',
                                         border: '1px solid var(--sala-border)',
                                         color: 'var(--sala-text)',
                                     }}
-                                    onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--sala-amber)'}
+                                    onMouseEnter={e => { if (!enMora) e.currentTarget.style.borderColor = 'var(--sala-amber)' }}
                                     onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--sala-border)'}
                                 >
                                     {opcion.texto}
@@ -245,12 +251,20 @@ function VotacionCard({ votacionActiva, resultados, yaVotoPor, poderes, onVotar,
 
                 {poderes.map(poder => {
                     const yaVotoPoder = yaVotoPor.includes(poder.poderdante_id)
+                    const poderdanteEnMora = restringirMorosos && poder.poderdante?.en_mora
                     return (
                         <div key={poder.id} className="border-t pt-4 mt-4" style={{ borderColor: 'var(--sala-border)' }}>
                             <p className="text-[10px] uppercase tracking-widest mb-2" style={{ color: 'var(--sala-amber)' }}>
                                 En nombre de: {poder.poderdante?.nombre}
                             </p>
-                            {!yaVotoPoder ? (
+                            {poderdanteEnMora ? (
+                                <p
+                                    className="text-xs px-3 py-2.5 rounded-xl"
+                                    style={{ background: 'rgba(248,113,113,0.10)', border: '1px solid rgba(248,113,113,0.35)', color: '#f87171' }}
+                                >
+                                    Poderdante en mora — su voto está suspendido (Art. 38, Ley 675)
+                                </p>
+                            ) : !yaVotoPoder ? (
                                 <div className="space-y-2">
                                     {votacionActiva.opciones.map(opcion => (
                                         <button
@@ -339,7 +353,7 @@ function FeedItem({ item }) {
                             {item.pregunta}
                         </p>
                         <p className="text-xs mt-0.5" style={{ color: 'var(--sala-green)' }}>
-                            Ganó: {item.ganadora} ({item.ganadora_pct}%)
+                            Mayor votación: {item.ganadora} ({item.ganadora_pct}%)
                         </p>
                     </div>
                     <span className="text-xs tabular-nums flex-shrink-0" style={{ color: 'var(--sala-text-faint)' }}>
@@ -394,6 +408,8 @@ export default function SalaShow({
     estadoReunion: initialEstadoReunion,
     esDelegadoExterno = false,
     poderdantesRepresentados = [],
+    enMora = false,
+    restringirMorosos = false,
 }) {
     const { errors } = usePage().props
 
@@ -564,7 +580,7 @@ export default function SalaShow({
             <div className="px-4 py-5 max-w-lg mx-auto">
                 <div className="mb-5">
                     <p className="text-xs uppercase tracking-wide mb-0.5" style={{ color: 'var(--sala-text-muted)' }}>
-                        {reunion.tipo}
+                        {reunion.tipo_cuerpo === 'asamblea' ? `Asamblea ${reunion.tipo_convocatoria === 'extraordinaria' ? 'Extraordinaria' : 'Ordinaria'}` : 'Consejo'}
                     </p>
                     <h1 className="text-lg font-semibold" style={{ color: 'var(--sala-text)' }}>
                         {reunion.titulo}
@@ -593,6 +609,9 @@ export default function SalaShow({
                                     {p.unidades?.length > 0 && (
                                         <span style={{ color: 'var(--sala-text-muted)' }}> · Unid. {p.unidades.join(', ')}</span>
                                     )}
+                                    {restringirMorosos && p.en_mora && (
+                                        <span style={{ color: '#f87171' }}> · en mora (voto suspendido)</span>
+                                    )}
                                 </li>
                             ))}
                         </ul>
@@ -606,6 +625,8 @@ export default function SalaShow({
                     onVotar={emitirVoto}
                     loading={votando}
                     esDelegadoExterno={esDelegadoExterno}
+                    enMora={enMora}
+                    restringirMorosos={restringirMorosos}
                 />
 
                 {feed.length > 0 && (

@@ -1,8 +1,9 @@
 import AdminLayout from '@/Layouts/AdminLayout'
 import { Link, router, useForm, usePage } from '@inertiajs/react'
 import { useState } from 'react'
+import { fechaCorta } from '@/utils/fecha'
 
-export default function Show({ tenant, stats, reuniones }) {
+export default function Show({ tenant, stats, reuniones, copropietarios = { data: [], links: [] } }) {
     const { flash } = usePage().props
     const [showAddAdmin, setShowAddAdmin] = useState(false)
     const { data, setData, post, processing, errors, reset } = useForm({
@@ -107,7 +108,7 @@ export default function Show({ tenant, stats, reuniones }) {
                                     <tr key={r.id}>
                                         <td className="px-4 py-3 font-medium text-app-text-primary">{r.titulo}</td>
                                         <td className="px-4 py-3 text-app-text-muted capitalize">{r.estado}</td>
-                                        <td className="px-4 py-3 text-app-text-muted">{r.fecha_programada ? new Date(r.fecha_programada).toLocaleDateString('es-CO') : '—'}</td>
+                                        <td className="px-4 py-3 text-app-text-muted">{fechaCorta(r.fecha_programada)}</td>
                                         <td className="px-4 py-3 text-app-text-muted">{r.convocatoria_envios}/2</td>
                                         <td className="px-4 py-3 text-right">
                                             {r.convocatoria_envios >= 2 && (
@@ -123,6 +124,55 @@ export default function Show({ tenant, stats, reuniones }) {
                                 ))}
                             </tbody>
                         </table>
+                    )}
+                </div>
+
+                {/* Copropietarios */}
+                <div className="lg:col-span-3 mt-6 bg-white rounded-xl border border-gray-200 overflow-hidden">
+                    <div className="px-5 py-4 border-b border-gray-100">
+                        <h3 className="font-semibold text-gray-800 text-sm">Copropietarios ({copropietarios.total ?? copropietarios.data.length})</h3>
+                    </div>
+                    <table className="w-full text-sm">
+                        <thead>
+                            <tr className="text-left text-xs text-gray-400 uppercase tracking-wide">
+                                <th className="px-5 py-2.5">Nombre</th>
+                                <th className="px-5 py-2.5">Documento</th>
+                                <th className="px-5 py-2.5">Unidades</th>
+                                <th className="px-5 py-2.5 text-right">Coeficiente</th>
+                                <th className="px-5 py-2.5">Estado</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {copropietarios.data.map(c => (
+                                <tr key={c.id} className="border-t border-gray-100">
+                                    <td className="px-5 py-2.5 font-medium text-gray-700">{c.nombre}</td>
+                                    <td className="px-5 py-2.5 text-gray-500">{c.documento ?? '—'}</td>
+                                    <td className="px-5 py-2.5 text-gray-500">{c.unidades || '—'}</td>
+                                    <td className="px-5 py-2.5 text-right tabular-nums text-gray-500">{c.coeficiente.toFixed(2)}%</td>
+                                    <td className="px-5 py-2.5">
+                                        <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium ${c.activo ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'}`}>
+                                            {c.activo ? 'Activo' : 'Inactivo'}
+                                        </span>
+                                        {c.en_mora && (
+                                            <span className="ml-1 inline-flex px-2 py-0.5 rounded-full text-xs font-medium bg-red-50 text-red-600">En mora</span>
+                                        )}
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                    {copropietarios.links?.length > 3 && (
+                        <div className="px-5 py-3 border-t border-gray-100 flex flex-wrap gap-1">
+                            {copropietarios.links.map((l, i) => (
+                                <Link
+                                    key={i}
+                                    href={l.url ?? '#'}
+                                    preserveScroll
+                                    className={`px-2.5 py-1 rounded text-xs ${l.active ? 'bg-blue-600 text-white' : l.url ? 'text-gray-600 hover:bg-gray-100' : 'text-gray-300 pointer-events-none'}`}
+                                    dangerouslySetInnerHTML={{ __html: l.label }}
+                                />
+                            ))}
+                        </div>
                     )}
                 </div>
 

@@ -15,7 +15,7 @@ class Reunion extends Model
     protected $table = 'reuniones';
 
     protected $fillable = [
-        'tenant_id', 'titulo', 'tipo', 'tipo_voto_peso',
+        'tenant_id', 'titulo', 'tipo_cuerpo', 'tipo_convocatoria', 'tipo_voto_peso',
         'quorum_requerido', 'estado', 'fecha_programada',
         'fecha_inicio', 'fecha_fin', 'convocatoria_enviada_at', 'creado_por',
         'qr_token', 'qr_expires_at', 'modalidad', 'convocatoria_envios',

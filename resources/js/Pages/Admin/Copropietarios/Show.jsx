@@ -43,9 +43,14 @@ export default function Show({ copropietario, poderesOtorgados = [], poderesReci
                                 <p className="text-sm text-app-text-muted">{copropietario.email}</p>
                             </div>
                         </div>
-                        <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${copropietario.activo ? 'bg-success-bg text-success' : 'bg-danger-bg text-danger'}`}>
-                            {copropietario.activo ? 'Activo' : 'Inactivo'}
-                        </span>
+                        <div className="flex items-center gap-1.5">
+                            <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${copropietario.activo ? 'bg-success-bg text-success' : 'bg-danger-bg text-danger'}`}>
+                                {copropietario.activo ? 'Activo' : 'Inactivo'}
+                            </span>
+                            <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${copropietario.en_mora ? 'bg-danger-bg text-danger' : 'bg-success-bg text-success'}`}>
+                                {copropietario.en_mora ? 'En mora' : 'Al día'}
+                            </span>
+                        </div>
                     </div>
 
                     <dl className="grid grid-cols-2 gap-4 text-sm">

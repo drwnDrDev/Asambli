@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react'
 import { router, usePage, useForm } from '@inertiajs/react'
 import AdminLayout from '@/Layouts/AdminLayout'
 import echo from '@/echo'
+import TipoDecisionSelector from '@/Components/TipoDecisionSelector'
+import ResultadosMayoria from '@/Components/ResultadosMayoria'
 
 // ─── ModalConectados ────────────────────────────────────────────────
 function ModalConectados({ conectados, onClose }) {
@@ -77,11 +79,15 @@ function ModalConectados({ conectados, onClose }) {
 }
 
 // ─── Conducir (Layout C) ───────────────────────────────────────────
-export default function Conducir({ reunion, quorum: initialQuorum, copropietarios = [], votaciones: initialVotaciones = [], resultadosIniciales = {} }) {
+export default function Conducir({ reunion, quorum: initialQuorum, copropietarios = [], votaciones: initialVotaciones = [], resultadosIniciales = {}, tiposDecision = [] }) {
     const { flash, errors: pageErrors } = usePage().props
     const [quorum, setQuorum] = useState(initialQuorum)
     const [votaciones, setVotaciones] = useState(initialVotaciones)
-    const [resultados, setResultados] = useState(resultadosIniciales)
+    // Transform initial resultados into { [id]: { resultados: [...], mayoriaData: null } }
+    const initialResultadosMap = Object.fromEntries(
+        Object.entries(resultadosIniciales).map(([id, res]) => [id, { resultados: res, mayoriaData: null }])
+    )
+    const [resultadosMap, setResultadosMap] = useState(initialResultadosMap)
     const [conectados, setConectados] = useState([])
     const [showConectados, setShowConectados] = useState(false)
     const [ticker, setTicker] = useState([])
@@ -95,6 +101,7 @@ export default function Conducir({ reunion, quorum: initialQuorum, copropietario
         pregunta: '',
         descripcion: '',
         opciones: [{ texto: 'Si' }, { texto: 'No' }, { texto: 'Abstención' }],
+        tipo_decision_id: null,
     })
 
     // Edit state
@@ -125,10 +132,10 @@ export default function Conducir({ reunion, quorum: initialQuorum, copropietario
         })
         publicChannel.listen('VotacionModificada', (e) => {
             if (e.accion === 'created') {
-                setVotaciones(prev => [...prev, { id: e.votacion_id, pregunta: e.pregunta, descripcion: e.descripcion, estado: e.estado, opciones: e.opciones }])
+                setVotaciones(prev => [...prev, { id: e.votacion_id, pregunta: e.pregunta, descripcion: e.descripcion, estado: e.estado, opciones: e.opciones, tipo_decision: e.tipo_decision ?? null }])
             } else if (e.accion === 'updated') {
                 setVotaciones(prev => prev.map(v =>
-                    v.id === e.votacion_id ? { ...v, pregunta: e.pregunta, descripcion: e.descripcion, opciones: e.opciones, estado: e.estado } : v
+                    v.id === e.votacion_id ? { ...v, pregunta: e.pregunta, descripcion: e.descripcion, opciones: e.opciones, estado: e.estado, tipo_decision: e.tipo_decision ?? null } : v
                 ))
             } else if (e.accion === 'deleted') {
                 setVotaciones(prev => prev.filter(v => v.id !== e.votacion_id))
@@ -138,7 +145,13 @@ export default function Conducir({ reunion, quorum: initialQuorum, copropietario
         // 2. Private channel
         const privateChannel = echo.private(`reunion.${reunion.id}`)
         privateChannel.listen('ResultadosVotacionActualizados', (e) => {
-            setResultados(prev => ({ ...prev, [e.votacion_id]: e.resultados }))
+            setResultadosMap(prev => ({
+                ...prev,
+                [e.votacion_id]: {
+                    resultados: e.resultados,
+                    mayoriaData: e.mayoria_data ?? null,
+                },
+            }))
             if (e.ultimo_voto_unidad) {
                 setTicker(prev => [{ unidad: e.ultimo_voto_unidad, ts: Date.now() }, ...prev].slice(0, 20))
             }
@@ -189,6 +202,16 @@ export default function Conducir({ reunion, quorum: initialQuorum, copropietario
     const quorumPresenciaPct = quorum?.total > 0
         ? Math.round((presenciaValor / quorum.total) * 100 * 10) / 10
         : 0
+
+    // Umbral de presencia para mayorías especiales (solo UX — el backend valida siempre).
+    // El % oficial del widget es por coeficiente solo cuando la reunión pesa por coeficiente.
+    const presenciaParaUmbral = quorum?.tipo === 'coeficiente' ? quorum.porcentaje_presente : null
+    const umbralApertura = (v) => {
+        const m = v.tipo_decision?.tipo_mayoria
+        if (m === 'calificada_70') return 70
+        if (m === 'unanimidad') return 100
+        return null
+    }
 
     const timeAgo = (ts) => {
         const secs = Math.floor((Date.now() - ts) / 1000)
@@ -273,7 +296,8 @@ export default function Conducir({ reunion, quorum: initialQuorum, copropietario
     const asistenciaConfirmada = copropietarios.filter(c => c.asistencia).length
 
     // ─── Votacion result helpers ────────────────────────────────
-    const getResultados = (votacionId) => resultados[votacionId] || []
+    const getResultados = (votacionId) => resultadosMap[votacionId]?.resultados || []
+    const getMayoriaData = (votacionId) => resultadosMap[votacionId]?.mayoriaData ?? null
     const getTotalVotos = (votacionId) => {
         const res = getResultados(votacionId)
         return res.reduce((sum, r) => sum + (r.count || 0), 0)
@@ -285,6 +309,11 @@ export default function Conducir({ reunion, quorum: initialQuorum, copropietario
             {flash?.success && (
                 <div className="mb-4 bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg text-sm">
                     {flash.success}
+                </div>
+            )}
+            {flash?.error && (
+                <div className="mb-4 px-4 py-3 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm">
+                    {flash.error}
                 </div>
             )}
 
@@ -406,6 +435,8 @@ export default function Conducir({ reunion, quorum: initialQuorum, copropietario
                             </div>
                         )}
                     </div>
+
+                    <ResultadosMayoria mayoriaData={getMayoriaData(votacionActiva.id)} />
                 </div>
             )}
 
@@ -516,8 +547,23 @@ export default function Conducir({ reunion, quorum: initialQuorum, copropietario
                                             <div className="flex gap-1 flex-shrink-0 items-center">
                                                 {v.estado === 'creada' && (
                                                     <>
-                                                        <button onClick={() => abrirVotacion(v.id)}
-                                                            className="text-xs bg-green-600 text-white px-2 py-0.5 rounded hover:bg-green-700 transition">Abrir</button>
+                                                        {(() => {
+                                                            const umbral = umbralApertura(v)
+                                                            const bloqueada = umbral !== null && presenciaParaUmbral !== null && presenciaParaUmbral < umbral
+                                                            return (
+                                                                <>
+                                                        <button onClick={() => !bloqueada && abrirVotacion(v.id)}
+                                                            disabled={bloqueada}
+                                                            title={bloqueada ? `Requiere ${umbral}% de coeficiente presente (hay ${presenciaParaUmbral}%)` : undefined}
+                                                            className="text-xs bg-green-600 text-white px-2 py-0.5 rounded hover:bg-green-700 transition disabled:opacity-50 disabled:cursor-not-allowed">Abrir</button>
+                                                                {bloqueada && (
+                                                                    <p className="text-[10px] text-red-500 mt-0.5">
+                                                                        Requiere {umbral}% presente · hay {presenciaParaUmbral}%
+                                                                    </p>
+                                                                )}
+                                                                </>
+                                                            )
+                                                        })()}
                                                         <button onClick={() => startEdit(v)}
                                                             className="text-xs text-blue-600 hover:text-blue-800 px-1">Editar</button>
                                                         <button onClick={() => deleteVotacion(v.id)}
@@ -544,8 +590,11 @@ export default function Conducir({ reunion, quorum: initialQuorum, copropietario
                                         {v.estado === 'cerrada' && isExpanded && (
                                             <div className="mt-2 ml-14 space-y-1.5 pb-1">
                                                 {vGanadora && (
-                                                    <p className="text-xs text-green-700 font-medium mb-1.5">
-                                                        Ganó: {vGanadora.texto} ({vTotalPeso > 0 ? ((parseFloat(vGanadora.peso_total) / vTotalPeso) * 100).toFixed(1) : 0}%)
+                                                    <p className={`text-xs font-medium mb-1.5 ${v.resultado === 'rechazada' ? 'text-red-700' : 'text-green-700'}`}>
+                                                        {v.tipo_decision && v.resultado !== 'pendiente'
+                                                            ? `Resultado: ${v.resultado === 'aprobada' ? 'Aprobada' : 'Rechazada'}`
+                                                            : `Mayor votación: ${vGanadora.texto}`}
+                                                        {' '}({vTotalPeso > 0 ? ((parseFloat(vGanadora.peso_total) / vTotalPeso) * 100).toFixed(1) : 0}%)
                                                     </p>
                                                 )}
                                                 {vResultados.map(r => {
@@ -590,6 +639,12 @@ export default function Conducir({ reunion, quorum: initialQuorum, copropietario
                                     className="w-full border border-gray-300 rounded px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                                 />
                                 {errors.pregunta && <p className="text-red-500 text-xs">{errors.pregunta}</p>}
+                                <TipoDecisionSelector
+                                    tiposDecision={tiposDecision}
+                                    value={data.tipo_decision_id}
+                                    onChange={value => setData('tipo_decision_id', value)}
+                                    error={errors.tipo_decision_id}
+                                />
                                 <div className="space-y-1.5">
                                     {data.opciones.map((op, i) => (
                                         <div key={i} className="flex gap-2">

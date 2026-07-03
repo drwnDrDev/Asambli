@@ -135,7 +135,7 @@ function CopropietariosTable({ data}) {
                 {data.map(c => {
                     const coefTotal = (c.unidades ?? []).reduce((s, u) => s + parseFloat(u.coeficiente ?? 0), 0)
                     return (
-                        <tr key={c.id} className="hover:bg-surface-hover transition-colors">
+                        <tr key={c.id} className={`hover:bg-surface-hover transition-colors ${c.en_mora ? 'bg-danger-bg/40 border-l-2 border-danger' : ''}`}>
                             <td className="px-5 py-3.5">
                                 <div className="font-medium text-app-text-primary">{c.nombre}</div>
                                 <div className="text-xs text-app-text-muted">{c.email}</div>
@@ -158,6 +158,11 @@ function CopropietariosTable({ data}) {
                                     <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium ${c.activo ? 'bg-success-bg text-success' : 'bg-danger-bg text-danger'}`}>
                                         {c.activo ? 'Activo' : 'Inactivo'}
                                     </span>
+                                    {c.en_mora && (
+                                        <span className="ml-1.5 inline-flex px-2 py-0.5 rounded-full text-xs font-medium bg-danger-bg text-danger">
+                                            En mora
+                                        </span>
+                                    )}
                                     {c.poderes_activos_count > 0 && (
                                         <span className="text-[11px] bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded">Con poder</span>
                                     )}

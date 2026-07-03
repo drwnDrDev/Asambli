@@ -19,29 +19,35 @@ class QuorumService
         return $this->calcularPorUnidad($reunion);
     }
 
-    private function calcularPorCoeficiente(Reunion $reunion): array
+    /**
+     * Presencia SIEMPRE por coeficiente (Arts. 45/46 Ley 675 hablan de
+     * coeficientes), independiente del tipo_voto_peso de la reunión.
+     * Deduplica poderdantes que ya tienen asistencia propia.
+     */
+    public function presenciaCoeficiente(Reunion $reunion): array
     {
-        $totalCoeficiente = Unidad::withoutGlobalScopes()
+        $totalCoeficiente = (float) Unidad::withoutGlobalScopes()
             ->where('tenant_id', $reunion->tenant_id)
             ->where('activo', true)
             ->sum('coeficiente');
 
-        // IDs de copropietarios con asistencia confirmada
         $presenteIds = Asistencia::where('reunion_id', $reunion->id)
             ->where('confirmada_por_admin', true)
             ->pluck('copropietario_id');
 
-        // Coeficiente propio de los asistentes
-        $coeficientePresente = Unidad::withoutGlobalScopes()
+        $coeficientePresente = (float) Unidad::withoutGlobalScopes()
             ->whereIn('copropietario_id', $presenteIds)
             ->sum('coeficiente');
 
-        // Coeficiente de los poderdantes representados por asistentes (Ley 675)
+        // Poderdantes representados que NO tienen asistencia propia
+        // (los que sí la tienen ya se contaron arriba — evita doble conteo)
         $coeficienteDelegados = 0.0;
         if ($presenteIds->isNotEmpty()) {
             $poderdanteIds = Poder::withoutGlobalScopes()
+                ->where('reunion_id', $reunion->id)
                 ->where('estado', 'aprobado')
                 ->whereIn('apoderado_id', $presenteIds)
+                ->whereNotIn('poderdante_id', $presenteIds)
                 ->pluck('poderdante_id');
 
             if ($poderdanteIds->isNotEmpty()) {
@@ -51,19 +57,28 @@ class QuorumService
             }
         }
 
-        $coeficienteTotal = $coeficientePresente + $coeficienteDelegados;
+        $presente = $coeficientePresente + $coeficienteDelegados;
 
-        $porcentaje = $totalCoeficiente > 0
-            ? round(($coeficienteTotal / $totalCoeficiente) * 100, 2)
-            : 0;
+        return [
+            'total'      => $totalCoeficiente,
+            'presente'   => $presente,
+            'porcentaje' => $totalCoeficiente > 0
+                ? round(($presente / $totalCoeficiente) * 100, 2)
+                : 0.0,
+        ];
+    }
+
+    private function calcularPorCoeficiente(Reunion $reunion): array
+    {
+        $presencia = $this->presenciaCoeficiente($reunion);
 
         return [
             'tipo'                => 'coeficiente',
-            'total'               => (float) $totalCoeficiente,
-            'presente'            => (float) $coeficienteTotal,
-            'porcentaje_presente' => $porcentaje,
+            'total'               => $presencia['total'],
+            'presente'            => $presencia['presente'],
+            'porcentaje_presente' => $presencia['porcentaje'],
             'quorum_requerido'    => (float) $reunion->quorum_requerido,
-            'tiene_quorum'        => $porcentaje >= $reunion->quorum_requerido,
+            'tiene_quorum'        => $presencia['porcentaje'] >= $reunion->quorum_requerido,
         ];
     }
 
@@ -83,12 +98,14 @@ class QuorumService
 
         $presentes = $presenteIds->count();
 
-        // Poderdantes representados por asistentes (Ley 675)
+        // Poderdantes representados sin asistencia propia (evita doble conteo)
         $poderdantesRepresentados = 0;
         if ($presenteIds->isNotEmpty()) {
             $poderdantesRepresentados = Poder::withoutGlobalScopes()
+                ->where('reunion_id', $reunion->id)
                 ->where('estado', 'aprobado')
                 ->whereIn('apoderado_id', $presenteIds)
+                ->whereNotIn('poderdante_id', $presenteIds)
                 ->count();
         }
 

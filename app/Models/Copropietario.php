@@ -13,13 +13,14 @@ class Copropietario extends Model
 
     protected $fillable = [
         'tenant_id', 'user_id', 'nombre', 'tipo_documento', 'numero_documento',
-        'es_residente', 'es_externo', 'empresa', 'telefono', 'activo', 'email',
+        'es_residente', 'es_externo', 'empresa', 'telefono', 'activo', 'en_mora', 'email',
     ];
 
     protected $casts = [
         'es_residente' => 'boolean',
         'es_externo'   => 'boolean',
         'activo'       => 'boolean',
+        'en_mora'      => 'boolean',
     ];
 
     public function user()

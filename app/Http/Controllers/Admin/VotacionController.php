@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Models\OpcionVotacion;
 use App\Models\Reunion;
 use App\Models\ReunionLog;
+use App\Models\Unidad;
 use App\Models\Votacion;
 use App\Models\Voto;
 use App\Services\QuorumService;
@@ -20,25 +21,30 @@ class VotacionController extends Controller
     public function store(Request $request, Reunion $reunion)
     {
         $data = $request->validate([
-            'pregunta'    => 'required|string|max:500',
-            'descripcion' => 'nullable|string|max:2000',
-            'opciones'    => 'required|array|min:2',
+            'pregunta'         => 'required|string|max:500',
+            'descripcion'      => 'nullable|string|max:2000',
+            'tipo_decision_id' => 'nullable|exists:tipos_decision,id',
+            'opciones'         => 'required|array|min:2',
             'opciones.*.texto' => 'required|string|max:255',
         ]);
 
         $votacion = $reunion->votaciones()->create([
-            'pregunta'    => $data['pregunta'],
-            'descripcion' => $data['descripcion'] ?? null,
-            'estado'      => 'creada',
-            'creada_por'  => auth()->id(),
-            'tenant_id'   => $reunion->tenant_id,
+            'pregunta'         => $data['pregunta'],
+            'descripcion'      => $data['descripcion'] ?? null,
+            'tipo_decision_id' => $data['tipo_decision_id'] ?? null,
+            'estado'           => 'creada',
+            'creada_por'       => auth()->id(),
+            'tenant_id'        => $reunion->tenant_id,
         ]);
 
-        foreach ($data['opciones'] as $opcion) {
-            $votacion->opciones()->create(['texto' => $opcion['texto']]);
+        foreach ($data['opciones'] as $index => $opcion) {
+            $votacion->opciones()->create([
+                'texto' => $opcion['texto'],
+                'orden' => $index + 1,
+            ]);
         }
 
-        $votacion->load('opciones');
+        $votacion->load('opciones', 'tipoDecision');
         broadcast(new VotacionModificada($votacion, 'created'));
 
         return back()->with('success', 'Votación creada.');
@@ -51,24 +57,29 @@ class VotacionController extends Controller
         }
 
         $data = $request->validate([
-            'pregunta'    => 'required|string|max:500',
-            'descripcion' => 'nullable|string|max:2000',
-            'opciones'    => 'required|array|min:2',
+            'pregunta'         => 'required|string|max:500',
+            'descripcion'      => 'nullable|string|max:2000',
+            'tipo_decision_id' => 'nullable|exists:tipos_decision,id',
+            'opciones'         => 'required|array|min:2',
             'opciones.*.texto' => 'required|string|max:255',
         ]);
 
         $votacion->update([
-            'pregunta'    => $data['pregunta'],
-            'descripcion' => $data['descripcion'] ?? null,
+            'pregunta'         => $data['pregunta'],
+            'descripcion'      => $data['descripcion'] ?? null,
+            'tipo_decision_id' => $data['tipo_decision_id'] ?? null,
         ]);
 
         $votacion->opciones()->delete();
 
-        foreach ($data['opciones'] as $opcion) {
-            $votacion->opciones()->create(['texto' => $opcion['texto']]);
+        foreach ($data['opciones'] as $index => $opcion) {
+            $votacion->opciones()->create([
+                'texto' => $opcion['texto'],
+                'orden' => $index + 1,
+            ]);
         }
 
-        $votacion->load('opciones');
+        $votacion->load('opciones', 'tipoDecision');
         broadcast(new VotacionModificada($votacion, 'updated'));
 
         return back()->with('success', 'Votación actualizada.');
@@ -94,10 +105,33 @@ class VotacionController extends Controller
 
     public function abrir(Votacion $votacion)
     {
-        $votacion->load('reunion');
+        $votacion->load('reunion', 'tipoDecision');
         $quorum = $this->quorumService->calcular($votacion->reunion);
 
-        $votacion->update(['estado' => 'abierta', 'abierta_at' => now()]);
+        // Arts. 45/46 Ley 675: sin la presencia mínima por coeficiente, la
+        // aprobación es matemáticamente imposible — no se permite abrir.
+        // Este bloqueo NO se exime con BYPASS_QUORUM (flag de dev para
+        // quórum de instalación, no para umbrales de mayoría).
+        $tipoMayoria = $votacion->tipoDecision?->tipo_mayoria;
+        if (in_array($tipoMayoria, ['calificada_70', 'unanimidad'], true)) {
+            $umbral    = $tipoMayoria === 'calificada_70' ? 70.0 : 100.0;
+            $presencia = $this->quorumService->presenciaCoeficiente($votacion->reunion);
+
+            if ($presencia['porcentaje'] < $umbral) {
+                return back()->with('error', sprintf(
+                    'No se puede abrir la votación: la decisión requiere %s%% de coeficiente presente y actualmente hay %s%% (Art. %s, Ley 675 de 2001).',
+                    rtrim(rtrim(number_format($umbral, 1), '0'), '.'),
+                    $presencia['porcentaje'],
+                    $tipoMayoria === 'calificada_70' ? '46' : '9'
+                ));
+            }
+        }
+
+        $votacion->update([
+            'estado'          => 'abierta',
+            'abierta_at'      => now(),
+            'quorum_apertura' => $quorum,
+        ]);
         $votacion->load('opciones');
         broadcast(new \App\Events\EstadoVotacionCambiado($votacion));
 
@@ -137,7 +171,12 @@ class VotacionController extends Controller
             ];
         })->sortByDesc('peso_total')->first();
 
-        $votacion->update(['estado' => 'cerrada', 'cerrada_at' => now()]);
+        $votacion->update([
+            'estado'        => 'cerrada',
+            'cerrada_at'    => now(),
+            'resultado'     => $this->calcularResultado($votacion),
+            'quorum_cierre' => $this->quorumService->calcular($votacion->reunion),
+        ]);
         broadcast(new \App\Events\EstadoVotacionCambiado($votacion));
 
         ReunionLog::create([
@@ -160,5 +199,53 @@ class VotacionController extends Controller
     {
         $votacion->load('opciones.votos', 'reunion');
         return Inertia::render('Admin/Votaciones/Resultados', compact('votacion'));
+    }
+
+    private function calcularResultado(Votacion $votacion): string
+    {
+        $votacion->loadMissing('tipoDecision', 'opciones');
+
+        $tipoMayoria = $votacion->tipoDecision?->tipo_mayoria ?? 'simple';
+
+        // Opción de favor: orden = 1 (primera opción)
+        $opcionFavor = $votacion->opciones->firstWhere('orden', 1);
+
+        if (! $opcionFavor) {
+            return 'rechazada';
+        }
+
+        $votosFavor = (float) Voto::withoutGlobalScopes()
+            ->where('votacion_id', $votacion->id)
+            ->where('opcion_id', $opcionFavor->id)
+            ->sum('peso');
+
+        $totalEmitido = (float) Voto::withoutGlobalScopes()
+            ->where('votacion_id', $votacion->id)
+            ->sum('peso');
+
+        $votosContra = $totalEmitido - $votosFavor;
+
+        switch ($tipoMayoria) {
+            case 'calificada_70':
+                $totalEdificio = (float) Unidad::withoutGlobalScopes()
+                    ->where('tenant_id', $votacion->tenant_id)
+                    ->sum('coeficiente');
+
+                $porcentaje = $totalEdificio > 0
+                    ? round($votosFavor / $totalEdificio * 100, 10)
+                    : 0.0;
+
+                return $porcentaje >= 70.0 ? 'aprobada' : 'rechazada';
+
+            case 'unanimidad':
+                return ($totalEmitido > 0 && $votosContra == 0.0) ? 'aprobada' : 'rechazada';
+
+            default: // 'simple'
+                $porcentajeFavor = $totalEmitido > 0
+                    ? round($votosFavor / $totalEmitido * 100, 10)
+                    : 0.0;
+
+                return $porcentajeFavor > 50.0 ? 'aprobada' : 'rechazada';
+        }
     }
 }

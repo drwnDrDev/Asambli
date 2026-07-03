@@ -12,12 +12,13 @@ class Tenant extends Model
 
     protected $fillable = [
         'nombre', 'nit', 'direccion', 'ciudad',
-        'logo_url', 'max_poderes_por_delegado', 'activo', 'producto',
+        'logo_url', 'max_poderes_por_delegado', 'activo', 'producto', 'restringir_voto_morosos',
     ];
 
     protected $casts = [
         'activo' => 'boolean',
         'max_poderes_por_delegado' => 'integer',
+        'restringir_voto_morosos' => 'boolean',
     ];
 
     public function users()

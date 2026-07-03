@@ -15,7 +15,7 @@ it('dispatches both ResultadosVotacionActualizados (private) and ResultadosPubli
     // OpcionVotacionFactory does not exist — create directly (OpcionVotacion has no tenant_id)
     \App\Models\OpcionVotacion::create(['votacion_id' => $votacion->id, 'texto' => 'SÍ', 'orden' => 1]);
 
-    (new RecalcularResultadosVotacion($votacion->id))->handle();
+    (new RecalcularResultadosVotacion($votacion))->handle();
 
     Event::assertDispatched(ResultadosVotacionActualizados::class);
     Event::assertDispatched(ResultadosPublicosVotacion::class, function ($e) use ($votacion) {

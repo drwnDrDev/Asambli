@@ -14,6 +14,7 @@ export default function Edit({ copropietario, unidades = [] }) {
         telefono: copropietario.telefono ?? '',
         es_residente: copropietario.es_residente ?? false,
         activo: copropietario.activo ?? true,
+        en_mora: copropietario.en_mora ?? false,
         unidades: asignadasIds,
     })
 
@@ -109,6 +110,22 @@ export default function Edit({ copropietario, unidades = [] }) {
                                 className="w-4 h-4 accent-brand rounded" />
                             <span className="text-sm text-app-text-secondary">Activo</span>
                         </label>
+                    </div>
+
+                    <div className="flex items-center gap-3">
+                        <label className="flex items-center gap-2 cursor-pointer">
+                            <input
+                                type="checkbox"
+                                checked={data.en_mora}
+                                onChange={e => setData('en_mora', e.target.checked)}
+                                className="rounded border-gray-300 text-red-600 focus:ring-red-500"
+                            />
+                            <span className="text-sm font-medium text-gray-700">En mora</span>
+                        </label>
+                        <span className="text-xs text-gray-500">
+                            Si está marcado, no podrá votar en ninguna asamblea (Art. 38 Ley 675)
+                        </span>
+                        {errors.en_mora && <p className="text-sm text-red-600">{errors.en_mora}</p>}
                     </div>
 
                     <div className="flex items-center gap-3 pt-2">

@@ -19,7 +19,8 @@ class ReunionFactory extends Factory
         return [
             'tenant_id' => fn() => app()->has('current_tenant') ? app('current_tenant')->id : \App\Models\Tenant::factory(),
             'titulo' => fake()->sentence(4),
-            'tipo' => 'asamblea',
+            'tipo_cuerpo'       => 'asamblea',
+            'tipo_convocatoria' => 'ordinaria',
             'tipo_voto_peso' => 'coeficiente',
             'quorum_requerido' => 50.00,
             'estado' => 'borrador',

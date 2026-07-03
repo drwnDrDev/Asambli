@@ -31,11 +31,12 @@ it('super_admin puede crear una reunion para un tenant', function () {
 
     $this->actingAs(superAdmin())
         ->post("/super-admin/tenants/{$tenant->id}/reuniones", [
-            'titulo'           => 'Asamblea Test 2026',
-            'tipo'             => 'asamblea',
-            'tipo_voto_peso'   => 'coeficiente',
-            'quorum_requerido' => 51,
-            'fecha_programada' => null,
+            'titulo'            => 'Asamblea Test 2026',
+            'tipo_cuerpo'       => 'asamblea',
+            'tipo_convocatoria' => 'ordinaria',
+            'tipo_voto_peso'    => 'coeficiente',
+            'quorum_requerido'  => 51,
+            'fecha_programada'  => null,
         ]);
 
     $reunion = Reunion::withoutGlobalScopes()

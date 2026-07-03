@@ -14,14 +14,17 @@ class Votacion extends Model
     protected $table = 'votaciones';
 
     protected $fillable = [
-        'tenant_id', 'reunion_id', 'pregunta', 'descripcion',
-        'tipo', 'es_secreta', 'estado', 'abierta_at', 'cerrada_at', 'creada_por',
+        'tenant_id', 'reunion_id', 'tipo_decision_id', 'pregunta', 'descripcion',
+        'tipo', 'es_secreta', 'estado', 'resultado', 'abierta_at', 'cerrada_at', 'creada_por',
+        'quorum_apertura', 'quorum_cierre',
     ];
 
     protected $casts = [
-        'es_secreta' => 'boolean',
-        'abierta_at' => 'datetime',
-        'cerrada_at' => 'datetime',
+        'es_secreta'      => 'boolean',
+        'abierta_at'      => 'datetime',
+        'cerrada_at'      => 'datetime',
+        'quorum_apertura' => 'array',
+        'quorum_cierre'   => 'array',
     ];
 
     public function reunion()
@@ -37,5 +40,10 @@ class Votacion extends Model
     public function votos()
     {
         return $this->hasMany(Voto::class);
+    }
+
+    public function tipoDecision(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(\App\Models\TipoDecision::class);
     }
 }

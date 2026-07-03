@@ -35,10 +35,11 @@ class SalaReunionController extends Controller
     {
         $copropietario = auth('copropietario')->user();
 
-        // Bloquear si el copropietario tiene un poder aprobado activo
+        // Bloquear si el copropietario tiene un poder aprobado activo para ESTA reunión
         if ($copropietario) {
             $poderActivo = Poder::withoutGlobalScopes()
                 ->where('poderdante_id', $copropietario->id)
+                ->where('reunion_id', $reunion->id)
                 ->where('estado', 'aprobado')
                 ->with('apoderado')
                 ->first();
@@ -55,32 +56,53 @@ class SalaReunionController extends Controller
         $poderes = collect();
         if ($copropietario && in_array($reunion->estado, [ReunionEstado::AnteSala, ReunionEstado::EnCurso])) {
             // Registrar asistencia del copropietario que entra físicamente
-            Asistencia::updateOrCreate(
+            $asistencia = Asistencia::updateOrCreate(
                 ['reunion_id' => $reunion->id, 'copropietario_id' => $copropietario->id],
                 ['confirmada_por_admin' => true, 'hora_confirmacion' => now()]
             );
+            $nuevasEntradas = $asistencia->wasRecentlyCreated
+                ? [[$copropietario->id, 'auto_sala']]
+                : [];
 
-            // Obtener poderes aprobados
+            // Obtener poderes aprobados para ESTA reunión
             $poderes = Poder::withoutGlobalScopes()
                 ->where('apoderado_id', $copropietario->id)
+                ->where('reunion_id', $reunion->id)
                 ->where('estado', 'aprobado')
                 ->with('poderdante.unidades')
                 ->get();
 
             // Registrar asistencia para cada poderdante representado
             foreach ($poderes as $poder) {
-                Asistencia::updateOrCreate(
+                $asistenciaPoderdante = Asistencia::updateOrCreate(
                     ['reunion_id' => $reunion->id, 'copropietario_id' => $poder->poderdante_id],
                     ['confirmada_por_admin' => true, 'hora_confirmacion' => now()]
                 );
+                if ($asistenciaPoderdante->wasRecentlyCreated) {
+                    $nuevasEntradas[] = [$poder->poderdante_id, 'representado'];
+                }
             }
 
             $quorum = $this->quorumService->calcular($reunion);
+
+            // Log auditable de entradas (reconstruye el quórum en cualquier instante)
+            foreach ($nuevasEntradas as [$copropietarioId, $origen]) {
+                \App\Models\AsistenciaEvento::create([
+                    'tenant_id'         => $reunion->tenant_id,
+                    'reunion_id'        => $reunion->id,
+                    'copropietario_id'  => $copropietarioId,
+                    'tipo'              => 'entrada',
+                    'origen'            => $origen,
+                    'quorum_resultante' => $quorum['porcentaje_presente'],
+                ]);
+            }
+
             broadcast(new QuorumActualizado($reunion->id, $quorum));
         } else {
             if ($copropietario) {
                 $poderes = Poder::withoutGlobalScopes()
                     ->where('apoderado_id', $copropietario->id)
+                    ->where('reunion_id', $reunion->id)
                     ->where('estado', 'aprobado')
                     ->with('poderdante.unidades')
                     ->get();
@@ -129,15 +151,21 @@ class SalaReunionController extends Controller
         $esDelegadoExterno = $copropietario?->es_externo ?? false;
 
         $poderdantesRepresentados = $poderes->map(fn($p) => [
-            'id'      => $p->poderdante_id,
-            'nombre'  => $p->poderdante?->nombre,
+            'id'       => $p->poderdante_id,
+            'nombre'   => $p->poderdante?->nombre,
             'unidades' => $p->poderdante?->unidades?->pluck('numero') ?? [],
+            'en_mora'  => (bool) ($p->poderdante?->en_mora ?? false),
         ])->values();
+
+        // El flujo PIN no tiene User → SetTenantContext no registra current_tenant.
+        // El tenant correcto siempre es el de la reunión.
+        $restringirMorosos = (bool) $reunion->tenant?->restringir_voto_morosos;
+        $enMora = ($copropietario?->en_mora ?? false) && $restringirMorosos;
 
         return Inertia::render('Copropietario/Sala/Show', compact(
             'reunion', 'quorum', 'poderes', 'yaVotoPor', 'votacionAbierta',
             'resultadosActuales', 'feedInicial', 'estadoReunion', 'esDelegadoExterno',
-            'poderdantesRepresentados'
+            'poderdantesRepresentados', 'enMora', 'restringirMorosos'
         ));
     }
 

@@ -3,6 +3,8 @@ import AdminLayout from '@/Layouts/AdminLayout'
 import { Link, router, usePage, useForm } from '@inertiajs/react'
 import { QRCodeSVG } from 'qrcode.react'
 import echo from '@/echo'
+import TipoDecisionSelector from '@/Components/TipoDecisionSelector'
+import { fechaHora } from '@/utils/fecha'
 
 const ESTADO_BADGE = {
     borrador:     'bg-gray-100 text-gray-700',
@@ -58,13 +60,13 @@ function ModalObservacion({ titulo, onConfirm, onCancel }) {
     )
 }
 
-const emptyForm = { pregunta: '', descripcion: '', opciones: [{ texto: '' }, { texto: '' }] }
+const emptyForm = { pregunta: '', descripcion: '', opciones: [{ texto: '' }, { texto: '' }], tipo_decision_id: null }
 
-function VotacionForm({ reunionId, votacion, onCancel }) {
+function VotacionForm({ reunionId, votacion, onCancel, tiposDecision = [] }) {
     const isEditing = Boolean(votacion)
     const { data, setData, post, patch, processing, errors, reset } = useForm(
         isEditing
-            ? { pregunta: votacion.pregunta, descripcion: votacion.descripcion ?? '', opciones: votacion.opciones.map(o => ({ texto: o.texto })) }
+            ? { pregunta: votacion.pregunta, descripcion: votacion.descripcion ?? '', opciones: votacion.opciones.map(o => ({ texto: o.texto })), tipo_decision_id: votacion.tipo_decision_id ?? null }
             : emptyForm
     )
 
@@ -116,6 +118,12 @@ function VotacionForm({ reunionId, votacion, onCancel }) {
                     className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
                 />
             </div>
+            <TipoDecisionSelector
+                tiposDecision={tiposDecision}
+                value={data.tipo_decision_id}
+                onChange={value => setData('tipo_decision_id', value)}
+                error={errors.tipo_decision_id}
+            />
             <div className="space-y-2">
                 {data.opciones.map((op, i) => (
                     <div key={i} className="flex gap-2">
@@ -154,7 +162,7 @@ function VotacionForm({ reunionId, votacion, onCancel }) {
     )
 }
 
-export default function Show({ reunion, quorum, copropietarios = [], votaciones: initialVotaciones = [] }) {
+export default function Show({ reunion, quorum, copropietarios = [], votaciones: initialVotaciones = [], tiposDecision = [] }) {
     const { flash } = usePage().props
     const [votaciones, setVotaciones] = useState(initialVotaciones)
     const [showCreateForm, setShowCreateForm] = useState(false)
@@ -214,7 +222,7 @@ export default function Show({ reunion, quorum, copropietarios = [], votaciones:
                     <span className={`px-3 py-1 rounded-full text-sm font-medium ${ESTADO_BADGE[reunion.estado]}`}>
                         {reunion.estado}
                     </span>
-                    <span className="text-sm text-gray-500">Tipo: {reunion.tipo} · Quórum requerido: {reunion.quorum_requerido}%</span>
+                    <span className="text-sm text-gray-500">Tipo: {reunion.tipo_cuerpo === 'asamblea' ? `Asamblea ${reunion.tipo_convocatoria === 'extraordinaria' ? 'Extraordinaria' : 'Ordinaria'}` : 'Consejo'} · Quórum requerido: {reunion.quorum_requerido}%</span>
                 </div>
                 <div className="flex gap-2 flex-wrap">
                     {reunion.estado === 'borrador' && (
@@ -279,6 +287,10 @@ export default function Show({ reunion, quorum, copropietarios = [], votaciones:
                     )}
                     {reunion.estado === 'finalizada' && (
                         <>
+                            <Link href={`/admin/reuniones/${reunion.id}/lista-acceso`}
+                                className="px-3 py-1.5 rounded-lg text-sm border border-surface-border text-app-text-primary hover:bg-surface-hover transition-colors">
+                                Lista de acceso
+                            </Link>
                             <a href={`/admin/reuniones/${reunion.id}/reporte/pdf`}
                                 className="text-sm bg-gray-700 text-white px-4 py-2 rounded-lg hover:bg-gray-800 transition">
                                 Descargar Acta PDF
@@ -292,6 +304,12 @@ export default function Show({ reunion, quorum, copropietarios = [], votaciones:
                                 CSV Votos
                             </a>
                         </>
+                    )}
+                    {['ante_sala', 'en_curso', 'suspendida'].includes(reunion.estado) && (
+                        <Link href={`/admin/reuniones/${reunion.id}/lista-acceso`}
+                            className="text-sm border border-gray-300 text-gray-600 px-4 py-2 rounded-lg hover:bg-gray-50 transition">
+                            Lista de acceso
+                        </Link>
                     )}
                     <Link href={`/admin/reuniones/${reunion.id}/auditoria`}
                         className="text-sm border border-gray-300 text-gray-600 px-4 py-2 rounded-lg hover:bg-gray-50 transition">
@@ -331,7 +349,7 @@ export default function Show({ reunion, quorum, copropietarios = [], votaciones:
                             </p>
                         </div>
                         <p className="text-xs text-gray-500">
-                            Vence: {new Date(reunion.qr_expires_at).toLocaleString('es-CO')}
+                            Vence: {fechaHora(reunion.qr_expires_at)}
                         </p>
                         <button
                             onClick={() => router.post(route('admin.reuniones.generar-qr', reunion.id))}
@@ -417,6 +435,7 @@ export default function Show({ reunion, quorum, copropietarios = [], votaciones:
                             reunionId={reunion.id}
                             votacion={null}
                             onCancel={() => setShowCreateForm(false)}
+                            tiposDecision={tiposDecision}
                         />
                     )}
 
@@ -431,6 +450,7 @@ export default function Show({ reunion, quorum, copropietarios = [], votaciones:
                                     reunionId={reunion.id}
                                     votacion={v}
                                     onCancel={() => setEditingId(null)}
+                                    tiposDecision={tiposDecision}
                                 />
                             ) : (
                                 <div className="flex items-center gap-3 py-2 px-1 border-b border-gray-50 last:border-0">

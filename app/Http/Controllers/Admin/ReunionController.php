@@ -6,6 +6,7 @@ use App\Enums\ReunionEstado;
 use App\Http\Controllers\Controller;
 use App\Models\Copropietario;
 use App\Models\Reunion;
+use App\Models\TipoDecision;
 use App\Services\ConvocatoriaService;
 use App\Services\QuorumService;
 use App\Services\ReporteService;
@@ -42,9 +43,11 @@ class ReunionController extends Controller
             ->with('user', 'unidades')
             ->get()
             ->map(fn($c) => array_merge($c->toArray(), ['asistencia' => in_array($c->id, $asistencias)]));
-        $votaciones = $reunion->votaciones()->with('opciones')->get();
+        $votaciones = $reunion->votaciones()->with('opciones', 'tipoDecision')->get();
 
-        return Inertia::render('Admin/Reuniones/Show', compact('reunion', 'quorum', 'copropietarios', 'votaciones'));
+        $tiposDecision = TipoDecision::paraAsamblea()->values();
+
+        return Inertia::render('Admin/Reuniones/Show', compact('reunion', 'quorum', 'copropietarios', 'votaciones', 'tiposDecision'));
     }
 
     public function conducir(Reunion $reunion)
@@ -56,7 +59,7 @@ class ReunionController extends Controller
             ->with('user', 'unidades')
             ->get()
             ->map(fn($c) => array_merge($c->toArray(), ['asistencia' => in_array($c->id, $asistencias)]));
-        $votaciones = $reunion->votaciones()->with('opciones')->get();
+        $votaciones = $reunion->votaciones()->with('opciones', 'tipoDecision')->get();
 
         // Resultados para votaciones abiertas Y cerradas
         $resultadosIniciales = [];
@@ -74,7 +77,9 @@ class ReunionController extends Controller
             })->toArray();
         }
 
-        return Inertia::render('Admin/Reuniones/Conducir', compact('reunion', 'quorum', 'copropietarios', 'votaciones', 'resultadosIniciales'));
+        $tiposDecision = TipoDecision::paraAsamblea()->values();
+
+        return Inertia::render('Admin/Reuniones/Conducir', compact('reunion', 'quorum', 'copropietarios', 'votaciones', 'resultadosIniciales', 'tiposDecision'));
     }
 
     public function actualizarQuorumPresencia(Request $request, Reunion $reunion)
@@ -201,15 +206,25 @@ class ReunionController extends Controller
 
     public function confirmarAsistencia(Reunion $reunion, Copropietario $copropietario)
     {
-        \App\Models\Asistencia::updateOrCreate(
+        $asistencia = \App\Models\Asistencia::updateOrCreate(
             ['reunion_id' => $reunion->id, 'copropietario_id' => $copropietario->id],
             ['confirmada_por_admin' => true, 'hora_confirmacion' => now()]
         );
 
-        broadcast(new \App\Events\QuorumActualizado(
-            $reunion->id,
-            app(QuorumService::class)->calcular($reunion)
-        ));
+        $quorum = app(QuorumService::class)->calcular($reunion);
+
+        if ($asistencia->wasRecentlyCreated) {
+            \App\Models\AsistenciaEvento::create([
+                'tenant_id'         => $reunion->tenant_id,
+                'reunion_id'        => $reunion->id,
+                'copropietario_id'  => $copropietario->id,
+                'tipo'              => 'entrada',
+                'origen'            => 'admin',
+                'quorum_resultante' => $quorum['porcentaje_presente'],
+            ]);
+        }
+
+        broadcast(new \App\Events\QuorumActualizado($reunion->id, $quorum));
 
         return back()->with('success', 'Asistencia confirmada.');
     }
