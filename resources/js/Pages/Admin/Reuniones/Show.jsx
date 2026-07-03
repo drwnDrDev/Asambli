@@ -304,6 +304,12 @@ export default function Show({ reunion, quorum, copropietarios = [], votaciones:
                             </a>
                         </>
                     )}
+                    {['ante_sala', 'en_curso', 'suspendida'].includes(reunion.estado) && (
+                        <Link href={`/admin/reuniones/${reunion.id}/lista-acceso`}
+                            className="text-sm border border-gray-300 text-gray-600 px-4 py-2 rounded-lg hover:bg-gray-50 transition">
+                            Lista de acceso
+                        </Link>
+                    )}
                     <Link href={`/admin/reuniones/${reunion.id}/auditoria`}
                         className="text-sm border border-gray-300 text-gray-600 px-4 py-2 rounded-lg hover:bg-gray-50 transition">
                         Auditoría
