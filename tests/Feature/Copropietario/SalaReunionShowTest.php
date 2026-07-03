@@ -1,6 +1,7 @@
 <?php
 use App\Enums\ReunionEstado;
 use App\Models\Copropietario;
+use App\Models\Poder;
 use App\Models\Reunion;
 use App\Models\ReunionLog;
 use App\Models\Tenant;
@@ -186,4 +187,43 @@ it('show funciona para copropietario PIN sin binding de current_tenant y expone 
 
     $response->assertStatus(200);
     expect($response->json('props.enMora'))->toBeTrue();
+});
+
+it('show expone restringirMorosos y en_mora de poderdantes representados', function () {
+    $tenant = Tenant::factory()->create(['restringir_voto_morosos' => true]);
+    app()->instance('current_tenant', $tenant);
+
+    $user = User::factory()->create(['tenant_id' => $tenant->id]);
+    $apoderado  = Copropietario::factory()->create(['tenant_id' => $tenant->id]);
+    $poderdante = Copropietario::factory()->create(['tenant_id' => $tenant->id, 'en_mora' => true]);
+    $reunion = Reunion::factory()->create(['tenant_id' => $tenant->id, 'estado' => ReunionEstado::EnCurso]);
+
+    \App\Models\Poder::withoutEvents(fn () => \App\Models\Poder::create([
+        'tenant_id'     => $tenant->id,
+        'reunion_id'    => $reunion->id,
+        'apoderado_id'  => $apoderado->id,
+        'poderdante_id' => $poderdante->id,
+        'estado'        => 'aprobado',
+        'registrado_por' => $user->id,
+    ]));
+
+    $token = \Illuminate\Support\Str::random(64);
+    \App\Models\AccesoReunion::create([
+        'copropietario_id' => $apoderado->id,
+        'reunion_id'       => $reunion->id,
+        'pin_hash'         => bcrypt('000000'),
+        'session_token'    => $token,
+        'activo'           => true,
+    ]);
+
+    app()->forgetInstance('current_tenant');
+
+    $response = $this->withSession(['copropietario_session_token' => $token])
+        ->withHeaders(['X-Inertia' => 'true', 'X-Inertia-Version' => inertiaVersion()])
+        ->get("/sala/{$reunion->id}");
+
+    $response->assertStatus(200);
+    expect($response->json('props.restringirMorosos'))->toBeTrue();
+    $reps = $response->json('props.poderdantesRepresentados');
+    expect($reps[0]['en_mora'])->toBeTrue();
 });

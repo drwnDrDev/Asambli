@@ -129,20 +129,21 @@ class SalaReunionController extends Controller
         $esDelegadoExterno = $copropietario?->es_externo ?? false;
 
         $poderdantesRepresentados = $poderes->map(fn($p) => [
-            'id'      => $p->poderdante_id,
-            'nombre'  => $p->poderdante?->nombre,
+            'id'       => $p->poderdante_id,
+            'nombre'   => $p->poderdante?->nombre,
             'unidades' => $p->poderdante?->unidades?->pluck('numero') ?? [],
+            'en_mora'  => (bool) ($p->poderdante?->en_mora ?? false),
         ])->values();
 
         // El flujo PIN no tiene User → SetTenantContext no registra current_tenant.
         // El tenant correcto siempre es el de la reunión.
-        $enMora = ($copropietario?->en_mora ?? false)
-            && (bool) $reunion->tenant?->restringir_voto_morosos;
+        $restringirMorosos = (bool) $reunion->tenant?->restringir_voto_morosos;
+        $enMora = ($copropietario?->en_mora ?? false) && $restringirMorosos;
 
         return Inertia::render('Copropietario/Sala/Show', compact(
             'reunion', 'quorum', 'poderes', 'yaVotoPor', 'votacionAbierta',
             'resultadosActuales', 'feedInicial', 'estadoReunion', 'esDelegadoExterno',
-            'poderdantesRepresentados', 'enMora'
+            'poderdantesRepresentados', 'enMora', 'restringirMorosos'
         ));
     }
 

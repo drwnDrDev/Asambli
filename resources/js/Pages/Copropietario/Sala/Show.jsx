@@ -151,7 +151,7 @@ function ResultBar({ opcion, resultados, esVotada }) {
     )
 }
 
-function VotacionCard({ votacionActiva, resultados, yaVotoPor, poderes, onVotar, loading, esDelegadoExterno, enMora = false }) {
+function VotacionCard({ votacionActiva, resultados, yaVotoPor, poderes, onVotar, loading, esDelegadoExterno, enMora = false, restringirMorosos = false }) {
     const [pendingOpcion, setPendingOpcion] = useState(null)
     const yaVotoPropio = yaVotoPor.includes('propio')
 
@@ -250,12 +250,20 @@ function VotacionCard({ votacionActiva, resultados, yaVotoPor, poderes, onVotar,
 
                 {poderes.map(poder => {
                     const yaVotoPoder = yaVotoPor.includes(poder.poderdante_id)
+                    const poderdanteEnMora = restringirMorosos && poder.poderdante?.en_mora
                     return (
                         <div key={poder.id} className="border-t pt-4 mt-4" style={{ borderColor: 'var(--sala-border)' }}>
                             <p className="text-[10px] uppercase tracking-widest mb-2" style={{ color: 'var(--sala-amber)' }}>
                                 En nombre de: {poder.poderdante?.nombre}
                             </p>
-                            {!yaVotoPoder ? (
+                            {poderdanteEnMora ? (
+                                <p
+                                    className="text-xs px-3 py-2.5 rounded-xl"
+                                    style={{ background: 'rgba(248,113,113,0.10)', border: '1px solid rgba(248,113,113,0.35)', color: '#f87171' }}
+                                >
+                                    Poderdante en mora — su voto está suspendido (Art. 38, Ley 675)
+                                </p>
+                            ) : !yaVotoPoder ? (
                                 <div className="space-y-2">
                                     {votacionActiva.opciones.map(opcion => (
                                         <button
@@ -400,6 +408,7 @@ export default function SalaShow({
     esDelegadoExterno = false,
     poderdantesRepresentados = [],
     enMora = false,
+    restringirMorosos = false,
 }) {
     const { errors } = usePage().props
 
@@ -599,6 +608,9 @@ export default function SalaShow({
                                     {p.unidades?.length > 0 && (
                                         <span style={{ color: 'var(--sala-text-muted)' }}> · Unid. {p.unidades.join(', ')}</span>
                                     )}
+                                    {restringirMorosos && p.en_mora && (
+                                        <span style={{ color: '#f87171' }}> · en mora (voto suspendido)</span>
+                                    )}
                                 </li>
                             ))}
                         </ul>
@@ -613,6 +625,7 @@ export default function SalaShow({
                     loading={votando}
                     esDelegadoExterno={esDelegadoExterno}
                     enMora={enMora}
+                    restringirMorosos={restringirMorosos}
                 />
 
                 {feed.length > 0 && (
