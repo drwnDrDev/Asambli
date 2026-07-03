@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { router, useForm, usePage } from '@inertiajs/react'
 import AdminLayout from '@/Layouts/AdminLayout'
+import BuscadorCopropietario from '@/Components/BuscadorCopropietario'
 
 const ESTADO_COLOR = {
     pendiente: 'bg-yellow-100 text-yellow-700',
@@ -67,7 +68,7 @@ function PoderRow({ poder, onAprobar, onRechazar, onRevocar }) {
 
 function CrearPoderForm({ copropietarios, reunionesVigentes, onSuccess }) {
     const [modo, setModo] = useState('copropietario') // 'copropietario' | 'externo'
-    const [busqueda, setBusqueda] = useState('')
+    const [poderdanteSeleccionado, setPoderdanteSeleccionado] = useState(null)
     const [apoderadoSeleccionado, setApoderadoSeleccionado] = useState(null)
     const [elegibilidad, setElegibilidad] = useState(null)
     const [verificando, setVerificando] = useState(false)
@@ -85,15 +86,6 @@ function CrearPoderForm({ copropietarios, reunionesVigentes, onSuccess }) {
         documento_url:             '',
     })
 
-    const copropietariosFiltrados = copropietarios.filter(c => {
-        const q = busqueda.toLowerCase()
-        return (
-            c.nombre?.toLowerCase().includes(q) ||
-            (c.numero_documento ?? '').toLowerCase().includes(q) ||
-            (c.unidades ?? []).some(u => u.numero?.toLowerCase().includes(q))
-        )
-    })
-
     useEffect(() => {
         if (!apoderadoSeleccionado) { setElegibilidad(null); return }
         setVerificando(true)
@@ -106,7 +98,6 @@ function CrearPoderForm({ copropietarios, reunionesVigentes, onSuccess }) {
     const seleccionar = (c) => {
         setApoderadoSeleccionado(c)
         setData('apoderado_copropietario_id', c.id)
-        setBusqueda('')
     }
 
     const limpiarSeleccion = () => {
@@ -117,6 +108,7 @@ function CrearPoderForm({ copropietarios, reunionesVigentes, onSuccess }) {
 
     const cambiarModo = (m) => {
         setModo(m)
+        setPoderdanteSeleccionado(null)
         limpiarSeleccion()
         reset()
         if (reunionesVigentes.length === 1) {
@@ -128,7 +120,7 @@ function CrearPoderForm({ copropietarios, reunionesVigentes, onSuccess }) {
         e.preventDefault()
         post('/admin/poderes', {
             preserveScroll: true,
-            onSuccess: () => { reset(); limpiarSeleccion(); onSuccess() },
+            onSuccess: () => { reset(); limpiarSeleccion(); setPoderdanteSeleccionado(null); onSuccess() },
         })
     }
 
@@ -179,18 +171,19 @@ function CrearPoderForm({ copropietarios, reunionesVigentes, onSuccess }) {
             {/* Poderdante */}
             <div>
                 <label className="text-xs text-gray-500 block mb-1">Copropietario que otorga el poder (poderdante) *</label>
-                <select
-                    value={data.poderdante_id}
-                    onChange={e => setData('poderdante_id', e.target.value)}
-                    className="w-full border border-gray-300 rounded px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                <BuscadorCopropietario
+                    copropietarios={copropietarios}
+                    seleccionado={poderdanteSeleccionado}
+                    onSeleccionar={c => { setPoderdanteSeleccionado(c); setData('poderdante_id', c.id) }}
+                    onLimpiar={() => { setPoderdanteSeleccionado(null); setData('poderdante_id', '') }}
+                    label="Buscar poderdante *"
                 >
-                    <option value="">Seleccionar copropietario…</option>
-                    {copropietarios.map(c => (
-                        <option key={c.id} value={c.id}>
-                            {c.nombre} — {c.unidades?.map(u => u.numero).join(', ') || 'sin unidades'}
-                        </option>
-                    ))}
-                </select>
+                    {poderdanteSeleccionado?.en_mora && (
+                        <p className="mt-1.5 px-3 py-2 rounded text-xs font-medium bg-yellow-50 border border-yellow-200 text-yellow-700">
+                            ⚠ Poderdante en mora: su voto delegado será bloqueado en las votaciones mientras la restricción del conjunto esté activa (Art. 38, Ley 675).
+                        </p>
+                    )}
+                </BuscadorCopropietario>
                 {errors.poderdante_id && <p className="text-red-500 text-xs mt-0.5">{errors.poderdante_id}</p>}
             </div>
 
@@ -218,69 +211,30 @@ function CrearPoderForm({ copropietarios, reunionesVigentes, onSuccess }) {
             {/* Modo A: copropietario */}
             {modo === 'copropietario' && (
                 <div>
-                    {!apoderadoSeleccionado ? (
-                        <>
-                            <label className="text-xs text-gray-500 block mb-1">Buscar copropietario *</label>
-                            <input
-                                type="text"
-                                value={busqueda}
-                                onChange={e => setBusqueda(e.target.value)}
-                                placeholder="Nombre, documento o unidad…"
-                                className="w-full border border-gray-300 rounded px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 mb-1"
-                            />
-                            {busqueda.length > 0 && (
-                                <div className="border border-gray-200 rounded bg-white max-h-40 overflow-y-auto shadow-sm">
-                                    {copropietariosFiltrados.length === 0 ? (
-                                        <p className="text-xs text-gray-400 px-3 py-2">Sin resultados</p>
-                                    ) : copropietariosFiltrados.map(c => (
-                                        <button
-                                            key={c.id}
-                                            type="button"
-                                            onClick={() => seleccionar(c)}
-                                            className="w-full text-left px-3 py-2 text-sm hover:bg-blue-50 transition border-b border-gray-100 last:border-0"
-                                        >
-                                            <span className="font-medium">{c.nombre}</span>
-                                            <span className="text-gray-400 text-xs ml-2">
-                                                {c.numero_documento && `Doc: ${c.numero_documento} · `}
-                                                {c.unidades?.map(u => u.numero).join(', ')}
-                                            </span>
-                                        </button>
-                                    ))}
-                                </div>
-                            )}
-                        </>
-                    ) : (
-                        <div>
-                            <div className="flex items-center justify-between border border-gray-200 rounded-lg px-3 py-2.5 bg-white">
-                                <div>
-                                    <p className="text-sm font-medium text-gray-800">{apoderadoSeleccionado.nombre}</p>
-                                    <p className="text-xs text-gray-400 mt-0.5">
-                                        {apoderadoSeleccionado.numero_documento && `Doc: ${apoderadoSeleccionado.numero_documento} · `}
-                                        Unidades: {apoderadoSeleccionado.unidades?.map(u => u.numero).join(', ') || '—'}
-                                    </p>
-                                </div>
-                                <button type="button" onClick={limpiarSeleccion} className="text-xs text-gray-400 hover:text-red-500 ml-3">✕</button>
+                    <BuscadorCopropietario
+                        copropietarios={copropietarios}
+                        seleccionado={apoderadoSeleccionado}
+                        onSeleccionar={seleccionar}
+                        onLimpiar={limpiarSeleccion}
+                        label="Buscar copropietario delegado *"
+                    >
+                        {verificando && <p className="text-xs text-gray-400 mt-1.5">Verificando elegibilidad…</p>}
+                        {elegibilidad && !verificando && (
+                            <div className={`mt-1.5 px-3 py-2 rounded text-xs font-medium ${
+                                elegibilidad.bloqueado
+                                    ? 'bg-red-50 border border-red-200 text-red-700'
+                                    : elegibilidad.info
+                                        ? 'bg-yellow-50 border border-yellow-200 text-yellow-700'
+                                        : 'bg-green-50 border border-green-200 text-green-700'
+                            }`}>
+                                {elegibilidad.bloqueado
+                                    ? `✕ ${elegibilidad.motivo}`
+                                    : elegibilidad.info
+                                        ? `ⓘ ${elegibilidad.info}`
+                                        : '✓ Elegible como delegado'}
                             </div>
-
-                            {verificando && <p className="text-xs text-gray-400 mt-1.5">Verificando elegibilidad…</p>}
-
-                            {elegibilidad && !verificando && (
-                                <div className={`mt-1.5 px-3 py-2 rounded text-xs font-medium ${
-                                    elegibilidad.bloqueado
-                                        ? 'bg-red-50 border border-red-200 text-red-700'
-                                        : elegibilidad.info
-                                            ? 'bg-yellow-50 border border-yellow-200 text-yellow-700'
-                                            : 'bg-green-50 border border-green-200 text-green-700'
-                                }`}>
-                                    {elegibilidad.bloqueado
-                                        ? `✕ ${elegibilidad.motivo}`
-                                        : elegibilidad.info
-                                            ? `ⓘ ${elegibilidad.info}`
-                                            : '✓ Elegible como delegado'}
-                                </div>
-                            )}
-                        </div>
-                    )}
+                        )}
+                    </BuscadorCopropietario>
                     {errors.apoderado_copropietario_id && (
                         <p className="text-red-500 text-xs mt-0.5">{errors.apoderado_copropietario_id}</p>
                     )}
