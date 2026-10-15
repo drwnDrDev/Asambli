@@ -70,7 +70,8 @@
       "Bash(echo \"padron_jsx:$?\")",
       "Bash(echo \"mls:$?\")",
       "Bash(npm --version)",
-      "Bash(./sail pnpm:*)"
+      "Bash(./sail pnpm:*)",
+      "Bash(npm list *)"
     ]
   }
 }

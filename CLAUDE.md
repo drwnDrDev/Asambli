@@ -154,6 +154,11 @@ El job `RecalcularResultadosVotacion` usa **`dispatchSync()`** — NO `dispatch(
 
 **Fase compliance legal completa (2026-07-03):** Ley 675 núcleo implementado (mayorías, mora, quórum, snapshots, eventos de asistencia) — specs y planes en `docs/superpowers/`; estado legal detallado en `docs/legal/compliance-ley675.md`. Diferido a fases futuras: jerarquía de nomenclatura (etapas/torres), representante legal del tenant, exclusión de morosos del quórum (3.4/8.3), orden del día, segunda citación.
 
+**Retoma 2026-10-14:** entorno verificado (176 tests verdes). Checklist de pruebas de usuario en `docs/testing/checklist-pruebas-usuario.md` (flujos implementados + no implementados de producto y legales). Siguiente: ronda de pruebas de usuario → rama de ajustes (follow-ups compliance + hallazgos) → fase exclusión de morosos del quórum. Hallazgos de revisión de código pendientes de confirmar:
+- Entrada por QR no funcional: `generarQr` crea `qr_token` pero ninguna ruta lo consume; `EntradaQR.jsx`, `Auth/AccesoRapido.jsx`, `Onboarding/Index.jsx` sin ruta.
+- `asistencia_eventos` tipo `salida` nunca se registra → el quórum no baja cuando alguien sale.
+- Posible bug: `PoderController::verificarElegibilidadApoderado` cuenta poderes activos sin filtrar `reunion_id`.
+
 ## Comandos frecuentes
 ```bash
 # Tests
