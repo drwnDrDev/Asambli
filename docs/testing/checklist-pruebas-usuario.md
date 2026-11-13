@@ -26,20 +26,20 @@ Credenciales seed: `super@asambli.co` / `password` · `admin@conjuntotest.co` / 
 ## 1. Super admin (`/super-admin`)
 
 ### 1.1 Tenants
-- [ ] Login como super admin → redirige a `/super-admin/dashboard`
-- [ ] Crear tenant **con** admin → se crean tenant y usuario admin
-- [ ] Crear tenant **sin** admin → válido; luego agregar admin desde el show del tenant
-- [ ] Editar tenant: nombre, `max_poderes`, toggle **restringir voto morosos**, producto
-- [ ] Activar/desactivar un usuario admin (toggle); no permite desactivarse a sí mismo
-- [ ] Show del tenant: índice paginado de copropietarios
+- [x] Login como super admin → redirige a `/super-admin/dashboard`
+- [x] Crear tenant **con** admin → se crean tenant y usuario admin
+- [x] Crear tenant **sin** admin → válido; luego agregar admin desde el show del tenant
+- [x] Editar tenant: nombre, `max_poderes`, toggle **restringir voto morosos**, producto
+- [x] Activar/desactivar un usuario admin (toggle); no permite desactivarse a sí mismo
+- [?] Show del tenant: índice paginado de copropietarios
 - [ ] Auditoría del tenant (`/super-admin/tenants/{id}/auditoria`) lista acciones
 
 ### 1.2 Padrón
 - [ ] Importar padrón CSV válido → crea copropietarios y unidades
-- [ ] Importar XLSX válido
+- [x] Importar XLSX válido
 - [ ] Archivo con errores (columnas faltantes, coeficiente inválido, documento duplicado) → mensajes claros, no importa basura
 - [ ] Copropietario con **varias unidades** se importa como un solo copropietario con N unidades
-- [ ] Re-importar el mismo archivo no duplica registros
+- [x] Re-importar el mismo archivo no duplica registros
 
 ### 1.3 Reuniones (creación)
 - [ ] Crear reunión desde super admin: `tipo_cuerpo` (asamblea/consejo), `tipo_convocatoria` (ordinaria/extraordinaria), modalidad, peso de voto (coeficiente/unidad), quórum requerido, fecha
